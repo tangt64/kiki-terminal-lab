@@ -1,0 +1,842 @@
+
+/* Extracted cloud styles: styles.css */
+.mini-horizon-instance-domains {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 7px;
+  padding: 9px 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.mini-horizon-instance-domains > span:first-child {
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mini-horizon-instance-domains > div,
+.mini-horizon-inline-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mini-horizon-instance-domains a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mini-horizon-inline-form input,
+.mini-horizon-inline-form select {
+  width: auto;
+  min-height: 34px;
+}
+
+.mini-horizon-inline-form input:first-child {
+  min-width: 190px;
+}
+
+.mini-horizon-inline-form > span {
+  color: #64748b;
+  font-size: 12px;
+}
+.loading-card {
+  background: var(--surface);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.06);
+}
+.session-loading-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  width: min(520px, calc(100vw - 48px));
+  padding: 18px;
+  overflow: hidden;
+  border-color: rgba(37, 99, 235, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%),
+    repeating-linear-gradient(90deg, rgba(37, 99, 235, 0.06) 0 1px, transparent 1px 26px);
+}
+.session-loading-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.12) 48%, transparent 100%);
+  transform: translateX(-100%);
+  animation: session-loading-scan 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.session-loading-signal {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  width: 52px;
+  height: 52px;
+  padding: 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+.session-loading-signal span {
+  width: 7px;
+  min-height: 12px;
+  border-radius: 999px;
+  background: #2563eb;
+  animation: session-loading-signal-pulse 1.05s ease-in-out infinite;
+}
+.session-loading-signal span:nth-child(2) {
+  min-height: 22px;
+  animation-delay: 0.12s;
+}
+.session-loading-signal span:nth-child(3) {
+  min-height: 32px;
+  animation-delay: 0.24s;
+}
+.session-loading-terminal {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.session-loading-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.session-loading-head > span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-loading-head i {
+  margin-left: auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-style: normal;
+  line-height: 1;
+}
+.session-loading-emote {
+  display: inline-grid;
+  place-items: center;
+  min-width: 32px;
+  height: 24px;
+  padding: 0 7px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-family: "JetBrains Mono", "D2Coding", "Pretendard Variable", monospace;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+.session-loading-copy {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+  color: var(--primary);
+  font-family: "JetBrains Mono", "D2Coding", "Pretendard Variable", monospace;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.session-loading-prefix {
+  color: var(--muted);
+}
+.session-loading-cursor {
+  color: var(--accent);
+  animation: session-loading-cursor-blink 1s steps(2, start) infinite;
+}
+.session-loading-rail {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+.session-loading-rail span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb 0%, #14b8a6 100%);
+  animation: session-loading-rail-slide 1.45s ease-in-out infinite;
+}
+.session-loading-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.session-loading-steps span {
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px 7px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-loading-steps span.is-active {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.exam-preparation-dialog .session-loading-terminal {
+  gap: 12px;
+}
+.ai-lab-console-panel .terminal-root {
+  box-sizing: border-box;
+  width: 100%;
+  height: clamp(360px, 55vh, 560px);
+  min-height: 0;
+  max-height: 560px;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  background: #07111f;
+}
+.ai-lab-console-panel .terminal-root .xterm {
+  height: 100%;
+  min-height: 0;
+}
+.ai-lab-console-panel .terminal-root .xterm-viewport {
+  height: 100% !important;
+  min-height: 0;
+}
+.ai-lab-console-panel .terminal-root .xterm-screen {
+  min-height: 0;
+}
+
+@media (max-width: 720px) {
+  .ai-lab-console-panel .terminal-root {
+    height: 380px;
+  }
+}
+
+@media (max-width: 520px) {
+  .session-loading-card {
+    grid-template-columns: 1fr;
+    width: min(420px, calc(100vw - 32px));
+    padding: 16px;
+  }
+  .session-loading-signal {
+    justify-self: start;
+    width: 46px;
+    height: 44px;
+    padding: 8px;
+  }
+  .session-loading-copy {
+    font-size: 13px;
+  }
+  .session-loading-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* v1.2 bright landing refresh. */
+
+/* Temporary product-led landing concept. Remove this block and TemporaryLandingContent to restore v1.2. */
+.status-chip.is-coming-soon {
+  color: #075985;
+  border-color: rgba(14, 165, 233, 0.24);
+  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  color: var(--muted);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+.status-chip.is-success {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  border-color: transparent;
+  color: #334155;
+}
+.status-chip.is-error {
+  background: linear-gradient(180deg, #fff1f2 0%, #fef2f2 100%);
+  border-color: transparent;
+  color: #991b1b;
+}
+.status-chip.is-muted {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-color: transparent;
+  color: #64748b;
+}
+.status-chip.is-government {
+  background: rgba(219, 234, 254, 0.92);
+  border-color: rgba(37, 99, 235, 0.22);
+  color: #1d4ed8;
+}
+.status-chip.is-ilt {
+  background: rgba(224, 231, 255, 0.92);
+  border-color: rgba(79, 70, 229, 0.24);
+  color: #3730a3;
+}
+.status-chip.is-online {
+  background: rgba(220, 252, 231, 0.92);
+  border-color: rgba(22, 163, 74, 0.24);
+  color: #15803d;
+}
+.status-chip.is-console-zun {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  border-color: transparent;
+  color: #334155;
+}
+.status-chip.is-console-ssh {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  border-color: transparent;
+  color: #334155;
+}
+.status-chip.is-warn {
+  background: linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%);
+  border-color: transparent;
+  color: #92400e;
+}
+.terminal-root {
+  width: 100%;
+  overflow: hidden;
+}
+.terminal-root.is-fixed {
+  min-height: 560px;
+}
+.terminal-root.is-embedded {
+  min-height: 380px;
+}
+.terminal-embed.is-console-blocked .terminal-root {
+  opacity: 0.26;
+  pointer-events: none;
+  user-select: none;
+}
+.terminal-console-status-meta .status-chip {
+  gap: 7px;
+  min-height: 25px;
+  padding: 4px 10px;
+  border-color: rgba(96, 165, 250, 0.26);
+  background: rgba(37, 99, 235, 0.14);
+  color: #bfdbfe;
+}
+.terminal-console-status-meta .status-chip i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.12);
+  animation: terminal-readiness-icon-bob 1.15s ease-in-out infinite;
+}
+.terminal-console-status-overlay.is-wait .terminal-console-status-meta .status-chip i {
+  background: #fbbf24;
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.12);
+}
+.terminal-console-status-overlay.is-error .terminal-console-status-meta .status-chip i {
+  background: #f87171;
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.12);
+  animation: none;
+}
+.terminal-root.is-fixed .xterm {
+  width: 100%;
+  min-height: 560px;
+}
+.terminal-root.is-embedded .xterm {
+  width: 100%;
+  min-height: 380px;
+}
+.terminal-root.is-fixed .xterm-viewport {
+  width: 100% !important;
+  min-height: 560px;
+}
+.terminal-root.is-embedded .xterm-viewport {
+  width: 100% !important;
+  min-height: 380px;
+}
+.terminal-root.is-fixed .xterm-screen {
+  width: 100%;
+  min-height: 560px;
+}
+.terminal-root.is-embedded .xterm-screen {
+  width: 100%;
+  min-height: 380px;
+}
+.terminal-root .xterm-screen canvas {
+  max-width: none;
+  width: auto !important;
+  height: auto !important;
+}
+.terminal-embed.is-windows-rdp-only .terminal-root {
+  opacity: 0.18;
+  filter: blur(0.4px);
+}
+.terminal-learning-workbench.is-active .terminal-root.is-fixed,
+.terminal-learning-workbench.is-active .terminal-root.is-fixed .xterm,
+.terminal-learning-workbench.is-active .terminal-root.is-fixed .xterm-viewport,
+.terminal-learning-workbench.is-active .terminal-root.is-fixed .xterm-screen {
+  height: 100%;
+  min-height: 0;
+}
+@media (max-width: 1180px) {
+  .terminal-learning-workbench.is-active .terminal-root.is-fixed,
+  .terminal-learning-workbench.is-active .terminal-root.is-fixed .xterm,
+  .terminal-learning-workbench.is-active .terminal-root.is-fixed .xterm-viewport,
+  .terminal-learning-workbench.is-active .terminal-root.is-fixed .xterm-screen {
+    min-height: 480px;
+  }
+}
+.terminal-view-shell.is-terminal-layout-wide .terminal-root.is-fixed,
+.terminal-view-shell.is-terminal-layout-wide .terminal-root.is-fixed .xterm,
+.terminal-view-shell.is-terminal-layout-wide .terminal-root.is-fixed .xterm-viewport,
+.terminal-view-shell.is-terminal-layout-wide .terminal-root.is-fixed .xterm-screen {
+  min-height: clamp(680px, 72dvh, 920px);
+}
+.terminal-notice .status-chip {
+  flex: 0 0 auto;
+  min-width: 54px;
+  box-shadow: none;
+}
+.my-course-summary-state .status-chip {
+  justify-content: center;
+}
+.lab-exam-popup-runner .embedded-terminal-view .terminal-root.is-embedded {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.lab-exam-popup-runner .terminal-root.is-embedded,
+.lab-exam-popup-runner .terminal-root.is-embedded .xterm,
+.lab-exam-popup-runner .terminal-root.is-embedded .xterm-viewport,
+.lab-exam-popup-runner .terminal-root.is-embedded .xterm-screen {
+  min-height: 0;
+  height: 100% !important;
+}
+.lab-exam-console-panel .terminal-root.is-embedded,
+.lab-exam-console-panel .terminal-root.is-embedded .xterm,
+.lab-exam-console-panel .terminal-root.is-embedded .xterm-viewport,
+.lab-exam-console-panel .terminal-root.is-embedded .xterm-screen {
+  min-height: 520px;
+}
+.lab-exam-popup-runner .lab-exam-console-panel .terminal-root.is-embedded,
+.lab-exam-popup-runner .lab-exam-console-panel .terminal-root.is-embedded .xterm,
+.lab-exam-popup-runner .lab-exam-console-panel .terminal-root.is-embedded .xterm-viewport,
+.lab-exam-popup-runner .lab-exam-console-panel .terminal-root.is-embedded .xterm-screen {
+  min-height: 0;
+  height: 100% !important;
+}
+.admin-page.is-compact-density .status-chip {
+  min-height: 22px;
+  padding: 3px 7px;
+  font-size: 11px;
+}
+.admin-users-table .status-chip.is-online {
+  border-color: #86efac;
+  background: #dcfce7;
+  color: #166534;
+}
+.admin-consulting-title-line .status-chip {
+  min-width: 0;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.admin-ai-gpu-card-head .status-chip {
+  min-width: 0;
+}
+.heat-workload-history button.status-chip {
+  cursor: pointer;
+  font: inherit;
+}
+.heat-workload-history button.status-chip:hover {
+  border-color: rgba(37, 99, 235, 0.32);
+  color: #1d4ed8;
+}
+.admin-labs-card .status-chip {
+  min-width: 0;
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.message-cleanup-user-status span:not(.status-chip) {
+  color: #475569;
+  font-size: 0.82rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-loading-card::before,
+  .session-loading-signal span,
+  .session-loading-rail span,
+  .terminal-console-status-meta .status-chip i,
+  .session-loading-cursor {
+    animation: none !important;
+  }
+  .session-loading-card::before {
+    opacity: 0;
+  }
+}
+
+.terminal-popup-main .terminal-root.is-fill,
+.terminal-popup-main .terminal-root.is-fill .xterm,
+.terminal-popup-main .terminal-root.is-fill .xterm-viewport,
+.terminal-popup-main .terminal-root.is-fill .xterm-screen {
+  min-height: 0;
+  height: 100% !important;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}
+
+.shell.portal-ui-v2 .status-chip {
+  min-height: 26px;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+/* Admin v2 console refresh */
+
+/* v1 release polish: keep the existing portal structure, reduce visual noise. */
+
+/* v2 sidebar refinement */
+
+.terminal-cloud-resource-card .status-chip {
+  justify-self: end;
+}
+
+.status-chip.is-wait {
+  color: #92400e;
+  border-color: rgba(245, 158, 11, 0.24);
+  background: #fffbeb;
+}
+
+.status-chip.is-info {
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.24);
+  background: #eff6ff;
+}
+
+.status-chip.is-error {
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.24);
+  background: #fef2f2;
+}
+
+.terminal-cloud-project-handoff > .status-chip {
+  justify-self: start;
+}
+
+.terminal-cloud-view .status-chip {
+  border-color: var(--tc-border);
+  background: rgba(226, 232, 240, 0.08);
+  color: var(--tc-text);
+}
+
+.terminal-cloud-view .status-chip.is-running {
+  border-color: rgba(52, 211, 153, 0.36);
+  background: rgba(16, 185, 129, 0.13);
+  color: #bbf7d0;
+}
+
+.terminal-cloud-view .status-chip.is-wait {
+  border-color: rgba(251, 191, 36, 0.36);
+  background: rgba(245, 158, 11, 0.13);
+  color: #fde68a;
+}
+
+.terminal-cloud-view .status-chip.is-info {
+  border-color: rgba(96, 165, 250, 0.36);
+  background: rgba(37, 99, 235, 0.14);
+  color: #bfdbfe;
+}
+
+.terminal-cloud-view .status-chip.is-error {
+  border-color: rgba(248, 113, 113, 0.36);
+  background: rgba(220, 38, 38, 0.14);
+  color: #fecaca;
+}
+
+@media (max-width: 980px) {
+
+  .terminal-cloud-resource-card .status-chip {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+/* v1.2: make lab navigation and cloud operations feel like concise work rails. */
+
+/* v1.2: final cascade guard for reviewed portal screens. */
+
+/* v1.2: align admin/user copy, controls, and action rows consistently. */
+
+.shell.portal-ui-v2 .status-chip,
+.admin-shell .status-chip {
+  align-items: center;
+  min-height: 24px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+}
+
+/* v1.2: keep admin course headers compact and operational. */
+
+/* v1.2: terminal cloud must stay on the light portal theme. */
+
+/* v1.2: final UX pass for dense operations screens. */
+
+/* v1.2: remaining UI density and contrast sweep. */
+
+.shell.portal-ui-v2 .status-chip,
+.admin-shell .status-chip {
+  border-color: #dbe5f2;
+  background: #f8fafc;
+  color: #334155;
+  opacity: 1;
+}
+
+.shell.portal-ui-v2 .status-chip.is-success,
+.admin-shell .status-chip.is-success {
+  border-color: #bbf7d0;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.shell.portal-ui-v2 .status-chip.is-warn,
+.admin-shell .status-chip.is-warn {
+  border-color: #fde68a;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.shell.portal-ui-v2 .status-chip.is-error,
+.admin-shell .status-chip.is-error {
+  border-color: #fecaca;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* v1.2: Figma schedule and notice page polish. */
+
+/* v1.2: terminal cloud contrast correction from Figma review. */
+
+/* v1.2: final terminal cloud light-mode guardrails for action forms. */
+
+/* v1.2: terminal cloud action panels can render outside .terminal-cloud-view. */
+
+.shell.portal-ui-v2 :is(.terminal-cloud-action-step-index, .terminal-cloud-action-status, .terminal-cloud-impact-tags span, .terminal-cloud-readiness-item .status-chip), .shell:not(.portal-ui-v2) :is(.terminal-cloud-action-step-index, .terminal-cloud-action-status, .terminal-cloud-impact-tags span, .terminal-cloud-readiness-item .status-chip) {
+  border-color: #bfdbfe !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+/* v1.2: cloud request menu audit - remove remaining dark theme fragments. */
+
+/* v1.2: terminal cloud full-page contrast audit. */
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(.terminal-cloud-sync-chip, .terminal-cloud-service-strip span, .terminal-cloud-action-status, .terminal-cloud-timeline-marker, .status-chip), .shell:not(.portal-ui-v2) .terminal-cloud-view :is(.terminal-cloud-sync-chip, .terminal-cloud-service-strip span, .terminal-cloud-action-status, .terminal-cloud-timeline-marker, .status-chip) {
+  border: 1px solid #bfdbfe !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  opacity: 1 !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(.is-ready, .is-enabled, .success) > :is(.terminal-cloud-sync-chip, span, .status-chip), .shell:not(.portal-ui-v2) .terminal-cloud-view :is(.is-ready, .is-enabled, .success) > :is(.terminal-cloud-sync-chip, span, .status-chip) {
+  border-color: #bbf7d0 !important;
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(.is-warning, .is-wait, .has-waiting) > :is(.terminal-cloud-sync-chip, span, .status-chip), .shell:not(.portal-ui-v2) .terminal-cloud-view :is(.is-warning, .is-wait, .has-waiting) > :is(.terminal-cloud-sync-chip, span, .status-chip) {
+  border-color: #fde68a !important;
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(.is-danger, .is-disabled, .is-error, .has-disabled) > :is(.terminal-cloud-sync-chip, span, .status-chip), .shell:not(.portal-ui-v2) .terminal-cloud-view :is(.is-danger, .is-disabled, .is-error, .has-disabled) > :is(.terminal-cloud-sync-chip, span, .status-chip) {
+  border-color: #fecaca !important;
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+/* v1.2: hard light sweep for every Terminal Cloud surface. */
+
+.shell :is(
+  .terminal-cloud-sync-chip,
+  .terminal-cloud-action-status,
+  .terminal-cloud-map-node-status,
+  .terminal-cloud-timeline-marker,
+  .terminal-cloud-flow-step,
+  .terminal-cloud-diagnostic-mark,
+  .terminal-cloud-lifecycle-icon,
+  .status-chip,
+  .admin-terminal-cloud-ops-check > span,
+  .admin-terminal-cloud-readiness-item > span,
+  .admin-terminal-cloud-route-checks li > span,
+  .admin-terminal-cloud-release-gap > span
+) {
+  border: 1px solid #bfdbfe !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  opacity: 1 !important;
+}
+
+.shell :is(.is-success, .is-ready, .is-enabled, .is-running, .is-done, .is-clear, .success) :is(
+  .terminal-cloud-sync-chip,
+  .terminal-cloud-action-status,
+  .terminal-cloud-map-node-status,
+  .terminal-cloud-timeline-marker,
+  .terminal-cloud-flow-step,
+  .terminal-cloud-diagnostic-mark,
+  .terminal-cloud-lifecycle-icon,
+  .status-chip
+) {
+  border-color: #bbf7d0 !important;
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.shell :is(.is-warning, .is-warn, .is-wait, .has-waiting, .is-progress, .is-quote, .is-cost) :is(
+  .terminal-cloud-sync-chip,
+  .terminal-cloud-action-status,
+  .terminal-cloud-map-node-status,
+  .terminal-cloud-timeline-marker,
+  .terminal-cloud-flow-step,
+  .terminal-cloud-diagnostic-mark,
+  .terminal-cloud-lifecycle-icon,
+  .status-chip
+) {
+  border-color: #fde68a !important;
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.shell :is(.is-danger, .is-error, .is-disabled, .has-disabled, .is-failed) :is(
+  .terminal-cloud-sync-chip,
+  .terminal-cloud-action-status,
+  .terminal-cloud-map-node-status,
+  .terminal-cloud-timeline-marker,
+  .terminal-cloud-flow-step,
+  .terminal-cloud-diagnostic-mark,
+  .terminal-cloud-lifecycle-icon,
+  .status-chip
+) {
+  border-color: #fecaca !important;
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+/* v1.2: terminal cloud residual dark surface sweep. */
+
+/* v1.2 admin cleanup and platform simplification. */
+
+/* v1.2 notice repair for both user and admin shells. */
+
+/* 2026 curriculum catalog */
+
+/* Keep long course editor actions visible at the top while the form scrolls. */
+
+/* Keep the animated exam preparation content from changing the dialog width. */
+
+.shell.portal-ui-v2 .exam-preparation-dialog .session-loading-terminal,
+.shell.portal-ui-v2 .exam-preparation-dialog .session-loading-terminal > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.shell.portal-ui-v2 .exam-preparation-dialog .session-loading-rail {
+  width: 100%;
+}
+
+/* Extracted cloud styles: modern-ui.css */
+/* Terminal Lab modern UI layer. Loaded after styles.css so the same visual
+   language reaches legacy views without changing their behavior. */
+
+.shell.portal-ui-v2 :is(.status-chip,.sidebar-badge),.admin-page .status-chip { border-radius: 999px; font-weight: 800; }
+
+.shell.portal-ui-v2 :is(.status-chip.is-success,.status-chip.is-running),.admin-page :is(.status-chip.is-success,.status-chip.is-running) {
+  border-color: #abefc6; background: #ecfdf3; color: #067647;
+}
+
+.shell.portal-ui-v2 :is(.status-chip.is-warn,.status-chip.is-warning,.status-chip.is-wait),.admin-page :is(.status-chip.is-warn,.status-chip.is-warning,.status-chip.is-wait) {
+  border-color: #fedf89; background: #fffaeb; color: #b54708;
+}
+
+.shell.portal-ui-v2 :is(.status-chip.is-danger,.status-chip.is-error),.admin-page :is(.status-chip.is-danger,.status-chip.is-error) {
+  border-color: #fecdca; background: #fef3f2; color: #b42318;
+}
+
+/* Complete coverage for shared view primitives. */
+
+/* Specialized workspaces. */
+
+/* Learning home and course workspace. */
+
+/* Infrastructure request flows. */
+
+/* Terminal Cloud console. */
+
+/* Running lab workspace. */
+
+/* Admin information density and hierarchy. */
+
+/* Keep the dense admin console usable on narrow screens. */
+
+/* Authentication, feedback, and global states. */
+
+/* Landing layout fixes verified against real desktop/mobile renders. */
+
+
+/* Keep Terminal Cloud request-impact surfaces consistent with the light portal theme. */
+
+
+/* Terminal Cloud compact light surface. */
+
+
+/* Terminal Cloud final light-theme alignment */
+
+
+/* Mini Horizon */
+.mini-horizon-shell{display:grid;gap:14px;color:#0f172a}.mini-horizon-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px;border:1px solid #dbe5f2;border-radius:14px;background:#fff}.mini-horizon-header h2{margin:3px 0 4px}.mini-horizon-header p{margin:0;color:#64748b}.mini-horizon-header>div:last-child{display:flex;align-items:end;gap:10px}.mini-horizon-header label{display:grid;gap:5px;color:#475569;font-size:12px;font-weight:700}.mini-horizon-header select{min-width:210px}.mini-horizon-header>div:last-child>span{padding:9px 11px;border-radius:9px;font-size:12px;font-weight:800}.mini-horizon-header .is-direct{background:#ecfdf3;color:#027a48}.mini-horizon-header .is-approval{background:#fffaeb;color:#b54708}.mini-horizon-status{padding:10px 12px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff;color:#1d4ed8}.mini-horizon-status.is-error{border-color:#fecaca;background:#fef2f2;color:#b91c1c}.mini-horizon-status.is-warning{border-color:#fed7aa;background:#fff7ed;color:#c2410c}.mini-horizon-status.is-success{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.mini-horizon-tabs{display:flex;gap:4px;padding:5px;border:1px solid #dbe5f2;border-radius:11px;background:#fff;overflow:auto}.mini-horizon-tabs button{white-space:nowrap;padding:9px 12px;border:0;border-radius:7px;background:transparent;color:#475569;font-weight:700}.mini-horizon-tabs button.is-active{background:#eff6ff;color:#1d4ed8}.mini-horizon-content{display:grid;gap:12px;padding:14px;border:1px solid #dbe5f2;border-radius:12px;background:#fff}.mini-horizon-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}.mini-horizon-toolbar h3{margin:0}.mini-horizon-toolbar>div:last-child{display:flex;gap:7px}.mini-horizon-quota-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.mini-horizon-quota{display:grid;gap:6px;padding:12px;border:1px solid #e2e8f0;border-radius:9px;background:#f8fafc}.mini-horizon-quota span{color:#64748b;font-size:12px}.mini-horizon-quota strong{font-size:16px}.mini-horizon-quota>div{height:5px;border-radius:9px;background:#e2e8f0;overflow:hidden}.mini-horizon-quota i{display:block;height:100%;background:#3b82f6}.mini-horizon-overview-counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.mini-horizon-overview-counts>div{display:flex;align-items:baseline;gap:7px;padding:12px;border:1px solid #e2e8f0;border-radius:9px}.mini-horizon-overview-counts strong{font-size:22px}.mini-horizon-overview-counts span{color:#64748b}.mini-horizon-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));align-items:end;gap:10px;padding:12px;border:1px solid #bfdbfe;border-radius:10px;background:#f8fbff}.mini-horizon-form h4{grid-column:1/-1;margin:0}.mini-horizon-field{display:grid;gap:5px;min-width:0}.mini-horizon-field>span{color:#475569;font-size:12px;font-weight:700}.mini-horizon-field input,.mini-horizon-field select,.mini-horizon-table select{width:100%;min-height:38px}.mini-horizon-field>div{display:flex;gap:5px}.mini-horizon-dual-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini-horizon-table{display:grid;gap:8px}.mini-horizon-table article{display:grid;grid-template-columns:minmax(170px,1.2fr) auto minmax(160px,1fr) auto;align-items:center;gap:10px;padding:11px 12px;border:1px solid #e2e8f0;border-radius:9px;background:#fff}.mini-horizon-table article>div:first-child{display:grid;gap:2px;min-width:0}.mini-horizon-table article small{overflow:hidden;color:#64748b;text-overflow:ellipsis}.mini-horizon-table article p{margin:0;color:#475569;overflow-wrap:anywhere}.mini-horizon-table article>div:last-child{display:flex;justify-content:flex-end;gap:5px;flex-wrap:wrap}.mini-horizon-instance-credentials{display:flex;grid-column:1/-1;align-items:center;gap:7px;flex-wrap:wrap;padding:9px 10px;border:1px solid #bbf7d0;border-radius:8px;background:#f0fdf4}.mini-horizon-instance-credentials>span{color:#15803d;font-size:12px;font-weight:800}.mini-horizon-instance-credentials code{padding:5px 7px;border-radius:6px;background:#dcfce7;color:#166534}.mini-horizon-instance-security{display:grid;grid-column:1/-1;gap:6px;padding:9px 10px;border-radius:8px;background:#f8fafc}.mini-horizon-instance-security>span{color:#64748b;font-size:12px;font-weight:800}.mini-horizon-instance-security>div{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.mini-horizon-instance-security select{width:auto;min-width:170px}.mini-horizon-security-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid #bfdbfe;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700}.mini-horizon-security-chip button{display:grid;place-items:center;width:18px;height:18px;padding:0;border:0;border-radius:50%;background:#dbeafe;color:#1d4ed8;cursor:pointer}.mini-horizon-security-chip button:disabled{cursor:not-allowed;opacity:.45}.mini-horizon-rule-list{display:grid;grid-column:1/-1;gap:6px}.mini-horizon-rule-row{display:grid;grid-template-columns:70px 90px minmax(100px,.7fr) minmax(140px,1fr) auto;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc}.mini-horizon-rule-row.is-head{border:0;background:transparent;color:#64748b;font-size:11px;font-weight:800}.mini-horizon-rule-row code{color:#1d4ed8}.mini-horizon-rule-row .hint{text-align:right}.mini-horizon-empty{padding:28px;border:1px dashed #cbd5e1;border-radius:10px;text-align:center;color:#64748b;background:#f8fafc}.mini-horizon-warnings{display:grid;gap:5px;padding:10px;border-radius:9px;background:#fff7ed;color:#9a3412;font-size:12px}
+@media(max-width:1000px){.mini-horizon-quota-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mini-horizon-table article{grid-template-columns:minmax(0,1fr) auto}.mini-horizon-table article>p,.mini-horizon-table article>div:last-child{grid-column:1/-1;justify-content:flex-start}}
+@media(max-width:700px){.mini-horizon-rule-row{grid-template-columns:1fr 1fr}.mini-horizon-rule-row>:nth-child(4){grid-column:1/-1}.mini-horizon-header{align-items:stretch;flex-direction:column}.mini-horizon-header>div:last-child{align-items:stretch;flex-direction:column}.mini-horizon-header select{min-width:0;width:100%}.mini-horizon-quota-grid,.mini-horizon-overview-counts,.mini-horizon-dual-form{grid-template-columns:1fr}.mini-horizon-content{padding:11px}.mini-horizon-toolbar{align-items:flex-start}.mini-horizon-form{grid-template-columns:1fr}}
+
+.mini-horizon-access-panel{display:grid;gap:12px;padding:14px;border:1px solid #bfdbfe;border-radius:12px;background:#f8fbff}.mini-horizon-access-panel>header{display:flex;align-items:center;justify-content:space-between;gap:12px}.mini-horizon-access-panel>header>div{display:grid;gap:2px}.mini-horizon-access-panel>header small{color:#64748b}.mini-horizon-access-panel>nav{display:flex;gap:5px;padding:4px;border-radius:9px;background:#eaf2ff}.mini-horizon-access-panel>nav button{padding:8px 14px;border:0;border-radius:7px;background:transparent;color:#475569;font-weight:800}.mini-horizon-access-panel>nav button.is-active{background:#fff;color:#1d4ed8;box-shadow:0 1px 3px #94a3b840}.mini-horizon-access-body{display:grid;gap:12px}.mini-horizon-endpoint{display:grid;gap:7px;padding:13px;border:1px solid #bbf7d0;border-radius:9px;background:#f0fdf4}.mini-horizon-endpoint strong{font-size:18px;color:#166534}.mini-horizon-endpoint code{overflow-wrap:anywhere;color:#334155}.mini-horizon-console-frame{min-height:520px;border:1px solid #1e293b;border-radius:10px;background:#07111f;overflow:hidden}.mini-horizon-console-frame iframe{display:block;width:100%;height:70vh;min-height:520px;border:0}.mini-horizon-access-body .terminal-root.is-embedded{min-height:460px;padding:6px;border-radius:10px;background:#07111f}.mini-horizon-access-body .terminal-root.is-embedded .xterm{height:450px}.mini-horizon-access-body .terminal-root.is-embedded .xterm-viewport{height:450px!important}@media(max-width:700px){.mini-horizon-console-frame,.mini-horizon-console-frame iframe{min-height:400px}.mini-horizon-access-panel{padding:10px}.mini-horizon-access-panel>nav button{flex:1;padding:8px}}
+.mini-horizon-flavor-details{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.mini-horizon-flavor-details span,.mini-horizon-flavor-details small{padding:4px 7px;border-radius:6px;background:#eef2ff;color:#334155;font-size:12px}.mini-horizon-flavor-details code{flex-basis:100%;padding:7px;border-radius:6px;background:#0f172a;color:#e2e8f0;overflow-wrap:anywhere;font-size:11px}
+.mini-horizon-instance-form{align-items:start}.mini-horizon-instance-form>.primary-btn{margin-top:17px}.mini-horizon-instance-form .mini-horizon-flavor-details{align-content:flex-start}
+.mini-horizon-tabs button.is-group-start{margin-left:8px;border-left:1px solid #cbd5e1;border-radius:0 7px 7px 0}.mini-horizon-create-result{display:grid;gap:7px;padding:11px 13px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534}.mini-horizon-create-result.is-warning{border-color:#fed7aa;background:#fff7ed;color:#9a3412}.mini-horizon-create-result>span{font-size:12px}.mini-horizon-create-result ul{display:grid;gap:4px;margin:0;padding-left:18px}.mini-horizon-create-result li span{display:block;font-size:12px}.mini-horizon-instance-credentials small{flex-basis:100%;color:#64748b}.mini-horizon-shell[aria-busy="true"]{cursor:progress}

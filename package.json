@@ -1,0 +1,62 @@
+{
+  "name": "terminal-lab-community",
+  "version": "0.2.2",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "server": "node platform/server/community-bootstrap.js",
+    "start": "node platform/server/community-bootstrap.js",
+    "prebuild": "node scripts/licenses.mjs && node scripts/prepare-platform-assets.mjs",
+    "build": "vite build",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node scripts/check.mjs && npm test && npm run build",
+    "db:migrate": "node scripts/migrate-platform.mjs",
+    "release:pack": "python installer/package.py",
+    "predev": "node scripts/prepare-platform-assets.mjs"
+  },
+  "dependencies": {
+    "@mdxeditor/editor": "^4.1.0",
+    "@xterm/addon-fit": "0.10.0",
+    "@xterm/xterm": "5.5.0",
+    "bcryptjs": "2.4.3",
+    "express": "4.22.3",
+    "express-session": "1.19.0",
+    "http-proxy-middleware": "^3.0.7",
+    "node-pty": "^1.0.0",
+    "nodemailer": "^9.0.3",
+    "pg": "8.16.3",
+    "qrcode": "^1.5.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "sharp": "^0.35.3",
+    "transliteration": "^2.6.1",
+    "ws": "8.22.1",
+    "yaml": "2.9.1",
+    "@novnc/novnc": "1.5.0",
+    "ssh2": "1.17.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.4.1",
+    "vite": "6.4.3"
+  },
+  "description": "Terminal Lab general user and administrator features, excluding education and Lab Board",
+  "author": {
+    "name": "Choi Gook Hyun",
+    "email": "tang@dustbox.kr",
+    "url": "https://github.com/tangt64"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tangt64/terminal-lab-community.git"
+  },
+  "homepage": "https://github.com/tangt64/terminal-lab-community#readme",
+  "bugs": {
+    "url": "https://github.com/tangt64/terminal-lab-community/issues",
+    "email": "tang@dustbox.kr"
+  }
+}

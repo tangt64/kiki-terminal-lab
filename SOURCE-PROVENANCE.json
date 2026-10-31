@@ -1,0 +1,12 @@
+{
+  "edition": "terminal-lab-community",
+  "version": "0.2.1",
+  "activeSource": "platform/",
+  "sourceInventory": "platform/SOURCE-PROVENANCE.json",
+  "description": "Standalone snapshot of the original general user and administrator features. Education routes and navigation excluded. Empty education compatibility schema retained. No parent imports, credentials, data, teaching content or Git history included. Lab Board UI, service, assets and dedicated dependencies were removed in 0.2.1.",
+  "legacyCore": "server/ and client/ contain the previous 0.1 core implementation for migration fixtures and regression tests; server/index.js starts the active platform.",
+  "excludedFeatures": [
+    "education",
+    "lab-board"
+  ]
+}

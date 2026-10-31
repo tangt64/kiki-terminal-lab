@@ -1,0 +1,1081 @@
+/* Terminal Lab modern UI layer. Loaded after styles.css so the same visual
+   language reaches legacy views without changing their behavior. */
+:root {
+  --bg: #f3f6fa;
+  --surface: #fff;
+  --surface-muted: #f7f9fc;
+  --surface-tint: #eef4ff;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text: #101828;
+  --muted: #667085;
+  --primary: #175cd3;
+  --primary-strong: #1849a9;
+  --primary-soft: #eaf2ff;
+  --accent: #1570ef;
+  --accent-soft: #eff6ff;
+  --danger: #b42318;
+  --success: #067647;
+  --panel: rgba(255,255,255,.96);
+  --line: #dce4ee;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.04);
+  --shadow-md: 0 16px 40px rgba(16,24,40,.09);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --focus-ring: 0 0 0 4px rgba(21,112,239,.14);
+}
+
+body {
+  background: #f3f6fa;
+  color: var(--text);
+  font-feature-settings: "ss01" 1, "cv11" 1;
+  text-rendering: optimizeLegibility;
+}
+
+:where(button,input,select,textarea,summary,a):focus-visible {
+  outline: 2px solid #1570ef;
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+}
+
+.shell.portal-ui-v2,
+.admin-page { color: var(--text); }
+
+.shell.portal-ui-v2 :is(.app-shell,.portal-layout,.portal-main),
+.admin-page :is(.admin-layout,.admin-main-rail,.admin-content) { min-width: 0; }
+
+.shell.portal-ui-v2 :is(.simple-panel,.simple-info-block,.course-card,.qna-thread,.settings-panel,.quota-panel,.summary-item,.metric-card),
+.admin-page :is(.admin-simple-card,.admin-section-card,.admin-request-item,.admin-form-panel,.admin-workbench-panel,.quick-action-card) {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.shell.portal-ui-v2 :is(.simple-panel,.simple-info-block,.course-card,.qna-thread),
+.admin-page :is(.admin-simple-card,.admin-section-card,.admin-form-panel) {
+  padding: clamp(18px,2vw,24px);
+}
+
+.shell.portal-ui-v2 :is(h1,h2,h3,h4),
+.admin-page :is(h1,h2,h3,h4) {
+  color: #101828;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+
+.shell.portal-ui-v2 :is(.hint,.terminal-note,.card-description,small),
+.admin-page :is(.hint,.terminal-note,small) { color: #667085; }
+
+.shell.portal-ui-v2 :is(.eyebrow,.card-label),
+.admin-page :is(.eyebrow,.card-label) {
+  color: #175cd3;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.shell.portal-ui-v2 :is(.primary-btn,.primary-mini-btn,.save-btn),
+.admin-page :is(.primary-btn,.primary-mini-btn,.save-btn) {
+  min-height: 40px;
+  border: 1px solid #175cd3;
+  border-radius: 9px;
+  background: #175cd3;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(16,24,40,.08);
+  font-weight: 750;
+}
+
+.shell.portal-ui-v2 :is(.primary-btn,.primary-mini-btn,.save-btn):hover:not(:disabled),
+.admin-page :is(.primary-btn,.primary-mini-btn,.save-btn):hover:not(:disabled) {
+  border-color: #1849a9;
+  background: #1849a9;
+  transform: translateY(-1px);
+}
+
+.shell.portal-ui-v2 :is(.ghost-btn,.mini-btn,.secondary-btn,.secondary-mini-btn),
+.admin-page :is(.ghost-btn,.mini-btn,.secondary-btn,.secondary-mini-btn) {
+  min-height: 38px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: #fff;
+  color: #344054;
+  box-shadow: 0 1px 2px rgba(16,24,40,.04);
+  font-weight: 700;
+}
+
+.shell.portal-ui-v2 :is(.ghost-btn,.mini-btn,.secondary-btn,.secondary-mini-btn):hover:not(:disabled),
+.admin-page :is(.ghost-btn,.mini-btn,.secondary-btn,.secondary-mini-btn):hover:not(:disabled) {
+  border-color: #84adff;
+  background: #f5f8ff;
+  color: #1849a9;
+}
+
+.shell.portal-ui-v2 :is(.danger-btn,.danger-mini-btn,.reset-btn),
+.admin-page :is(.danger-btn,.danger-mini-btn,.reset-btn) {
+  border-color: #fecdca;
+  border-radius: 9px;
+  background: #fff;
+  color: #b42318;
+}
+
+.shell.portal-ui-v2 :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
+.admin-page :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: #fff;
+  color: #101828;
+  box-shadow: 0 1px 2px rgba(16,24,40,.03);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.shell.portal-ui-v2 :is(input,select,textarea):hover:not(:disabled),
+.admin-page :is(input,select,textarea):hover:not(:disabled) { border-color: #98a2b3; }
+
+.shell.portal-ui-v2 :is(input,select,textarea):focus,
+.admin-page :is(input,select,textarea):focus {
+  border-color: #1570ef;
+  outline: 0;
+  box-shadow: var(--focus-ring);
+}
+
+.shell.portal-ui-v2 :is(input,textarea)::placeholder,
+.admin-page :is(input,textarea)::placeholder { color: #98a2b3; }
+
+.shell.portal-ui-v2 :is(.status-chip,.sidebar-badge),
+.admin-page .status-chip { border-radius: 999px; font-weight: 800; }
+
+.shell.portal-ui-v2 :is(.status-chip.is-success,.status-chip.is-running),
+.admin-page :is(.status-chip.is-success,.status-chip.is-running) {
+  border-color: #abefc6; background: #ecfdf3; color: #067647;
+}
+
+.shell.portal-ui-v2 :is(.status-chip.is-warn,.status-chip.is-warning,.status-chip.is-wait),
+.admin-page :is(.status-chip.is-warn,.status-chip.is-warning,.status-chip.is-wait) {
+  border-color: #fedf89; background: #fffaeb; color: #b54708;
+}
+
+.shell.portal-ui-v2 :is(.status-chip.is-danger,.status-chip.is-error),
+.admin-page :is(.status-chip.is-danger,.status-chip.is-error) {
+  border-color: #fecdca; background: #fef3f2; color: #b42318;
+}
+
+.shell.portal-ui-v2 .sidebar {
+  border-right: 1px solid var(--border);
+  background: rgba(255,255,255,.98);
+  box-shadow: none;
+}
+
+.shell.portal-ui-v2 .sidebar :is(.nav-item,.sidebar-submenu-toggle) {
+  min-height: 38px;
+  border-radius: 8px;
+  color: #475467;
+  font-weight: 700;
+}
+
+.shell.portal-ui-v2 .sidebar :is(.nav-item,.sidebar-submenu-toggle):hover {
+  background: #f2f4f7;
+  color: #101828;
+}
+
+.shell.portal-ui-v2 .sidebar .nav-item.is-active,
+.shell.portal-ui-v2 .sidebar .sidebar-submenu.is-active > .sidebar-submenu-toggle {
+  background: #eaf2ff;
+  color: #1849a9;
+  box-shadow: inset 3px 0 #1570ef;
+}
+
+.shell.portal-ui-v2 .sidebar-service-hint {
+  border-color: #d1e0ff;
+  border-radius: 10px;
+  background: #f5f8ff;
+  box-shadow: none;
+}
+
+.shell.portal-ui-v2 :is(.summary-grid,.terminal-cloud-summary-grid,.metric-grid),
+.admin-page :is(.admin-summary-grid,.admin-users-overview-grid) { gap: 12px; }
+
+.shell.portal-ui-v2 :is(table,.admin-table,.resource-table),
+.admin-page :is(table,.admin-table) { border-collapse: separate; border-spacing: 0; width: 100%; }
+
+.shell.portal-ui-v2 :is(th,.admin-table-head),
+.admin-page :is(th,.admin-table-head) {
+  background: #f8fafc;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.shell.portal-ui-v2 :is(td,th),
+.admin-page :is(td,th) { border-bottom: 1px solid #eaecf0; padding: 11px 12px; }
+
+.admin-page { max-width: 1600px; background: #f3f6fa; }
+.admin-page .admin-layout { gap: 18px; }
+.admin-page .admin-nav-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-page .admin-tabs .tab { border-radius: 8px; color: #475467; font-weight: 700; }
+.admin-page .admin-tabs .tab.is-active { border-color: #175cd3; background: #175cd3; color: #fff; }
+
+.admin-page :is(.admin-table-row,.admin-request-item,.quick-action-card) {
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.admin-page :is(.admin-table-row,.admin-request-item,.quick-action-card):hover {
+  border-color: #b2ccff;
+  box-shadow: 0 8px 20px rgba(16,24,40,.07);
+}
+
+.portal-modal-backdrop { background: rgba(16,24,40,.56); backdrop-filter: blur(10px); }
+.portal-modal-card { border-color: var(--border); border-radius: 18px; box-shadow: 0 28px 80px rgba(16,24,40,.24); }
+
+@media (max-width: 900px) {
+  .shell.portal-ui-v2 { padding: 0; }
+  .shell.portal-ui-v2 :is(.simple-panel,.simple-info-block,.course-card,.qna-thread),
+  .admin-page :is(.admin-simple-card,.admin-section-card,.admin-form-panel) { border-radius: 12px; padding: 16px; }
+  .shell.portal-ui-v2 :is(.portal-actions,.admin-inline-actions),
+  .admin-page :is(.admin-inline-actions,.admin-topbar-actions) { align-items: stretch; flex-direction: column; }
+  .shell.portal-ui-v2 :is(.portal-actions,.admin-inline-actions) > button,
+  .admin-page :is(.admin-inline-actions,.admin-topbar-actions) > button { width: 100%; }
+  .shell.portal-ui-v2 :is(.summary-grid,.terminal-cloud-summary-grid,.metric-grid),
+  .admin-page :is(.admin-summary-grid,.admin-users-overview-grid) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .admin-page { padding-inline: 12px; }
+}
+
+@media (max-width: 560px) {
+  .shell.portal-ui-v2 :is(.summary-grid,.terminal-cloud-summary-grid,.metric-grid),
+  .admin-page :is(.admin-summary-grid,.admin-users-overview-grid) { grid-template-columns: 1fr; }
+
+  .shell.portal-ui-v2 :is(.simple-panel,.simple-info-block,.course-card,.qna-thread),
+  .admin-page :is(.admin-simple-card,.admin-section-card,.admin-form-panel) {
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .shell.portal-ui-v2 :is(td,th),
+  .admin-page :is(td,th) { padding: 10px 8px; }
+}
+
+/* Complete coverage for shared view primitives. */
+.shell.portal-ui-v2 :is(.portal-section-header,.portal-detail-head),
+.admin-page :is(.portal-section-header,.portal-detail-head) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.shell.portal-ui-v2 .portal-section-header {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.shell.portal-ui-v2 :is(.form-field,.inline-form-field),
+.admin-page :is(.form-field,.inline-form-field) {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.shell.portal-ui-v2 .inline-form-field,
+.admin-page .inline-form-field {
+  grid-template-columns: auto minmax(140px,1fr);
+  align-items: center;
+}
+
+.admin-page :is(.admin-toolbar,.admin-tab-filter-row,.admin-card-actions,.button-row) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-page :is(.admin-table-wrap,.template-editor) {
+  overflow: auto;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.admin-page :is(.code-textarea,.admin-large-textarea),
+.shell.portal-ui-v2 .code-textarea {
+  min-height: 180px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  tab-size: 2;
+}
+
+.admin-page :is(.admin-field-wide,.admin-curriculum-file-field) { grid-column: 1 / -1; }
+.admin-page .heat-template-upload-copy { display: grid; gap: 8px; min-width: 0; }
+.admin-page .settings-toggle-list { display: grid; gap: 8px; }
+.shell.portal-ui-v2 .survey-scale-field { display: grid; gap: 10px; }
+
+.shell.portal-ui-v2 :is(.icon-btn),
+.admin-page :is(.icon-btn) {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--text-secondary);
+}
+
+.shell.portal-ui-v2 .icon-btn:hover,
+.admin-page .icon-btn:hover { border-color: #84adff; background: #f5f8ff; color: #175cd3; }
+
+/* Specialized workspaces. */
+.shell.portal-ui-v2 .cicd-view > .portal-section-header {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Learning home and course workspace. */
+.shell.portal-ui-v2 .my-learning-panel { display: grid; gap: 18px; }
+.shell.portal-ui-v2 .my-learning-hero {
+  display: grid;
+  grid-template-columns: minmax(0,1.2fr) minmax(320px,.8fr);
+  gap: 14px;
+}
+
+.shell.portal-ui-v2 .my-learning-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-color: #dbe4f0;
+}
+
+.shell.portal-ui-v2 .my-learning-hero-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: #2e90fa;
+}
+
+.shell.portal-ui-v2 :is(.my-learning-survey-banner,.my-learning-next-action) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #b2ccff;
+  border-radius: 12px;
+  background: linear-gradient(135deg,#f5f8ff,#fff);
+}
+
+.shell.portal-ui-v2 .my-learning-survey-banner.is-complete {
+  border-color: #abefc6;
+  background: linear-gradient(135deg,#ecfdf3,#fff);
+}
+
+.shell.portal-ui-v2 :is(.my-learning-journey-dashboard,.my-course-selector) {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.shell.portal-ui-v2 .my-learning-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eaecf0;
+}
+
+.shell.portal-ui-v2 :is(.my-learning-journey-step,.my-learning-journey-watch-item,.my-course-summary-card) {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.shell.portal-ui-v2 :is(.my-learning-journey-step,.my-learning-journey-watch-item,.my-course-summary-card):hover {
+  border-color: #84adff;
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.shell.portal-ui-v2 .my-course-summary-card.is-active {
+  border-color: #528bff;
+  background: #f5f8ff;
+  box-shadow: 0 0 0 3px rgba(21,112,239,.08);
+}
+
+/* Infrastructure request flows. */
+.shell.portal-ui-v2 :is(.self-service-step-card,.extension-step-card) {
+  position: relative;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--shadow-xs);
+}
+
+.shell.portal-ui-v2 :is(.self-service-step-head,.extension-step-head) {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.shell.portal-ui-v2 .self-service-step-number {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #175cd3;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.shell.portal-ui-v2 :is(.extension-summary-grid,.self-service-quota-grid) {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 10px;
+}
+
+.shell.portal-ui-v2 :is(.self-service-impact-preview,.self-service-network-request-panel,.self-service-cost-summary) {
+  border: 1px solid #d1e0ff;
+  border-radius: 12px;
+  background: #f5f8ff;
+}
+
+/* Terminal Cloud console. */
+.shell.portal-ui-v2 .terminal-cloud-view { gap: 16px; }
+.shell.portal-ui-v2 .terminal-cloud-hero {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 18px 24px;
+  border-color: #b2ccff;
+  background: linear-gradient(135deg,#f5f8ff 0%,#fff 62%);
+}
+
+.shell.portal-ui-v2 .terminal-cloud-hero-status {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(90px,1fr));
+  gap: 8px;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-hero-status > span {
+  padding: 12px;
+  border: 1px solid #d1e0ff;
+  border-radius: 10px;
+  background: rgba(255,255,255,.8);
+}
+
+.shell.portal-ui-v2 .terminal-cloud-hero-actions { grid-column: 1 / -1; }
+.shell.portal-ui-v2 :is(.terminal-cloud-action-deck,.terminal-cloud-next-actions,.terminal-cloud-request-queue,.terminal-cloud-timeline) {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--shadow-xs);
+}
+
+.shell.portal-ui-v2 :is(.terminal-cloud-action-grid,.terminal-cloud-resource-card-grid,.terminal-cloud-next-action-grid) {
+  gap: 12px;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-horizon-layout {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-horizon-nav {
+  border-right: 1px solid var(--border);
+  background: #f8fafc;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-horizon-nav button { border-radius: 8px; }
+.shell.portal-ui-v2 .terminal-cloud-horizon-nav button.is-active {
+  background: #eaf2ff;
+  color: #1849a9;
+  box-shadow: inset 3px 0 #1570ef;
+}
+
+/* Running lab workspace. */
+.shell.portal-ui-v2 .terminal-view-shell > .simple-panel {
+  overflow: hidden;
+  border-color: #dbe4f0;
+}
+
+.shell.portal-ui-v2 .terminal-detail-head {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.shell.portal-ui-v2 :is(.terminal-lab-info-card,.terminal-console-access-card,.terminal-ai-tool-panel) {
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: #fff;
+}
+
+.shell.portal-ui-v2 .terminal-learning-workbench {
+  overflow: hidden;
+  border: 1px solid #344054;
+  border-radius: 14px;
+  background: #101828;
+  box-shadow: 0 18px 50px rgba(16,24,40,.18);
+}
+
+.shell.portal-ui-v2 .terminal-console-action-bar {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: #f8fafc;
+}
+
+/* Admin information density and hierarchy. */
+.admin-page .admin-main { min-width: 0; }
+.admin-page :is(.admin-section-card,.admin-simple-card,.settings-panel) > :is(h2,h3,h4):first-child { margin-top: 0; }
+.admin-page :is(.admin-summary-card,.admin-metric-card,.quick-action-card) {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--shadow-xs);
+}
+
+.admin-page :is(.admin-form-grid,.compact-admin-grid) { gap: 14px; }
+.admin-page :is(.admin-form-panel,.settings-panel) { border-color: var(--border); }
+
+@media (max-width: 1100px) {
+  .shell.portal-ui-v2 .my-learning-hero { grid-template-columns: 1fr; }
+  .shell.portal-ui-v2 .terminal-cloud-hero { grid-template-columns: 1fr; }
+  .shell.portal-ui-v2 .terminal-cloud-hero-actions { grid-column: auto; }
+  .shell.portal-ui-v2 :is(.extension-summary-grid,.self-service-quota-grid) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 720px) {
+  .shell.portal-ui-v2 :is(.portal-section-header,.portal-detail-head),
+  .admin-page :is(.portal-section-header,.portal-detail-head),
+  .shell.portal-ui-v2 :is(.my-learning-survey-banner,.my-learning-next-action) { flex-direction: column; align-items: stretch; }
+
+  .shell.portal-ui-v2 .terminal-cloud-hero-status,
+  .shell.portal-ui-v2 :is(.extension-summary-grid,.self-service-quota-grid) { grid-template-columns: 1fr; }
+
+  .shell.portal-ui-v2 .inline-form-field,
+  .admin-page .inline-form-field { grid-template-columns: 1fr; }
+
+  .shell.portal-ui-v2 :is(.self-service-step-card,.extension-step-card) { padding: 15px; }
+  .shell.portal-ui-v2 .terminal-learning-workbench { border-radius: 10px; }
+  .shell.portal-ui-v2 .survey-hero { grid-template-columns: minmax(0,1fr); padding: 16px; }
+  .shell.portal-ui-v2 .survey-hero > *, .shell.portal-ui-v2 .survey-hero-metrics { min-width: 0; }
+  .shell.portal-ui-v2 .survey-hero-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
+
+  .shell.portal-ui-v2 .portal-next-action-bar { grid-template-columns: 34px minmax(0,1fr); gap: 9px; padding: 10px 12px; }
+  .shell.portal-ui-v2 .portal-next-action-icon { width: 32px; height: 32px; }
+  .shell.portal-ui-v2 .portal-next-action-copy small { display: none; }
+  .shell.portal-ui-v2 .portal-next-action-copy strong { font-size: 14px; white-space: normal; }
+  .shell.portal-ui-v2 .portal-next-action-buttons { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4,minmax(max-content,1fr)); gap: 6px; overflow-x: auto; }
+  .shell.portal-ui-v2 .portal-next-action-buttons :is(.primary-btn,.mini-btn) { min-height: 32px; padding: 6px 9px; font-size: 12px; }
+
+  .shell.portal-ui-v2 .workspace-overview.is-compact .quick-actions-panel { padding: 10px 12px; }
+  .shell.portal-ui-v2 .workspace-overview.is-compact .quick-actions-head { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 8px; padding-right: 24px; }
+  .shell.portal-ui-v2 .workspace-overview.is-compact .quick-actions-preview,
+  .shell.portal-ui-v2 .workspace-overview.is-compact .quick-actions-meta > .workspace-version { display: none; }
+  .shell.portal-ui-v2 .workspace-overview.is-compact .quick-actions-meta { min-width: 0; margin: 0; padding: 0; }
+  .shell.portal-ui-v2 .workspace-overview.is-compact .quick-actions-head h3 { font-size: 14px; }
+
+  .admin-page :is(.admin-toolbar,.admin-tab-filter-row,.admin-card-actions,.button-row) { align-items: stretch; flex-direction: column; }
+}
+
+/* Keep the dense admin console usable on narrow screens. */
+@media (max-width: 760px) {
+  .admin-shell, .admin-shell .admin-page, .admin-shell .admin-layout, .admin-shell .admin-main-rail, .admin-shell .admin-content { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
+  .admin-shell .admin-layout { grid-template-columns: minmax(0,1fr); overflow-x: clip; }
+  .admin-shell .admin-page { overflow-x: clip; }
+  .admin-shell .admin-topbar { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .admin-shell .admin-topbar-title-wrap, .admin-shell .admin-topbar-actions { min-width: 0; width: 100%; }
+  .admin-shell .admin-topbar-actions { display: grid; grid-template-columns: minmax(0,1fr) repeat(3,max-content); align-items: center; gap: 6px; }
+  .admin-shell .admin-topbar-actions > *, .admin-shell .admin-topbar-actions > button { box-sizing: border-box; width: auto; min-width: 0; flex: none; }
+  .admin-shell .admin-density-toggle { justify-self: stretch; }
+  .admin-shell .admin-density-toggle button { flex: 1 1 0; min-width: 0; }
+  .admin-shell .admin-global-search-panel .admin-card-header { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 10px; }
+  .admin-shell .admin-global-search-panel .admin-inline-actions { display: flex; width: auto; flex-direction: row; align-items: center; justify-content: flex-end; }
+  .admin-shell .admin-global-search-panel .admin-inline-actions > *, .admin-shell .admin-global-search-panel .admin-inline-actions > button { width: auto; min-width: 0; flex: none; }
+  .admin-shell .admin-history-search, .admin-shell .admin-history-search input { box-sizing: border-box; width: 100%; min-width: 0; }
+
+  .admin-shell .admin-card-header { min-height: 0; height: auto; }
+  .admin-shell .admin-card-header .admin-inline-actions { display: flex; flex-direction: row; width: 100%; min-height: 0; }
+  .admin-shell .admin-card-header .admin-inline-actions > *,
+  .admin-shell .admin-card-header .admin-inline-actions > button { flex: 0 0 auto; width: auto; min-height: 36px; }
+  .admin-shell .admin-card-header .admin-inline-actions > button:only-child { width: 100%; }
+
+  .admin-shell .admin-course-search-row { grid-template-columns: minmax(0,1fr); }
+  .admin-shell .admin-course-search-row > button { width: 100%; }
+
+  .admin-shell .admin-labs-card { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; overflow: hidden; }
+  .admin-shell .admin-lab-toolbar { grid-template-columns: minmax(0,1fr); }
+  .admin-shell .admin-lab-toolbar,
+  .admin-shell .admin-lab-toolbar-main,
+  .admin-shell .admin-lab-toolbar-actions { box-sizing: border-box; width: 100%; min-width: 0; height: auto; }
+  .admin-shell .admin-lab-toolbar-main > *,
+  .admin-shell .admin-lab-toolbar-actions > *,
+  .admin-shell .admin-lab-search,
+  .admin-shell .admin-lab-course-action { flex: 0 0 auto; box-sizing: border-box; min-width: 0; max-width: 100%; width: 100%; }
+  .admin-shell .admin-lab-filter-group { box-sizing: border-box; width: 100%; }
+  .admin-shell .admin-lab-filter-group > button { flex: 0 0 auto; width: 100%; min-height: 36px; }
+  .admin-shell .admin-lab-toolbar .admin-inline-actions { display: grid; grid-template-columns: minmax(0,1fr); width: 100%; }
+  .admin-shell .admin-lab-toolbar .admin-inline-actions > * { flex: none; width: 100%; min-width: 0; }
+  .admin-shell .admin-lab-search input { box-sizing: border-box; width: 100%; min-width: 0; }
+
+  .admin-shell .admin-simple-card,
+  .admin-shell .admin-simple-card > *,
+  .admin-shell .admin-schedule-sync-panel,
+  .admin-shell .admin-schedule-calendar-panel { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
+  .admin-shell .admin-schedule-sync-panel { display: grid; grid-template-columns: minmax(0,1fr); align-items: stretch; }
+  .admin-shell .admin-schedule-sync-options { grid-template-columns: minmax(0,1fr); width: 100%; min-width: 0; }
+  .admin-shell .admin-schedule-sync-options :is(label,select,input) { box-sizing: border-box; width: 100%; min-width: 0; }
+  .admin-shell .admin-schedule-calendar-panel .admin-card-header { display: grid; grid-template-columns: minmax(0,1fr); align-items: stretch; }
+  .admin-shell .admin-schedule-month-controls { justify-content: space-between; width: 100%; min-width: 0; }
+  .admin-shell .admin-schedule-month-controls input[type="month"] { box-sizing: border-box; width: min(180px,100%); min-width: 0; }
+  .admin-shell .admin-schedule-month-board { box-sizing: border-box; width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+  .admin-shell .admin-schedule-month-grid,
+  .admin-shell .admin-schedule-month-bars,
+  .admin-shell .admin-schedule-weekday-grid { min-width: 700px; }
+}
+
+@media (max-width: 520px) {
+  .admin-shell .admin-topbar-actions { grid-template-columns: minmax(0,1fr) repeat(2,max-content); }
+  .admin-shell .admin-topbar-actions > .ghost-btn:last-child { grid-column: 1 / -1; width: 100%; }
+  .admin-shell .admin-global-search-panel .admin-card-header { grid-template-columns: minmax(0,1fr); align-items: stretch; }
+  .admin-shell .admin-global-search-panel .admin-inline-actions { justify-content: space-between; }
+}
+
+/* Authentication, feedback, and global states. */
+.landing-v2-shell {
+  gap: 24px;
+  padding: clamp(18px,4vw,48px);
+}
+
+.landing-v2-shell :is(.auth-hero,.auth-panel,.auth-notice-panel) {
+  border: 1px solid #dbe4f0;
+  border-radius: 18px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 18px 48px rgba(16,24,40,.09);
+}
+
+.landing-v2-shell .auth-panel {
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+}
+
+.landing-v2-shell .auth-panel .tabs {
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f2f4f7;
+}
+
+.landing-v2-shell .auth-panel .tab {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+}
+
+.landing-v2-shell .auth-panel .tab.is-active {
+  background: #fff;
+  color: #175cd3;
+  box-shadow: 0 1px 3px rgba(16,24,40,.12);
+}
+
+.landing-v2-shell .auth-form { gap: 14px; }
+.landing-v2-shell .auth-form input {
+  min-height: 44px;
+  border-color: var(--border-strong);
+  border-radius: 9px;
+}
+
+.landing-v2-shell .auth-form input:focus {
+  border-color: #1570ef;
+  box-shadow: var(--focus-ring);
+}
+
+:is(.shell.portal-ui-v2,.admin-page) :is(.empty-state,.admin-empty-state,.terminal-cloud-empty,.terminal-empty-state) {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-height: 180px;
+  padding: 28px;
+  border: 1px dashed #b8c4d4;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+:is(.shell.portal-ui-v2,.admin-page) :is(.global-banner,.inline-message,.status-message) {
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.toast-stack {
+  display: grid;
+  gap: 10px;
+  width: min(380px,calc(100vw - 24px));
+}
+
+.toast-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 16px 36px rgba(16,24,40,.16);
+  backdrop-filter: blur(12px);
+}
+
+.portal-modal-card {
+  max-height: min(88vh,900px);
+  overflow: auto;
+}
+
+.terminal-lab-logo-core-group {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (max-width: 720px) {
+  .landing-v2-shell { padding: 12px; }
+  .landing-v2-shell :is(.auth-hero,.auth-panel,.auth-notice-panel) { border-radius: 14px; }
+  :is(.shell.portal-ui-v2,.admin-page) :is(.empty-state,.admin-empty-state,.terminal-cloud-empty,.terminal-empty-state) {
+    min-height: 140px;
+    padding: 20px 14px;
+  }
+}
+
+/* Landing layout fixes verified against real desktop/mobile renders. */
+.landing-v2-shell {
+  box-sizing: border-box;
+  width: min(1440px,100%);
+}
+
+.landing-v2-shell > * { min-width: 0; }
+
+@media (max-width: 980px) {
+  .landing-v2-shell {
+    width: 100%;
+    padding: 14px 12px 28px;
+  }
+
+  .compact-auth-shell .auth-panel { order: -1; }
+  .compact-auth-shell .auth-hero { order: 1; }
+}
+
+@media (max-width: 480px) {
+  .landing-v2-shell .landing-intro h1 { font-size: clamp(32px,10vw,40px); }
+  .landing-v2-shell :is(.landing-intro h1,.hero-copy) {
+    overflow-wrap: anywhere;
+  }
+}
+
+
+/* Keep Terminal Cloud request-impact surfaces consistent with the light portal theme. */
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-impact-preview {
+  border-color: #dbe5f2;
+  background: #f8fafc;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-impact-card,
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-impact-checklist {
+  border-color: #e2e8f0;
+  background: #ffffff;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-impact-card :is(strong, b),
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-impact-checklist :is(strong, b) { color: #101828; }
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-impact-card :is(span, small, em),
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-impact-checklist :is(span, small, em) { color: #667085; }
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-submit-impact .terminal-cloud-submit-checklist span,
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-submit-targets span {
+  border-color: #dbe5f2;
+  background: #f8fafc;
+  color: #344054;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-submit-targets b { color: #667085; }
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-submit-targets em { color: #101828; }
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-submit-ack {
+  border-color: #abefc6;
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-submit-ack :is(strong, small) { color: #067647; }
+
+
+/* Terminal Cloud compact light surface. */
+.shell.portal-ui-v2 .terminal-cloud-view :is(
+  .terminal-cloud-action-status,
+  .terminal-cloud-action-card-badges span,
+  .terminal-cloud-impact-tags em,
+  .terminal-cloud-submit-checklist span,
+  .terminal-cloud-submit-targets span,
+  .self-service-quota-pill
+) {
+  border-color: #dbe5f2 !important;
+  background: #f8fafc !important;
+  background-image: none !important;
+  color: #344054 !important;
+  box-shadow: none !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(
+  .terminal-cloud-action-status.is-success,
+  .terminal-cloud-action-card-badges .is-success,
+  .self-service-quota-pill.is-pass
+) {
+  border-color: #abefc6 !important;
+  background: #ecfdf3 !important;
+  color: #067647 !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(
+  .terminal-cloud-action-status.is-warning,
+  .terminal-cloud-action-status.is-wait,
+  .terminal-cloud-action-card-badges .is-warning,
+  .terminal-cloud-action-card-badges .is-wait,
+  .self-service-quota-pill.is-fail
+) {
+  border-color: #fedf89 !important;
+  background: #fffaeb !important;
+  color: #b54708 !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-action-card {
+  gap: 10px;
+  min-height: 0;
+  padding: 12px;
+  border-color: #e2e8f0;
+  background: #fff;
+  box-shadow: none;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-action-card p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #667085;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(.terminal-cloud-action-deck,.terminal-cloud-project-panel) {
+  border-color: #e2e8f0;
+  background: #fff;
+  box-shadow: none;
+}
+
+
+.profile-cloud-cost-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.profile-cloud-cost-grid > div {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.profile-cloud-cost-grid span { color: #667085; font-size: 12px; font-weight: 700; }
+.profile-cloud-cost-grid strong { color: #101828; font-size: 20px; }
+.profile-cloud-cost > .hint { margin: 10px 0 0; }
+.profile-billing-table { margin-top: 14px; overflow: hidden; border: 1px solid #e4e7ec; border-radius: 12px; }
+.profile-billing-row { display: grid; grid-template-columns: minmax(180px, 1.4fr) minmax(140px, 1fr) minmax(100px, .7fr) minmax(100px, .7fr); gap: 12px; align-items: center; padding: 12px 14px; border-top: 1px solid #eaecf0; color: #475467; font-size: 13px; }
+.profile-billing-row:first-child { border-top: 0; }
+.profile-billing-row.is-head { background: #f9fafb; color: #667085; font-size: 12px; font-weight: 800; }
+.profile-billing-row > span:first-child { display: grid; gap: 2px; }
+.profile-billing-row small { color: #98a2b3; font-size: 11px; font-weight: 700; }
+.profile-billing-row strong { color: #101828; }
+
+@media (max-width: 640px) {
+  .profile-cloud-cost-grid { grid-template-columns: 1fr; }
+  .profile-billing-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .profile-billing-row > :nth-child(2), .profile-billing-row > :nth-child(3) { display: none; }
+}
+
+
+.terminal-cloud-database-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.terminal-cloud-database-summary > div { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 12px 14px; }
+.terminal-cloud-database-summary span, .terminal-cloud-database-summary strong { display: block; }
+.terminal-cloud-database-summary span { color: #64748b; font-size: 12px; }
+.terminal-cloud-database-summary strong { color: #172033; font-size: 20px; margin-top: 3px; }
+.terminal-cloud-database-summary .is-error strong { color: #b42318; }
+.terminal-cloud-database-specs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; margin: 10px 0 0; }
+.terminal-cloud-database-specs div { min-width: 0; }
+.terminal-cloud-database-specs .is-endpoint { grid-column: 1 / -1; }
+.terminal-cloud-database-specs dt { color: #64748b; font-size: 11px; }
+.terminal-cloud-database-specs dd { color: #172033; font-size: 13px; margin: 2px 0 0; overflow-wrap: anywhere; }
+.terminal-cloud-database-endpoint-actions { align-items: center; display: flex; gap: 8px; margin-top: 8px; }
+.terminal-cloud-database-endpoint-actions small { color: #526071; }
+@media (max-width: 720px) {
+  .terminal-cloud-database-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .terminal-cloud-database-specs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+
+/* Terminal Cloud final light-theme alignment */
+.shell.portal-ui-v2 .terminal-cloud-view.portal-stack {
+  gap: 14px;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(
+  .terminal-cloud-hero,
+  .terminal-cloud-action-deck,
+  .terminal-cloud-project-panel,
+  .terminal-cloud-horizon-toolbar,
+  .terminal-cloud-horizon-nav,
+  .terminal-cloud-resource-card,
+  .terminal-cloud-empty
+) {
+  border-color: #e2e8f0 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: none !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(
+  .terminal-cloud-hero h2,
+  .terminal-cloud-project-head h3,
+  .terminal-cloud-horizon-toolbar h3,
+  .terminal-cloud-resource-card strong,
+  .terminal-cloud-database-specs dd
+) {
+  color: #0f172a !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(
+  .terminal-cloud-hero p,
+  .terminal-cloud-project-head .hint,
+  .terminal-cloud-horizon-toolbar p,
+  .terminal-cloud-resource-card small,
+  .terminal-cloud-resource-card p,
+  .terminal-cloud-database-specs dt
+) {
+  color: #64748b !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(
+  .terminal-cloud-hero,
+  .terminal-cloud-action-deck,
+  .terminal-cloud-project-panel,
+  .terminal-cloud-horizon-toolbar
+) {
+  padding: 14px !important;
+  border-radius: 12px !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(
+  .terminal-cloud-action-grid,
+  .terminal-cloud-summary-grid,
+  .terminal-cloud-resource-card-grid,
+  .terminal-cloud-database-summary
+) {
+  gap: 12px !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view :is(
+  .terminal-cloud-horizon-main,
+  .terminal-cloud-project-panel,
+  .terminal-cloud-action-deck
+) {
+  gap: 12px;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-horizon-layout {
+  gap: 12px;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-resource-card {
+  gap: 8px;
+  padding: 14px !important;
+  border-radius: 10px !important;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-database-summary > div {
+  min-height: 72px;
+  padding: 14px;
+  border-color: #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.shell.portal-ui-v2 .terminal-cloud-view .terminal-cloud-database-specs {
+  gap: 10px 14px;
+  margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+  .shell.portal-ui-v2 .terminal-cloud-view.portal-stack { gap: 10px; }
+  .shell.portal-ui-v2 .terminal-cloud-view :is(
+    .terminal-cloud-hero,
+    .terminal-cloud-action-deck,
+    .terminal-cloud-project-panel,
+    .terminal-cloud-horizon-toolbar
+  ) { padding: 12px !important; }
+  .shell.portal-ui-v2 .terminal-cloud-view :is(
+    .terminal-cloud-action-grid,
+    .terminal-cloud-summary-grid,
+    .terminal-cloud-resource-card-grid,
+    .terminal-cloud-database-summary
+  ) { gap: 10px !important; }
+}
+
+
+/* Mini Horizon */
+.mini-horizon-shell{display:grid;gap:14px;color:#0f172a}.mini-horizon-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px;border:1px solid #dbe5f2;border-radius:14px;background:#fff}.mini-horizon-header h2{margin:3px 0 4px}.mini-horizon-header p{margin:0;color:#64748b}.mini-horizon-header>div:last-child{display:flex;align-items:end;gap:10px}.mini-horizon-header label{display:grid;gap:5px;color:#475569;font-size:12px;font-weight:700}.mini-horizon-header select{min-width:210px}.mini-horizon-header>div:last-child>span{padding:9px 11px;border-radius:9px;font-size:12px;font-weight:800}.mini-horizon-header .is-direct{background:#ecfdf3;color:#027a48}.mini-horizon-header .is-approval{background:#fffaeb;color:#b54708}.mini-horizon-status{padding:10px 12px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff;color:#1d4ed8}.mini-horizon-status.is-error{border-color:#fecaca;background:#fef2f2;color:#b91c1c}.mini-horizon-status.is-warning{border-color:#fed7aa;background:#fff7ed;color:#c2410c}.mini-horizon-status.is-success{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.mini-horizon-tabs{display:flex;gap:4px;padding:5px;border:1px solid #dbe5f2;border-radius:11px;background:#fff;overflow:auto}.mini-horizon-tabs button{white-space:nowrap;padding:9px 12px;border:0;border-radius:7px;background:transparent;color:#475569;font-weight:700}.mini-horizon-tabs button.is-active{background:#eff6ff;color:#1d4ed8}.mini-horizon-content{display:grid;gap:12px;padding:14px;border:1px solid #dbe5f2;border-radius:12px;background:#fff}.mini-horizon-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}.mini-horizon-toolbar h3{margin:0}.mini-horizon-toolbar>div:last-child{display:flex;gap:7px}.mini-horizon-quota-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.mini-horizon-quota{display:grid;gap:6px;padding:12px;border:1px solid #e2e8f0;border-radius:9px;background:#f8fafc}.mini-horizon-quota span{color:#64748b;font-size:12px}.mini-horizon-quota strong{font-size:16px}.mini-horizon-quota>div{height:5px;border-radius:9px;background:#e2e8f0;overflow:hidden}.mini-horizon-quota i{display:block;height:100%;background:#3b82f6}.mini-horizon-overview-counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.mini-horizon-overview-counts>div{display:flex;align-items:baseline;gap:7px;padding:12px;border:1px solid #e2e8f0;border-radius:9px}.mini-horizon-overview-counts strong{font-size:22px}.mini-horizon-overview-counts span{color:#64748b}.mini-horizon-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));align-items:end;gap:10px;padding:12px;border:1px solid #bfdbfe;border-radius:10px;background:#f8fbff}.mini-horizon-form h4{grid-column:1/-1;margin:0}.mini-horizon-field{display:grid;gap:5px;min-width:0}.mini-horizon-field>span{color:#475569;font-size:12px;font-weight:700}.mini-horizon-field input,.mini-horizon-field select,.mini-horizon-table select{width:100%;min-height:38px}.mini-horizon-field>div{display:flex;gap:5px}.mini-horizon-dual-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini-horizon-table{display:grid;gap:8px}.mini-horizon-table article{display:grid;grid-template-columns:minmax(170px,1.2fr) auto minmax(160px,1fr) auto;align-items:center;gap:10px;padding:11px 12px;border:1px solid #e2e8f0;border-radius:9px;background:#fff}.mini-horizon-table article>div:first-child{display:grid;gap:2px;min-width:0}.mini-horizon-table article small{overflow:hidden;color:#64748b;text-overflow:ellipsis}.mini-horizon-table article p{margin:0;color:#475569;overflow-wrap:anywhere}.mini-horizon-table article>div:last-child{display:flex;justify-content:flex-end;gap:5px;flex-wrap:wrap}.mini-horizon-instance-credentials{display:flex;grid-column:1/-1;align-items:center;gap:7px;flex-wrap:wrap;padding:9px 10px;border:1px solid #bbf7d0;border-radius:8px;background:#f0fdf4}.mini-horizon-instance-credentials>span{color:#15803d;font-size:12px;font-weight:800}.mini-horizon-instance-credentials code{padding:5px 7px;border-radius:6px;background:#dcfce7;color:#166534}.mini-horizon-instance-security{display:grid;grid-column:1/-1;gap:6px;padding:9px 10px;border-radius:8px;background:#f8fafc}.mini-horizon-instance-security>span{color:#64748b;font-size:12px;font-weight:800}.mini-horizon-instance-security>div{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.mini-horizon-instance-security select{width:auto;min-width:170px}.mini-horizon-security-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid #bfdbfe;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700}.mini-horizon-security-chip button{display:grid;place-items:center;width:18px;height:18px;padding:0;border:0;border-radius:50%;background:#dbeafe;color:#1d4ed8;cursor:pointer}.mini-horizon-security-chip button:disabled{cursor:not-allowed;opacity:.45}.mini-horizon-rule-list{display:grid;grid-column:1/-1;gap:6px}.mini-horizon-rule-row{display:grid;grid-template-columns:70px 90px minmax(100px,.7fr) minmax(140px,1fr) auto;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc}.mini-horizon-rule-row.is-head{border:0;background:transparent;color:#64748b;font-size:11px;font-weight:800}.mini-horizon-rule-row code{color:#1d4ed8}.mini-horizon-rule-row .hint{text-align:right}.mini-horizon-empty{padding:28px;border:1px dashed #cbd5e1;border-radius:10px;text-align:center;color:#64748b;background:#f8fafc}.mini-horizon-warnings{display:grid;gap:5px;padding:10px;border-radius:9px;background:#fff7ed;color:#9a3412;font-size:12px}
+@media(max-width:1000px){.mini-horizon-quota-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mini-horizon-table article{grid-template-columns:minmax(0,1fr) auto}.mini-horizon-table article>p,.mini-horizon-table article>div:last-child{grid-column:1/-1;justify-content:flex-start}}
+@media(max-width:700px){.mini-horizon-rule-row{grid-template-columns:1fr 1fr}.mini-horizon-rule-row>:nth-child(4){grid-column:1/-1}.mini-horizon-header{align-items:stretch;flex-direction:column}.mini-horizon-header>div:last-child{align-items:stretch;flex-direction:column}.mini-horizon-header select{min-width:0;width:100%}.mini-horizon-quota-grid,.mini-horizon-overview-counts,.mini-horizon-dual-form{grid-template-columns:1fr}.mini-horizon-content{padding:11px}.mini-horizon-toolbar{align-items:flex-start}.mini-horizon-form{grid-template-columns:1fr}}
+
+.admin-page .admin-tab-stack,
+.admin-page .admin-list-stack { display: grid; gap: 14px; }
+.admin-page .admin-section-head,
+.admin-page .admin-list-card { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
+.admin-page .admin-section-head { margin-bottom: 14px; }
+.admin-page .admin-section-head p,
+.admin-page .admin-list-card p { margin: 2px 0 0; }
+.admin-page .admin-list-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+.admin-page .admin-list-card > div:first-child { min-width: 0; }
+.admin-page .admin-list-card .button-row { display: flex; flex: 0 0 auto; gap: 6px; }
+@media (max-width: 760px) {
+  .admin-page .admin-section-head,
+  .admin-page .admin-list-card { align-items: stretch; flex-direction: column; }
+}
+
+.mini-horizon-access-panel{display:grid;gap:12px;padding:14px;border:1px solid #bfdbfe;border-radius:12px;background:#f8fbff}.mini-horizon-access-panel>header{display:flex;align-items:center;justify-content:space-between;gap:12px}.mini-horizon-access-panel>header>div{display:grid;gap:2px}.mini-horizon-access-panel>header small{color:#64748b}.mini-horizon-access-panel>nav{display:flex;gap:5px;padding:4px;border-radius:9px;background:#eaf2ff}.mini-horizon-access-panel>nav button{padding:8px 14px;border:0;border-radius:7px;background:transparent;color:#475569;font-weight:800}.mini-horizon-access-panel>nav button.is-active{background:#fff;color:#1d4ed8;box-shadow:0 1px 3px #94a3b840}.mini-horizon-access-body{display:grid;gap:12px}.mini-horizon-endpoint{display:grid;gap:7px;padding:13px;border:1px solid #bbf7d0;border-radius:9px;background:#f0fdf4}.mini-horizon-endpoint strong{font-size:18px;color:#166534}.mini-horizon-endpoint code{overflow-wrap:anywhere;color:#334155}.mini-horizon-console-frame{min-height:520px;border:1px solid #1e293b;border-radius:10px;background:#07111f;overflow:hidden}.mini-horizon-console-frame iframe{display:block;width:100%;height:70vh;min-height:520px;border:0}.mini-horizon-access-body .terminal-root.is-embedded{min-height:460px;padding:6px;border-radius:10px;background:#07111f}.mini-horizon-access-body .terminal-root.is-embedded .xterm{height:450px}.mini-horizon-access-body .terminal-root.is-embedded .xterm-viewport{height:450px!important}@media(max-width:700px){.mini-horizon-console-frame,.mini-horizon-console-frame iframe{min-height:400px}.mini-horizon-access-panel{padding:10px}.mini-horizon-access-panel>nav button{flex:1;padding:8px}}
+.mini-horizon-flavor-details{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.mini-horizon-flavor-details span,.mini-horizon-flavor-details small{padding:4px 7px;border-radius:6px;background:#eef2ff;color:#334155;font-size:12px}.mini-horizon-flavor-details code{flex-basis:100%;padding:7px;border-radius:6px;background:#0f172a;color:#e2e8f0;overflow-wrap:anywhere;font-size:11px}
+.mini-horizon-instance-form{align-items:start}.mini-horizon-instance-form>.primary-btn{margin-top:17px}.mini-horizon-instance-form .mini-horizon-flavor-details{align-content:flex-start}
+.mini-horizon-tabs button.is-group-start{margin-left:8px;border-left:1px solid #cbd5e1;border-radius:0 7px 7px 0}.mini-horizon-create-result{display:grid;gap:7px;padding:11px 13px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534}.mini-horizon-create-result.is-warning{border-color:#fed7aa;background:#fff7ed;color:#9a3412}.mini-horizon-create-result>span{font-size:12px}.mini-horizon-create-result ul{display:grid;gap:4px;margin:0;padding-left:18px}.mini-horizon-create-result li span{display:block;font-size:12px}.mini-horizon-instance-credentials small{flex-basis:100%;color:#64748b}.mini-horizon-shell[aria-busy="true"]{cursor:progress}
+
+.community-auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(350px,550px);gap:40px;align-items:center;max-width:1200px;margin:auto;padding:50px 28px}.community-auth-intro h1{font-size:40px}.community-auth-intro p{font-size:18px;color:#667085}@media(max-width:750px){.community-auth{grid-template-columns:1fr;padding:25px 18px}.community-auth-intro h1{font-size:28px}}

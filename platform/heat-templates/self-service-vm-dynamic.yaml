@@ -1,0 +1,300 @@
+heat_template_version: 2018-08-31
+
+description: >
+  Self-service VM template for Terminal Lab.
+  Creates 1 to 10 Nova instances from the requested instance_count.
+
+parameters:
+  image:
+    type: string
+    default: ubuntu-24.04
+  flavor:
+    type: string
+    default: m1.tiny
+  network:
+    type: string
+    default: net-infra
+  subnet:
+    type: string
+    default: ""
+  key_name:
+    type: string
+    default: ""
+  security_group:
+    type: string
+    default: example.com
+  instance_name:
+    type: string
+    default: self-service-vm
+  instance_count:
+    type: number
+    default: 1
+    constraints:
+      - range: { min: 1, max: 10 }
+  cloud_init:
+    type: string
+    default: "#cloud-config\n"
+  terminal_ssh_user:
+    type: string
+    default: ""
+  terminal_ssh_password:
+    type: string
+    default: ""
+    hidden: true
+  boot_from_volume:
+    type: boolean
+    default: false
+  boot_volume_size:
+    type: number
+    default: 20
+    constraints:
+      - range: { min: 1, max: 2048 }
+  boot_volume_type:
+    type: string
+    default: ""
+  data_volume_enabled:
+    type: boolean
+    default: false
+  data_volume_count:
+    type: number
+    default: 0
+    constraints:
+      - range: { min: 0, max: 10 }
+  data_volume_size:
+    type: number
+    default: 20
+    constraints:
+      - range: { min: 1, max: 2048 }
+  data_volume_type:
+    type: string
+    default: ""
+  floating_ip_enabled:
+    type: boolean
+    default: false
+  floating_ip_count:
+    type: number
+    default: 0
+    constraints:
+      - range: { min: 0, max: 10 }
+  floating_network:
+    type: string
+    default: net-external
+  user_data:
+    type: string
+    default: ""
+  username:
+    type: string
+    default: user
+  user_id:
+    type: string
+    default: ""
+  course_id:
+    type: string
+    default: self-service
+
+conditions:
+  boot_from_volume_enabled: { equals: [{ get_param: boot_from_volume }, true] }
+  data_volume_type_provided:
+    not:
+      equals: [{ get_param: data_volume_type }, ""]
+  use_subnet:
+    not:
+      equals: [{ get_param: subnet }, ""]
+
+resources:
+  lab_ports:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: instance_count }
+      index_var: "%index%"
+      resource_def:
+        type: OS::Neutron::Port
+        properties:
+          name:
+            str_replace:
+              template: "%stack%-port-%index%"
+              params:
+                "%stack%": { get_param: instance_name }
+          network: { get_param: network }
+          fixed_ips:
+            if:
+              - use_subnet
+              - [{ subnet: { get_param: subnet } }]
+              - []
+          security_groups:
+            - { get_param: security_group }
+
+  lab_servers:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count:
+        if:
+          - boot_from_volume_enabled
+          - 0
+          - { get_param: instance_count }
+      index_var: "%index%"
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          name:
+            str_replace:
+              template: "%stack%-node-%index%"
+              params:
+                "%stack%": { get_param: instance_name }
+          image: { get_param: image }
+          flavor: { get_param: flavor }
+          key_name: { get_param: key_name }
+          user_data_format: RAW
+          user_data:
+            str_replace:
+              template: { get_param: cloud_init }
+              params:
+                "__TERMINAL_LAB_USERNAME__": { get_param: terminal_ssh_user }
+                "__TERMINAL_LAB_PASSWORD__": { get_param: terminal_ssh_password }
+          networks:
+            - port: { get_attr: [lab_ports, resource.%index%] }
+          metadata:
+            terminal_lab_owner: { get_param: username }
+            terminal_lab_user_id: { get_param: user_id }
+            terminal_lab_course_id: { get_param: course_id }
+            terminal_lab_ssh_user: { get_param: terminal_ssh_user }
+            node_index: "%index%"
+
+  lab_boot_volume_servers:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count:
+        if:
+          - boot_from_volume_enabled
+          - { get_param: instance_count }
+          - 0
+      index_var: "%index%"
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          name:
+            str_replace:
+              template: "%stack%-node-%index%"
+              params:
+                "%stack%": { get_param: instance_name }
+          block_device_mapping_v2:
+            - image: { get_param: image }
+              boot_index: 0
+              volume_size: { get_param: boot_volume_size }
+              delete_on_termination: true
+          flavor: { get_param: flavor }
+          key_name: { get_param: key_name }
+          user_data_format: RAW
+          user_data:
+            str_replace:
+              template: { get_param: cloud_init }
+              params:
+                "__TERMINAL_LAB_USERNAME__": { get_param: terminal_ssh_user }
+                "__TERMINAL_LAB_PASSWORD__": { get_param: terminal_ssh_password }
+          networks:
+            - port: { get_attr: [lab_ports, resource.%index%] }
+          metadata:
+            terminal_lab_owner: { get_param: username }
+            terminal_lab_user_id: { get_param: user_id }
+            terminal_lab_course_id: { get_param: course_id }
+            terminal_lab_ssh_user: { get_param: terminal_ssh_user }
+            node_index: "%index%"
+
+  floating_ips:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: floating_ip_count }
+      index_var: "%index%"
+      resource_def:
+        type: OS::Neutron::FloatingIP
+        properties:
+          floating_network: { get_param: floating_network }
+
+  floating_ip_associations:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: floating_ip_count }
+      index_var: "%index%"
+      resource_def:
+        type: OS::Neutron::FloatingIPAssociation
+        properties:
+          floatingip_id: { get_attr: [floating_ips, resource.%index%] }
+          port_id: { get_attr: [lab_ports, resource.%index%] }
+
+  data_volumes:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: data_volume_count }
+      index_var: "%index%"
+      resource_def:
+        type: OS::Cinder::Volume
+        properties:
+          name:
+            str_replace:
+              template: "%stack%-data-volume-%index%"
+              params:
+                "%stack%": { get_param: instance_name }
+          size: { get_param: data_volume_size }
+          volume_type:
+            if:
+              - data_volume_type_provided
+              - { get_param: data_volume_type }
+              - null
+
+  data_volume_attachments:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: data_volume_count }
+      index_var: "%index%"
+      resource_def:
+        type: OS::Cinder::VolumeAttachment
+        properties:
+          instance_uuid:
+            if:
+              - boot_from_volume_enabled
+              - { get_attr: [lab_boot_volume_servers, resource.0] }
+              - { get_attr: [lab_servers, resource.0] }
+          volume_id: { get_attr: [data_volumes, resource.%index%] }
+
+outputs:
+  server_names:
+    value:
+      if:
+        - boot_from_volume_enabled
+        - { get_attr: [lab_boot_volume_servers, name] }
+        - { get_attr: [lab_servers, name] }
+  fixed_ips:
+    value:
+      if:
+        - boot_from_volume_enabled
+        - { get_attr: [lab_boot_volume_servers, first_address] }
+        - { get_attr: [lab_servers, first_address] }
+  floating_ips:
+    value: { get_attr: [floating_ips, floating_ip_address] }
+  data_volume_ids:
+    value: { get_attr: [data_volumes, refs] }
+  node_details:
+    value:
+      repeat:
+        template:
+          id: node-%index%
+          name: "%name%"
+          role: lab
+          status: running
+          fixedIp: "%ip%"
+        for_each:
+          "%index%":
+            if:
+              - boot_from_volume_enabled
+              - { get_attr: [lab_boot_volume_servers, refs] }
+              - { get_attr: [lab_servers, refs] }
+          "%name%":
+            if:
+              - boot_from_volume_enabled
+              - { get_attr: [lab_boot_volume_servers, name] }
+              - { get_attr: [lab_servers, name] }
+          "%ip%":
+            if:
+              - boot_from_volume_enabled
+              - { get_attr: [lab_boot_volume_servers, first_address] }
+              - { get_attr: [lab_servers, first_address] }

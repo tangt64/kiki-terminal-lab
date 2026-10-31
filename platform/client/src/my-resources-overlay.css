@@ -1,0 +1,144 @@
+.my-learning-marketing-survey-overlay {
+  bottom: 22px;
+  position: fixed;
+  right: 22px;
+  z-index: 60;
+}
+
+.my-learning-marketing-survey-fab {
+  align-items: center;
+  background: #0f172a;
+  border: 1px solid rgba(15, 23, 42, .12);
+  border-radius: 999px;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, .18);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 10px 8px 16px;
+}
+
+.my-learning-marketing-survey-fab span {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.my-learning-marketing-survey-fab strong {
+  background: #14b8a6;
+  border-radius: 999px;
+  color: #042f2e;
+  display: grid;
+  font-size: 12px;
+  height: 24px;
+  min-width: 24px;
+  padding: 0 7px;
+  place-items: center;
+}
+
+.my-learning-marketing-survey-panel {
+  background: rgba(255, 255, 255, .98);
+  border: 1px solid rgba(203, 213, 225, .95);
+  border-radius: 8px;
+  box-shadow: 0 24px 54px rgba(15, 23, 42, .18);
+  display: grid;
+  gap: 12px;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 14px;
+  width: 360px;
+}
+
+.my-learning-marketing-survey-head {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.my-learning-marketing-survey-head strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.my-learning-marketing-survey-options {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+}
+
+.my-learning-marketing-survey-options .survey-choice-btn {
+  min-height: 38px;
+  text-align: left;
+}
+
+.my-learning-marketing-survey-results {
+  display: grid;
+  gap: 8px;
+}
+
+.my-learning-marketing-survey-result {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(80px, 1fr) minmax(80px, 1.2fr) auto;
+}
+
+.my-learning-marketing-survey-result span,
+.my-learning-marketing-survey-result b {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.my-learning-marketing-survey-result div {
+  background: rgba(15, 23, 42, .08);
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.my-learning-marketing-survey-result i {
+  background: linear-gradient(90deg, #0f766e, #2563eb);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  min-width: 3px;
+}
+
+.my-learning-marketing-survey-actions {
+  gap: 8px;
+}
+
+.my-learning-marketing-survey-actions .primary-btn,
+.my-learning-marketing-survey-actions .ghost-btn {
+  min-height: 36px;
+  padding: 8px 11px;
+}
+
+@media (max-width: 720px) {
+  .my-learning-marketing-survey-overlay {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .my-learning-marketing-survey-fab {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .my-learning-marketing-survey-panel {
+    max-width: none;
+    width: 100%;
+  }
+
+  .my-learning-marketing-survey-result {
+    grid-template-columns: 1fr auto;
+  }
+
+  .my-learning-marketing-survey-result div {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

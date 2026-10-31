@@ -1,0 +1,15 @@
+.git
+node_modules
+dist
+.env
+.env.*
+data
+runtime
+secrets
+backups
+releases
+tests
+__pycache__
+platform/dist
+platform/client/public/board-fonts
+platform/client/public/board-pdf
