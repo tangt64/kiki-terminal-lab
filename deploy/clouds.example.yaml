@@ -1,0 +1,14 @@
+clouds:
+  community:
+    auth:
+      auth_url: https://identity.example.com:5000/v3
+      username: community-service
+      password: REPLACE_WITH_SERVICE_ACCOUNT_PASSWORD
+      project_name: admin
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+    interface: public
+    identity_api_version: 3
+    verify: true
+    # cacert: /app/secrets/openstack-ca.crt

@@ -1,0 +1,95 @@
+.kubectl-download-menu {
+  max-width: 100%;
+  position: relative;
+}
+
+.kubectl-download-menu[open] {
+  z-index: 30;
+}
+
+.kubectl-download-menu > summary {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  list-style: none;
+  max-width: 100%;
+}
+
+.kubectl-download-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.kubectl-download-panel {
+  background: var(--panel-bg, #fff);
+  border: 1px solid var(--border-color, #d8dee8);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 14%);
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  box-sizing: border-box;
+  max-width: calc(100vw - 32px);
+  min-width: 0;
+  padding: 14px;
+  position: absolute;
+  right: 0;
+  width: 420px;
+  z-index: 20;
+}
+
+.kubectl-download-panel label {
+  display: grid;
+  gap: 6px;
+}
+
+.kubectl-download-panel label > span,
+.kubectl-download-panel small {
+  color: var(--muted-color, #64748b);
+  font-size: 0.78rem;
+}
+
+.kubectl-download-panel select {
+  width: 100%;
+}
+
+.kubectl-download-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.kubectl-download-links a {
+  box-sizing: border-box;
+  flex: 1 1 150px;
+  justify-content: center;
+  min-width: 0;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .admin-inline-actions > .kubectl-download-menu {
+    width: 100%;
+  }
+
+  .kubectl-download-menu > summary {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .kubectl-download-panel {
+    margin-top: 8px;
+    max-width: 100%;
+    position: static;
+    width: 100%;
+  }
+
+  .kubectl-download-links {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kubectl-download-links a {
+    width: 100%;
+  }
+}

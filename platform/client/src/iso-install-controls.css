@@ -1,0 +1,9 @@
+.mini-horizon-iso-fields{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-width:0;margin:0;padding:14px;border:1px solid #cbdcf3;border-radius:10px;background:#fff}
+.mini-horizon-iso-fields legend{padding:0 6px;color:#1e40af;font-size:13px;font-weight:700}
+.mini-horizon-iso-fields>p{grid-column:1/-1;margin:0;line-height:1.6;overflow-wrap:anywhere}
+.mini-horizon-iso-fields>button{justify-self:start}
+.mini-horizon-iso-fields input{box-sizing:border-box;width:100%;min-width:0}
+.mini-horizon-iso-status{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px;border-radius:8px;background:#f8fbff}
+.mini-horizon-iso-status p{flex-basis:100%;margin:0}
+.mini-horizon-iso-status small{color:#64748b}
+@media(max-width:700px){.mini-horizon-iso-fields{grid-template-columns:minmax(0,1fr);padding:10px}}

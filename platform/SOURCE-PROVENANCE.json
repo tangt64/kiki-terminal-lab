@@ -1,0 +1,2152 @@
+{
+  "edition": "community-parity",
+  "sourceFiles": {
+    "server/arena-session-service.js": "5d8a4a8207f4c50c8f7d9953a19509538f86ac8307a7cbdd2ae52a171e568aaa",
+    "server/arena-validator-service.js": "6e6fa840b90501b610448d5edf4dae4794cb5ae555d45cd4d9048bee7b1a5a97",
+    "server/assets/kiki-cloud-guest-check.py": "6a599b56c63c47910ee2c280d37c47d2ff8d9274fa733a65d16e1f7d9a7af01a",
+    "server/barbican.js": "da9dec5b2e21b189273d0b2ed3616ee54ea297adb0049ec248f1335d3f82352e",
+    "server/db-runtime.js": "58789b10055464238fedd70a0ed82df39ad802e19d578235976dd7eefe0d0f58",
+    "server/designate.js": "38730c6d42b045c75cc558d8cc1b89dc19b9db834b849a74bf0b24272436aa34",
+    "server/env-loader.js": "e8b8d3d9c9962ead6e4e04471c56fc7f4c032ff3615f74cf1b18efa981cde910",
+    "server/heat.js": "9c0b2b354ad269c7cf11ed3b7829737d24b8462cafdb8b9a23a3b895cd3f8421",
+    "server/incident-security/contract.js": "e3e479dd9ea9812b909198585bcd6a7d220d54a24b2faf06b9ea163c7e556a50",
+    "server/incident-security/normalize-pilot.py": "a6c9e7d44908964859a48678420e0ed5b90b9ff3dca7db9da11ed734cc5281ff",
+    "server/incident-security/reader.js": "6212150704acea59cecd9c2abbfb849623feddce850d31e25be7f00f7ca308e1",
+    "server/index.js": "dc196389c20054838d8625d53d5d607978524c0a6d89cd6974e358fadf86468e",
+    "server/iso-upload.js": "4822d7a935a5a165243291b4e40f0d653328c4720caf18b7902564e818219637",
+    "server/iso-vm.js": "ae6aec712b240e78fbe33e5bac253a4a20be587eddd32c4f6bca793868bdb0ae",
+    "server/jenkins-service.js": "2e656b23b9eb0678a50469e20c232651ef07b08a5e04e0c5ca88a05bb8845871",
+    "server/kiki-cloud-openstack.js": "094e3c46f9a3e6f3a91633d55a82042df0c8989c1f6e67d1bfd2e11a65daf275",
+    "server/kiki-iso-automation.js": "01765cc85407a32432dcde321ecf582f992d88c07ebfaade14f1733d32f678ce",
+    "server/kubernetes-workload-inventory.js": "961e99439de4131bd18342d3c1ca498c8d06a4c09645f3550ce5934d7a271acb",
+    "server/lab-mac-reconciliation.js": "59926a70374d3654b346b82e179ebb4555f2769c4cd33f7d5ebcd206be56e3f9",
+    "server/llm-service.js": "ef37621ee1c830ae12a627ea7745f91e2a3e307512a4915154e5b840ddcf2fba",
+    "server/magnum.js": "72b665980c3d4ce564c1a3d56f603b625ca4e05a7941d03a850fd898c1de9d70",
+    "server/mail-campaigns.js": "b2983b4d468f84ef4c9ba6f66f48c8a90b2c064e05d06f03381195538d956efc",
+    "server/mail-templates.js": "31dfe43ec9cd9188310057e9a72ebd62ff4a567106f2b6dfd4f0ac006ae0034a",
+    "server/metallb-vip.js": "255a47f268f235d58da72247c191056bb41c795b8063b7ab77649037db94be26",
+    "server/openstack-fetch.js": "9fa439ca3709322fd71e7e9b39c09d2c38737c1adfb172b2e73aa9d64c1941f1",
+    "server/postgres-schema.sql": "93d00b920808ebbd0b48c3ae0ffc50070ddf5137ad0cad9457894f72015d55f5",
+    "server/postgres.js": "c4d7f264975513b31dc3731382785de5c425d11f06450e9e7c9613474c3e0be7",
+    "server/public-route-policy.js": "9b56a66ea43aab77b787d1ad005ef1b070f19ba627f709da0f5abf16956532d1",
+    "server/quota-circuit-breaker.js": "baf22a089b818a1e3d021bfd42247859375356bb6439ee77bd897176f335d2fc",
+    "server/request-protection.js": "cf23c265068a55bd85e60b0738963b0ca1b776d51d86f44027471b7706280b58",
+    "server/route-controller.js": "fd1fc6cc38f5e8b881717a0b6880beb5fb2bb39f15c3ca0ef9983058602c4413",
+    "server/security-inspection.js": "5a7f1605d3861bc2506cc95831461e6c2c116572150b4c528bbfe390a32cfb41",
+    "server/session-store.js": "2c723ae1a666be648736ef8e487fd079cb3a0f7b8d696691c358ada87a2ab619",
+    "server/ssh-host-keys.js": "c6e49dcce531b2d3e7d5d31bb900ef52644a5fe0d86ea3749e54bef326fab478",
+    "server/terminal-node-resolution.js": "ef41a9613fcb07f30cc265458c3433396aa65d1ff0bece4f9a900ce842ece495",
+    "server/trove.js": "53a63d7bdc914fbf46982f3dab19c2e40d1fcc5a80b3320d9f15f6fcf13603d5",
+    "server/vm-node-order.js": "6b08623275ad04c8e52c3e7f84d2ffb7c9cfcbd5399db74aa4886008590635d8",
+    "server/zun.js": "7362aa5d6c6c4250d4be0b3606602a0b0e2cd8091275a46b6ac4a0b9c6f5e9b4",
+    "client/src/admin-ai-labs-tab.jsx": "b2f2ebad502d0d5e5513bb02b1faacffee92e9ff04955b4d55fe27e796a18440",
+    "client/src/admin-cloud-console-tab.jsx": "b0342ad00e04b4f998fb9de5aa759408e300882f54a9abdb1063aac5e70050af",
+    "client/src/admin-curriculum-tab.jsx": "ad1202971b5f59e3d9c65183e6d11847d03e463cd3e2b12bf4255dc91aac66f5",
+    "client/src/admin-field.jsx": "12980e02b27450940325afb169a883cb1233d23d4ba43ee25943219aa9b607e4",
+    "client/src/admin-lab-tabs.jsx": "610a07ce9e66a13f9d5a147e9494b96937a8dead4f04e7da912ed3fc92970bb3",
+    "client/src/admin-load-balancers-tab.jsx": "69e1880debb6d7c5a250228269887fcc75a1efb9887e004f106536f7f06120e5",
+    "client/src/admin-marketing-activity-tab.jsx": "7f1673b6e01d1792ad1a556be7debf614f975287c45eb2243f00c11603622363",
+    "client/src/admin-ops-tabs.jsx": "9f17d0166bb602b73d40549b6155563691c84144687d92a59892a2ad52af98f8",
+    "client/src/admin-platform-tabs.jsx": "5276d6419b44eed316908dae4ccc5e183a79a9e4ba05b965f08946f562833e10",
+    "client/src/admin-security-inspection.css": "b626c25ca9e5e6efc3b89655245aee42eee472fb07bbb8e5171506ae76066a2a",
+    "client/src/admin-security-inspection.jsx": "023c29f502b9ceaad1b2b92de1e55fc1a2ee66cc4984b0e01fb5e127365683df",
+    "client/src/admin-template-tabs.jsx": "aaac2e115da2fcdc77c0f7f9119ebf3abd5aaf8409dfb2d0d2f74075c12cf1a8",
+    "client/src/admin-terms-tab.jsx": "590240a7422a2dd123d37b61a8dc961196f89b9604aef25c213c1fcb0a372361",
+    "client/src/admin-view.jsx": "2b7ba4fb7c30ab065ef114cc5fc2e2f5ec1b8a56c3e403315cbc34a047c67c8f",
+    "client/src/ai-lab-view.jsx": "03e0ec633b255759d4cdbc106edc12d22db56397d6167d60e06a056c27f13cfd",
+    "client/src/App.jsx": "9a9cf110d8415fad0a792b0336e653e57f72da10fb3c6074af82609ac49d337f",
+    "client/src/arena/ArenaPreviewPage.jsx": "dfb25dce7780b5e064a50dcf6ad7f3861946f1efebd57bc16a2e8124f19b6d2d",
+    "client/src/arena/ArenaTerminal.jsx": "13bb23b938b17074cc4e8c1a5bfe71df767948eab62f1c36fed3c084f06d7b3d",
+    "client/src/arena-preview.css": "63e0c7c54482ec133a0f8770fe10a2210b7c0b3597011deba3311ccb174059b0",
+    "client/src/build-info.js": "0e3e4d8368bc1bd8fff4552e7580f2d526fe684f304fb583f7881c4a00550801",
+    "client/src/cicd-view.jsx": "c437fab8e247a18415cae75fbeee6bc741fbb7adc968b1a996b845347e18e3c8",
+    "client/src/consulting-reply-templates.js": "8b62324c260b4d09e8e6a695257830f93f57676563809267737d387e62d153a7",
+    "client/src/course-markdown-editor.jsx": "f7493bbc04c10578094304d592fd60b4d70f63b772633729052f40632aa47759",
+    "client/src/course-mdx-editor-impl.jsx": "d92cbb559185ecaec1742ad0b8e365909e33b3a164362bd519a459db4b38b8cd",
+    "client/src/course-quote-view.jsx": "de50e187360c39583418e4d59df1cb8570f0ac7609c5b1e22982bdb9cd3fea49",
+    "client/src/course-view.jsx": "0d4c05df0fe5e8c4f78ada92648cee7194dd264924a37e2140cf7e9ad1de5598",
+    "client/src/course-visibility.js": "69dda6118fd76c3cca0132c830756f3e05d79dfc6fb119748edb8bed316d0bc4",
+    "client/src/curriculum-2026-data.js": "589ba61df1408a40987978842f4b8711b8a1b79e83b5ad1b6916856365951ea9",
+    "client/src/curriculum-2026-view.jsx": "82890d9b7114a8d269a55ef799c2eaa88574ba0d988f6a0f434fbbce83b6f8b8",
+    "client/src/dynamic-import-reload.js": "1df5d281e9b87743b4a0377dca92cd3b5afb0a476662ba349e38e622ae5e4a35",
+    "client/src/guide-renderer.jsx": "e16cf9f1eeba70c65e8fe2c6b217254217dd58dd8c787f7fdec8dd8f128a7c2a",
+    "client/src/infra-views.jsx": "d55e662c4210ced6598e39c486b67520ba2492ae4bf796d830fcbf1026dd5188",
+    "client/src/inquiry-hub-view.jsx": "dce588cac5b5ff3297f235c09cc09dbb78ca9397ab4e1951f5eb8863eec52105",
+    "client/src/interactive-logo-stage.jsx": "2a7b6a96a605a94e4339b65d490f1a2acc3d1d49bb4a965692eeeafd363b437d",
+    "client/src/iso-install-controls.css": "b7f35d838254f940c60cb30a253438903c982a46afa83dfb634c788b6a1aeb7a",
+    "client/src/iso-install-controls.jsx": "5005a1e2c848dea179d64e40747faa6a4176d12b5b73913ec1e7b8b318ac0942",
+    "client/src/kubectl-download-menu.css": "11c610c63801f38ad80656ada71da1cc6a7499e620f60bbaf766a36c4985dbcb",
+    "client/src/kubectl-download-menu.jsx": "20afcc0367748eed6f7c98f2e1b6e9b64156b6c7691e3447461fa0b40330ab4c",
+    "client/src/lab-exam-examples.js": "e10e4d1cb1ea37a129be87b720b6e941b709dea9edf723974bd20ce7ef23bd0b",
+    "client/src/latest-request-coordinator.js": "b747f74efc61f1a8806dc7ec0bac2ecefa5634d803dafa507d4cd97196d3ab13",
+    "client/src/learning-views.jsx": "7ccd11059a07ed5bd6c72a7757a76bf544d5132c05c7340aa341e0a276a4a7ff",
+    "client/src/lucky-draw-view.jsx": "9212474553c93a41da14923f7a83ee52c7349a9175bd7236afab2806482be8f6",
+    "client/src/main.jsx": "475b85a0f903eda1cc575dae501c7c6f0b1e7f322ca5c4d66f1834faace20a1e",
+    "client/src/markdown-mdx-safety.js": "cbd9c9a6a5d2c57c5b9d8432010e7d165598a71e1d2b289ed08507f94231aa0e",
+    "client/src/marketing-survey-view.jsx": "d41fb3c0a8c84adc41135b07c03a865bb649548a9b5933e19061b8c3390b3450",
+    "client/src/modern-ui.css": "6ca5760f23c81db9c4ded7583c520d496c8d72fa8790cbd34f784f1c05a1c7ff",
+    "client/src/my-resources-overlay.css": "d851d7572e3b639d940ba2bf78e878e377fa6de28a1da378017ab603f811b730",
+    "client/src/my-resources-view.jsx": "16d3291eaa16df9fe1babd4c0a417199b8cd876f0b665482c4e5c84eab0777d0",
+    "client/src/notice-view.jsx": "121da3207ff697ddd8489b31b0779501f2eefdb0f8c46241082628c3f6603b0c",
+    "client/src/notification-view.jsx": "75c5b58c9dd53f3946b80b85b3da15842e3713151610df8c813c4eaafc41a2c1",
+    "client/src/offline-schedule-view.jsx": "d37c14d50231b8be0a4c8b5a9ecc9ee52790cfbf6100b6ba45880a6aacb678b1",
+    "client/src/ops-monitor-view.jsx": "6787d37f628a76bc6acd96027b84d400ffff7a14aa4be76df502e39626968a57",
+    "client/src/portal-login-view.jsx": "b404d6d8d3403ea759c8fae2c4c53103fc2959f2d2e4cf02287e1789eeb92e53",
+    "client/src/portal-shared.jsx": "d40cf28ea0302df64e273d2f58296246e02d4c9c78f2ce4fee12d4065e0ade7f",
+    "client/src/portal-state.js": "4122c9e51eced468c4459b21918f50319890063d0d2d01e555d05e857106fcbd",
+    "client/src/portal-views.jsx": "6c37c4165069c9eca164479cc210fa4df5f20c3217d5e8d1ede3b61a3e9d97c5",
+    "client/src/profile-view.jsx": "54903a805ffbdbf4df259901bbfe271107d2ec2abbe9a738164c01a288a21093",
+    "client/src/qna-view.jsx": "773796bd2fd1dffc35f031100192ea4aa824c05cf02e79b31287b1e1be69f980",
+    "client/src/quota-usage.js": "510c49eefa68840802f9c42e64d27f045452cbee6b524f821c6d708d95c35cf2",
+    "client/src/schedule-views.jsx": "0eb01cb1d7e7246e9dd35db658bae889100cc9c0ca3dfa85ff2dbf4e452d1daf",
+    "client/src/security-inspection-preview.jsx": "83b49a61e847e0aa9eb0f52854708e75bc3ad9b0e85b74d8ef28950e2b10d8a0",
+    "client/src/styles.css": "67a0fcaf805656688c05b65cc5b9db238b70f738022bd2f6eba80cdd04d7734a",
+    "client/src/survey-results-view.jsx": "566930c30e7dc24907a5085bf03e485eb0e055cb3629d2204518f026bdb3f466",
+    "client/src/survey-view.jsx": "daae61bebd8b4cb0c70335a6926fd17d5bf91d7cea97dc23ba0196eddd6ec74e",
+    "client/src/terminal-cloud-view.jsx": "0ab6c0720f5d50f77f8479f8f217adb4c014dc54a0b190e304371f80bde16cd4",
+    "client/src/terminal-lab-logo.jsx": "d4632d5e987463dad52f3c477783ed50ca94c2426b16e17060c904c611284b1e",
+    "client/src/terminal-view.jsx": "fcba820101ebe5d5713a40f09fa96691d1b6dc79f8a477495017c01bbb2c4671",
+    "client/src/toast-stack.jsx": "7f309ace2443c408b87199457560fe546245d9d121e421acfa065babb32dcdf8",
+    "client/src/view-loaders/AdminView.jsx": "b7119d7f2494c43813375c794b89928a2f497791b53d0a7bfae38ceaaa96bd5f",
+    "client/src/view-loaders/CertificateView.jsx": "880f1e066648a40164b019291a25c12bd7998957f6521e71f764aee2ab95177f",
+    "client/src/view-loaders/CourseView.jsx": "89009b178abeac3d1a4cad31ee8b83f7ca4ba3685726815d7e75d5a61f8ef66a",
+    "client/src/view-loaders/InquiryHubView.jsx": "23f67dd6f581c6ce1c28ece7a639b7aff759879e29939065bb896a019c35537f",
+    "client/src/view-loaders/LabExamView.jsx": "5c7419b4e343ef6a6a9408845f34a2fd59ff79436c846355016a41f25a110aeb",
+    "client/src/view-loaders/LlmView.jsx": "1df29ddc9fffdbca7ed5f63bdc063e93d22bdcf518fc5ab79fadf2b5fc1bfb68",
+    "client/src/view-loaders/LuckyDrawView.jsx": "6972a106e752fad613402f9b4afd6f57ed470ef70cece3d84c07b20ba9e41829",
+    "client/src/view-loaders/MagnumView.jsx": "aa18829208ec49c7406bd1e54e7d1d9e77e393153cbdc801d05041bf730d2016",
+    "client/src/view-loaders/MyResourcesView.jsx": "af549ae2d697a74ca3f0a0c5fbe5f6d1ed8e0d2149462e4061c54d2fae307d7c",
+    "client/src/view-loaders/NoticeView.jsx": "d679b80b98bdc0c5f884dff94c953f7144c3bed39e86d5643d33bb243e016b8e",
+    "client/src/view-loaders/NotificationView.jsx": "2b00a427d0754c5bc9a8e089ff228f26d576c0a51b20beb877cedb37217d4cbf",
+    "client/src/view-loaders/OfflineScheduleView.jsx": "645efdd4f6a93e17e467b88dcc09b399ed7f3df7f8ae242fe05c01cef86dbfe8",
+    "client/src/view-loaders/PortalLogin.jsx": "bde99038293ef69200119dd417df7e159206c85d722b96064bce034f73862ff1",
+    "client/src/view-loaders/ProfileView.jsx": "f8d39050bc1f43128193e037d95c7247850db6c68ff9854ae7ef785ece82bbd2",
+    "client/src/view-loaders/SurveyView.jsx": "3ff15c27a34ad1a969fb3f6bcd3e1b6181553a53e247b96d86323f272a97e2ae",
+    "client/src/view-loaders/TerminalView.jsx": "8702f7e5b65ac5d9c76cf4bfafdea910e5db6ac7ec792958013343720597b33c",
+    "client/src/view-loaders/ToastStack.jsx": "72d274907eae82d05e201e86ec684e1e067e806507ddee948f3aafe07b01c9b9",
+    "client/src/view-loaders/WrittenExamView.jsx": "28b92650f1e01931d6a9340c3b63b6b533584bd7a186bea68da5aea4060604cb",
+    "client/src/view-loaders/ZunView.jsx": "122fc9ae0804c4cf15bc60cd5a34ac27fa43dd2fcb02eea7638909e0c8dc8284",
+    "client/src/vm-node-order.js": "6b08623275ad04c8e52c3e7f84d2ffb7c9cfcbd5399db74aa4886008590635d8",
+    "client/src/xterm.css": "602cca46da71e5166e2d9544021f974a5dedcd8f9e9590cacd1b40606f343587",
+    "shared/ai-container-catalog.js": "ab6e1a8fd86c73d777a97a2cf1a683d1f58aa9de1440a88c8aa40d4a55717a76",
+    "shared/ai-vm-flavor-catalog.js": "de7819fe7de49a40a1608237c1299d5045d002f0153403e6cfbf739223989279",
+    "client/index.html": "dde73e6b98ab50109edaffa221cdf36bf0a507470c7e3dbe953c381d65f46074",
+    "scripts/registry-image-mirror.sh": "72f7e49f70a5991daf7e3299692a701c002c35cd16fe31d209ac742aaa471475"
+  },
+  "removedEducationRoutes": [
+    {
+      "method": "get",
+      "path": "/api/arena/overview"
+    },
+    {
+      "method": "get",
+      "path": "/api/arena/leaderboard"
+    },
+    {
+      "method": "get",
+      "path": "/api/arena/me/records"
+    },
+    {
+      "method": "get",
+      "path": "/api/arena/logs/live"
+    },
+    {
+      "method": "post",
+      "path": "/api/arena/nodes/:nodeId/enter"
+    },
+    {
+      "method": "get",
+      "path": "/api/arena/sessions/:sessionId"
+    },
+    {
+      "method": "post",
+      "path": "/api/arena/sessions/:sessionId/reconnect"
+    },
+    {
+      "method": "post",
+      "path": "/api/arena/sessions/:sessionId/terminal"
+    },
+    {
+      "method": "post",
+      "path": "/api/arena/sessions/:sessionId/reboot"
+    },
+    {
+      "method": "post",
+      "path": "/api/arena/sessions/:sessionId/validate"
+    },
+    {
+      "method": "post",
+      "path": "/api/arena/sessions/:sessionId/terminate"
+    },
+    {
+      "method": "get",
+      "path": "/admin/reports/b2b-summary/print"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/arena/overview"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/arena/scenarios/:id"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/arena/nodes/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/arena/nodes"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/arena/boss-nodes/state"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/arena/season/reset"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/arena/seasons"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/arena/seasons/:id/activate"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/arena/scenarios"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/arena/sessions/:sessionId/terminate"
+    },
+    {
+      "method": "get",
+      "path": "/api/schedule-events"
+    },
+    {
+      "method": "get",
+      "path": "/api/public/schedule-summary"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/schedule-events"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/schedule-events/google-sync"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/schedule-events"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/schedule-events/:id"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/schedule-events/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/courses"
+    },
+    {
+      "method": "post",
+      "path": "/api/courses/:courseId/interest"
+    },
+    {
+      "method": "post",
+      "path": "/api/courses/:courseId/revoke-access"
+    },
+    {
+      "method": "post",
+      "path": "/api/courses/:courseId/extend-access"
+    },
+    {
+      "method": "get",
+      "path": "/api/course-surveys"
+    },
+    {
+      "method": "post",
+      "path": "/api/course-surveys/:courseId/:phase"
+    },
+    {
+      "method": "post",
+      "path": "/api/course-surveys/:courseId/:phase/feedback"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/course-surveys"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/course-surveys/feedback/run-daily"
+    },
+    {
+      "method": "get",
+      "path": "/api/public/courses"
+    },
+    {
+      "method": "get",
+      "path": "/api/exam-entitlements"
+    },
+    {
+      "method": "post",
+      "path": "/api/courses/:courseId/acquisition/claim"
+    },
+    {
+      "method": "get",
+      "path": "/api/written-exams"
+    },
+    {
+      "method": "post",
+      "path": "/api/written-exams/:courseId/submit"
+    },
+    {
+      "method": "get",
+      "path": "/api/lab-exams"
+    },
+    {
+      "method": "post",
+      "path": "/api/lab-exams/:courseId/sessions/start"
+    },
+    {
+      "method": "post",
+      "path": "/api/lab-exam-sessions/:sessionId/rebuild"
+    },
+    {
+      "method": "post",
+      "path": "/api/lab-exam-sessions/:sessionId/console-ready"
+    },
+    {
+      "method": "post",
+      "path": "/api/lab-exam-sessions/:sessionId/finish"
+    },
+    {
+      "method": "post",
+      "path": "/api/lab-exams/:courseId/submit"
+    },
+    {
+      "method": "get",
+      "path": "/api/certificates"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/certificates"
+    },
+    {
+      "method": "post",
+      "path": "/api/certificates/:courseId/issue"
+    },
+    {
+      "method": "get",
+      "path": "/api/certificates/verify/:code"
+    },
+    {
+      "method": "post",
+      "path": "/api/courses/redeem-code"
+    },
+    {
+      "method": "post",
+      "path": "/api/courses/:id/purchase-request"
+    },
+    {
+      "method": "get",
+      "path": "/api/payments"
+    },
+    {
+      "method": "get",
+      "path": "/api/course-quotes"
+    },
+    {
+      "method": "post",
+      "path": "/api/course-quotes"
+    },
+    {
+      "method": "post",
+      "path": "/api/courses/:id/payment/prepare"
+    },
+    {
+      "method": "post",
+      "path": "/api/payments/confirm"
+    },
+    {
+      "method": "post",
+      "path": "/api/payments/fail"
+    },
+    {
+      "method": "post",
+      "path": "/api/payments/:id/confirm"
+    },
+    {
+      "method": "post",
+      "path": "/api/payments/:id/cancel"
+    },
+    {
+      "method": "post",
+      "path": "/api/payments/:id/refund"
+    },
+    {
+      "method": "post",
+      "path": "/api/payments/webhook"
+    },
+    {
+      "method": "get",
+      "path": "/api/labs"
+    },
+    {
+      "method": "get",
+      "path": "/api/labs/:id/replays"
+    },
+    {
+      "method": "get",
+      "path": "/api/lab-domains/check"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/domain"
+    },
+    {
+      "method": "delete",
+      "path": "/api/labs/:id/domain"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/public-port"
+    },
+    {
+      "method": "delete",
+      "path": "/api/labs/:id/public-port"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/external-ssh"
+    },
+    {
+      "method": "delete",
+      "path": "/api/labs/:id/external-ssh"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/external-rdp"
+    },
+    {
+      "method": "delete",
+      "path": "/api/labs/:id/external-rdp"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/resize-request"
+    },
+    {
+      "method": "delete",
+      "path": "/api/labs/:id/resize-request"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/extend"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/pause"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/reset"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/remove"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/nodes/:nodeId/ssh-host-key/reset"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/nodes/:nodeId/reboot"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/nodes/:nodeId/rebuild"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/start"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/heartbeat"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/console/vnc"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/console/vnc/clipboard"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/upload"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/course-access-requests"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/payments"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/course-quotes"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/course-quotes"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/course-quotes/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/course-access-requests/:id/approve"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/course-access-requests/:id/reject"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/lab-domains"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/courses"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/textbooks"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/written-exams"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/exam-entitlements"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/exam-entitlements"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/exam-entitlements/:id"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/written-exams/:courseId"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/written-exams/:courseId"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/lab-exams"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exam-sessions/:id/manual-result"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exam-sessions/:id/force-end"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exams/bulk-remove"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exams/preserve-completed-labs"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exams/:courseId/validate-script"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exams/:courseId/test"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exams/:courseId/preflight"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/lab-exams/:courseId"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/lab-exams/:courseId"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/courses"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/courses/:id"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/courses/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/textbooks"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/textbooks/:id"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/textbooks/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/labs"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/bulk-approve"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/bulk-precreate"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/cinder-boot-smoke"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/approve"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/resize"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/approve-resize"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/reject-resize"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/approve-domain"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/reject-domain"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/approve-public-port"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/reject-public-port"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/approve-external-rdp"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/reject-external-rdp"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/approve-external-ssh"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/reject-external-ssh"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/pause"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/resume"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/:id/terminate"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/bulk-power-course"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/bulk-terminate-course"
+    },
+    {
+      "method": "post",
+      "path": "/api/labs/:id/power-action"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/delete-records"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/labs/archive-old"
+    },
+    {
+      "method": "get",
+      "path": "/api/public/curricula"
+    },
+    {
+      "method": "get",
+      "path": "/api/public/curricula/:year"
+    },
+    {
+      "method": "get",
+      "path": "/api/public/curricula/:year/download"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/curricula"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/curricula/upload"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/curricula/:year"
+    },
+    {
+      "method": "post",
+      "path": "/api/exams/:courseId/entitlements/claim"
+    },
+    {
+      "method": "get",
+      "path": "/certificate/:code"
+    },
+    {
+      "method": "get",
+      "path": "/certificate/:code/print"
+    },
+    {
+      "method": "get",
+      "path": "/api/materials/download/:name"
+    },
+    {
+      "method": "get",
+      "path": "/api/materials/view/:name"
+    },
+    {
+      "method": "get",
+      "path": "/api/example-files/download/:name"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/users/:id/courses/:courseId/revoke-access"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/course-access/assign"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/lab-exam-attempts/:id/review"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exam-attempts/:id/resend-mail"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/lab-exam-attempts/:id/manual-result"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exam-attempts/:id/llm-report"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exam-attempts/reports.zip"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/lab-exam-attempts/:id/report.pdf"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lab-exam-attempts/:id/regrade"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/lab-exam-attempts/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/lab-exam-attempts/export.csv"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/materials"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/example-files"
+    },
+    {
+      "method": "get",
+      "path": "/lab-exam-snapshots/:fileName"
+    },
+    {
+      "method": "post",
+      "path": "/api/instructor-share/sessions"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/reports/b2b-summary"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/reports/b2b-summary/share"
+    },
+    {
+      "method": "get",
+      "path": "/reports/b2b-summary/share"
+    },
+    {
+      "method": "post",
+      "path": "/api/llm/terminal-plan"
+    },
+    {
+      "method": "post",
+      "path": "/api/terminal/readiness"
+    },
+    {
+      "method": "post",
+      "path": "/api/terminal/session"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/service-validation/setup"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/service-validation/cleanup"
+    }
+  ],
+  "retainedGeneralRoutes": [
+    {
+      "method": "get",
+      "path": "/api/health"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/logs"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/audit-logs"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/api-status"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/instance-monitor"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/instance-monitor/warn"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/instance-monitor/auto-warn"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/traffic-debug/interfaces"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/traffic-debug/capture"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/access-logs"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/access-stats"
+    },
+    {
+      "method": "get",
+      "path": "/api/access-stats"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/invites"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/invites"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/invites/:id"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/invites/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/lucky-draw/events"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lucky-draw/events"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/lucky-draw/events/:id"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/lucky-draw/events/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/lucky-draw/events/:id/rewards"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/lucky-draw/rewards/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/lucky-draw/events/:id/attempts"
+    },
+    {
+      "method": "get",
+      "path": "/api/marketing-surveys"
+    },
+    {
+      "method": "post",
+      "path": "/api/marketing-surveys/:id/vote"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/marketing-surveys"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/marketing-surveys"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/marketing-surveys/:id"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/marketing-surveys/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/marketing-surveys/:id/submissions"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/coupons"
+    },
+    {
+      "method": "get",
+      "path": "/api/platform-status"
+    },
+    {
+      "method": "get",
+      "path": "/api/terms/current"
+    },
+    {
+      "method": "post",
+      "path": "/api/public/quote-inquiries"
+    },
+    {
+      "method": "post",
+      "path": "/api/terms/agree"
+    },
+    {
+      "method": "post",
+      "path": "/api/user/marketing-consent"
+    },
+    {
+      "method": "get",
+      "path": "/api/events"
+    },
+    {
+      "method": "get",
+      "path": "/api/lucky-draw"
+    },
+    {
+      "method": "post",
+      "path": "/api/lucky-draw/attempt"
+    },
+    {
+      "method": "get",
+      "path": "/api/quota-status"
+    },
+    {
+      "method": "get",
+      "path": "/api/auth/oauth/:provider"
+    },
+    {
+      "method": "get",
+      "path": "/api/auth/oauth/:provider/callback"
+    },
+    {
+      "method": "get",
+      "path": "/api/auth/session"
+    },
+    {
+      "method": "get",
+      "path": "/api/llm/quota-status"
+    },
+    {
+      "method": "post",
+      "path": "/api/user/portal-ui-version"
+    },
+    {
+      "method": "post",
+      "path": "/api/llm/chat"
+    },
+    {
+      "method": "post",
+      "path": "/api/llm/chat/stream"
+    },
+    {
+      "method": "post",
+      "path": "/api/auth/signup"
+    },
+    {
+      "method": "post",
+      "path": "/api/auth/reset-password-with-pin"
+    },
+    {
+      "method": "get",
+      "path": "/api/auth/check-username"
+    },
+    {
+      "method": "post",
+      "path": "/api/auth/login"
+    },
+    {
+      "method": "post",
+      "path": "/api/auth/logout"
+    },
+    {
+      "method": "get",
+      "path": "/api/auth/access-logs"
+    },
+    {
+      "method": "get",
+      "path": "/api/notifications"
+    },
+    {
+      "method": "post",
+      "path": "/api/notifications/:id/read"
+    },
+    {
+      "method": "post",
+      "path": "/api/notifications/read-all"
+    },
+    {
+      "method": "delete",
+      "path": "/api/notifications/:id"
+    },
+    {
+      "method": "delete",
+      "path": "/api/notifications"
+    },
+    {
+      "method": "get",
+      "path": "/api/messages"
+    },
+    {
+      "method": "get",
+      "path": "/api/messages/recipients"
+    },
+    {
+      "method": "post",
+      "path": "/api/messages"
+    },
+    {
+      "method": "post",
+      "path": "/api/messages/:id/read"
+    },
+    {
+      "method": "post",
+      "path": "/api/messages/:id/archive"
+    },
+    {
+      "method": "post",
+      "path": "/api/messages/:id/delete"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/messages/:id/delete"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/messages/:id/cleanup-status"
+    },
+    {
+      "method": "post",
+      "path": "/api/auth/qna/read"
+    },
+    {
+      "method": "get",
+      "path": "/api/cicd/credentials"
+    },
+    {
+      "method": "post",
+      "path": "/api/cicd/credentials"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cicd/credentials/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/cicd/projects"
+    },
+    {
+      "method": "post",
+      "path": "/api/cicd/projects"
+    },
+    {
+      "method": "patch",
+      "path": "/api/cicd/projects/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/cicd/runs"
+    },
+    {
+      "method": "get",
+      "path": "/api/cicd/runs/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cicd/projects/:id/runs"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/cicd/projects"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/cicd/projects/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/cicd/runs"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/cicd/runs/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/cicd/jenkins/test"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/cicd/projects/:id/runs"
+    },
+    {
+      "method": "patch",
+      "path": "/api/auth/profile"
+    },
+    {
+      "method": "post",
+      "path": "/api/auth/otp/setup/start"
+    },
+    {
+      "method": "post",
+      "path": "/api/auth/otp/setup/confirm"
+    },
+    {
+      "method": "post",
+      "path": "/api/auth/otp/disable"
+    },
+    {
+      "method": "delete",
+      "path": "/api/auth/profile"
+    },
+    {
+      "method": "get",
+      "path": "/api/notices"
+    },
+    {
+      "method": "get",
+      "path": "/api/coupons"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/coupons"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/coupons/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/terminal-replays/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/custom-lab-requests"
+    },
+    {
+      "method": "get",
+      "path": "/api/consulting-requests"
+    },
+    {
+      "method": "post",
+      "path": "/api/consulting-requests"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/prepaid"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/:id/keypair"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/:id/confirm"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/:id/payment/prepare"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/:id/payment/confirm"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/:id/payment/fail"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/:id/cancel"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/:id/terminate"
+    },
+    {
+      "method": "delete",
+      "path": "/api/custom-lab-requests/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/custom-lab-requests/:id/heat-template/download"
+    },
+    {
+      "method": "get",
+      "path": "/api/custom-lab-requests/:id/application-yaml/download"
+    },
+    {
+      "method": "get",
+      "path": "/api/custom-lab-requests/:id/cloud-init/download"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/:id/terminal/session"
+    },
+    {
+      "method": "post",
+      "path": "/api/custom-lab-requests/:id/domain"
+    },
+    {
+      "method": "delete",
+      "path": "/api/custom-lab-requests/:id/domain"
+    },
+    {
+      "method": "get",
+      "path": "/api/self-service-vms"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/iso-images"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances/:id/complete-iso-install"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances/:id/action"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances/:id/networks"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/instances/:id/networks/:portId"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances/:id/security-groups"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/instances/:id/security-groups/:name"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances/:id/external-ssh"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/instances/:id/external-ssh"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances/:id/tcp-forwards"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/instances/:id/tcp-forwards/:externalPort"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances/:id/terminal/session"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/terminal/sessions/:sessionId"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances/:id/console"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/instances/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/volumes"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/volumes/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/volumes/:id/attach"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/volumes/:id/detach"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/networks"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/networks/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/subnets"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/subnets/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/routers"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/routers/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/routers/:id/interfaces"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/routers/:id/interfaces/:subnetId"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/floating-ips"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/floating-ips/:id/association"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/floating-ips/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/security-groups"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/security-groups/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/security-groups/:id/rules"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/security-group-rules/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/load-balancers"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/load-balancers/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/load-balancer-listeners"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/load-balancer-listeners/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/load-balancer-pools"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/load-balancer-pools/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/load-balancer-pools/:id/members"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/load-balancer-pools/:id/members/:memberId"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/load-balancer-health-monitors"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/load-balancer-health-monitors/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/alarms"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/alarms/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/reservations"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/reservations/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/shares"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/shares/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/dns/zones"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/dns/zones/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/dns/zones/:id/recordsets"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/dns/zones/:id/recordsets/:recordsetId"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/instances/:id/domains"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/instances/:id/domains/:subdomain"
+    },
+    {
+      "method": "get",
+      "path": "/api/cloud-console/actions"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/cloud-console/flavor-capacity"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/cloud-console/resources"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/cloud-console/load-balancers"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/cloud-console/load-balancers/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/cloud-console/load-balancer-listeners"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/cloud-console/load-balancer-listeners/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/cloud-console/load-balancer-pools"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/cloud-console/load-balancer-pools/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/cloud-console/load-balancer-pools/:id/members"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/cloud-console/load-balancer-pools/:id/members/:memberId"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/cloud-console/load-balancer-health-monitors"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/cloud-console/load-balancer-health-monitors/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/cloud-console/actions/:id/review"
+    },
+    {
+      "method": "get",
+      "path": "/api/cloud-console/snapshot"
+    },
+    {
+      "method": "get",
+      "path": "/api/self-service-vms/preflight"
+    },
+    {
+      "method": "get",
+      "path": "/api/cloud-console/project"
+    },
+    {
+      "method": "post",
+      "path": "/api/cloud-console/project"
+    },
+    {
+      "method": "delete",
+      "path": "/api/cloud-console/project"
+    },
+    {
+      "method": "post",
+      "path": "/api/self-service-vms/access-request"
+    },
+    {
+      "method": "post",
+      "path": "/api/self-service-project-requests/:id/cancel"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/self-service-project-requests/:id/review"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/self-service-project-requests/delete-records"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/self-service-projects/preflight"
+    },
+    {
+      "method": "get",
+      "path": "/api/cloud-init-templates"
+    },
+    {
+      "method": "post",
+      "path": "/api/self-service-vms"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/self-service-vms/provision-legacy"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/self-service-vms/:id/review"
+    },
+    {
+      "method": "post",
+      "path": "/api/self-service-vms/:id/request-external-ssh"
+    },
+    {
+      "method": "post",
+      "path": "/api/self-service-vms/:id/release-external-ssh"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/self-service-vms/:id/approve-external-ssh"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/self-service-vms/:id/reject-external-ssh"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/self-service-vms/delete-records"
+    },
+    {
+      "method": "post",
+      "path": "/api/self-service-vms/:id/power-action"
+    },
+    {
+      "method": "post",
+      "path": "/api/self-service-vms/:id/terminate"
+    },
+    {
+      "method": "get",
+      "path": "/api/zun/containers"
+    },
+    {
+      "method": "get",
+      "path": "/api/internal-images/search"
+    },
+    {
+      "method": "get",
+      "path": "/api/zun/images/search"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/internal-images/download"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/zun/images/download"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/internal-images/mirror"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/internal-images/mirrors"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/internal-images/mirrors/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/zun/containers"
+    },
+    {
+      "method": "post",
+      "path": "/api/zun/containers/:id/terminal/session"
+    },
+    {
+      "method": "post",
+      "path": "/api/zun/containers/:id/start"
+    },
+    {
+      "method": "post",
+      "path": "/api/zun/containers/:id/stop"
+    },
+    {
+      "method": "post",
+      "path": "/api/zun/containers/:id/refresh"
+    },
+    {
+      "method": "post",
+      "path": "/api/zun/containers/:id/domains"
+    },
+    {
+      "method": "delete",
+      "path": "/api/zun/containers/:id/domains/:subdomain"
+    },
+    {
+      "method": "delete",
+      "path": "/api/zun/containers/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/zun-containers"
+    },
+    {
+      "method": "get",
+      "path": "/api/magnum/templates"
+    },
+    {
+      "method": "get",
+      "path": "/api/magnum/clusters"
+    },
+    {
+      "method": "post",
+      "path": "/api/magnum/clusters"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/magnum-clusters/:id/review"
+    },
+    {
+      "method": "post",
+      "path": "/api/magnum/clusters/:id/refresh"
+    },
+    {
+      "method": "get",
+      "path": "/api/magnum/clusters/:id/kubeconfig"
+    },
+    {
+      "method": "delete",
+      "path": "/api/magnum/clusters/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/magnum-clusters"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/magnum-clusters/reconcile"
+    },
+    {
+      "method": "get",
+      "path": "/api/trove/datastores"
+    },
+    {
+      "method": "get",
+      "path": "/api/trove/instances"
+    },
+    {
+      "method": "post",
+      "path": "/api/trove/instances"
+    },
+    {
+      "method": "post",
+      "path": "/api/trove/instances/:id/credentials"
+    },
+    {
+      "method": "post",
+      "path": "/api/trove/instances/:id/refresh"
+    },
+    {
+      "method": "delete",
+      "path": "/api/trove/instances/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/trove-instances"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/resource-deletion-jobs"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/resource-deletion-jobs/reconcile"
+    },
+    {
+      "method": "get",
+      "path": "/api/qna"
+    },
+    {
+      "method": "post",
+      "path": "/api/qna"
+    },
+    {
+      "method": "post",
+      "path": "/api/qna/:id/comments"
+    },
+    {
+      "method": "post",
+      "path": "/api/qna/:id/helpful"
+    },
+    {
+      "method": "patch",
+      "path": "/api/qna/:id/status"
+    },
+    {
+      "method": "post",
+      "path": "/api/qna/:id/comments/:commentId/accept"
+    },
+    {
+      "method": "delete",
+      "path": "/api/qna/:id"
+    },
+    {
+      "method": "delete",
+      "path": "/api/qna/:id/comments/:commentId"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/users"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/password-reset-pins"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/users"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/users/batch-create"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/custom-lab-requests"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/consulting-requests"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/public-quote-inquiries/:id/review"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/consulting-requests/:id/review"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/custom-lab-requests/:id/review"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/custom-lab-requests/:id/terminate"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/openstack-cleanup"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/openstack-cleanup/heat-stacks"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/openstack-cleanup/heat-stacks/delete"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/openstack-cleanup/retry"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/openstack-cleanup/poc-advanced"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/openstack-cleanup/clear-exposure"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/openstack-cleanup/clear-exposures"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/custom-lab-requests/:id"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/terms"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/terms"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/terms/:id"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/platform-status"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/landing-media"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/landing-brand-media"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/service-validation-status"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/service-validation/openstack-lifecycle-test"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/llm/test"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/mail/test"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/mail/verify"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/mail/send"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/mail-campaigns/preview"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/mail-campaigns"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/mail-campaigns"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/mail-campaigns/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/mail-campaigns/:id/events"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/mail-logs"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/messages"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/backups/export"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/backups/restore"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/notices"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/notices/:id"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/notices/:id"
+    },
+    {
+      "method": "patch",
+      "path": "/api/admin/users/:id/access"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/users/:id/account-sharing-restriction/resolve"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/users/:id"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/users/:id/reset-password"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/users/:id/issue-reset-pin"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/users/bulk-approve"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/heat-templates"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/heat-templates"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/heat-templates/capacity-check"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/heat-templates/workload-test"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/heat-templates/workload-test"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/heat-templates/workload-test/:jobId"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/heat-templates/:name"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/heat-templates/:name"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/application-yamls"
+    },
+    {
+      "method": "get",
+      "path": "/api/admin/cloud-init-templates"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/application-yamls"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/application-yamls/:name"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/application-yamls/:name"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/cloud-init-templates"
+    },
+    {
+      "method": "put",
+      "path": "/api/admin/cloud-init-templates/:name"
+    },
+    {
+      "method": "delete",
+      "path": "/api/admin/cloud-init-templates/:name"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/custom-lab-requests/:id/approve-domain"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/custom-lab-requests/:id/reject-domain"
+    },
+    {
+      "method": "post",
+      "path": "/api/admin/qna/:id/answer"
+    },
+    {
+      "method": "get",
+      "path": "/favicon.ico"
+    },
+    {
+      "method": "get",
+      "path": "/assets/*"
+    },
+    {
+      "method": "get",
+      "path": "*"
+    }
+  ],
+  "notes": [
+    "General API implementations and UI copied from the recorded working tree. Education HTTP entry points removed; edition guard also returns 404.",
+    "Shared schema retains empty education compatibility tables. No original environment, data, training materials or Git history are distributed.",
+    "Operator domains, contacts, landing defaults and installation paths replaced with neutral examples."
+  ],
+  "version": "0.2.1",
+  "excludedFeatures": [
+    "education",
+    "lab-board"
+  ],
+  "communityCleanup": {
+    "removedEducationContent": [
+      "client/src/curriculum-2026-data.js"
+    ],
+    "description": "Education reports, lab terminals, instructor sharing and educational validation seeds removed; compatibility schema and inert shared helpers remain."
+  }
+}

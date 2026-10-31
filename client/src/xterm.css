@@ -1,0 +1,84 @@
+.xterm {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.xterm:focus,
+.xterm.focus {
+  outline: none;
+}
+
+.xterm .xterm-helpers {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.xterm .xterm-helper-textarea {
+  position: absolute;
+  top: 0;
+  left: -9999em;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  resize: none;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.xterm .composition-view {
+  position: absolute;
+  z-index: 1;
+  display: none;
+  white-space: nowrap;
+}
+
+.xterm .composition-view.active {
+  display: block;
+}
+
+.xterm .xterm-viewport {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  background: transparent;
+}
+
+.xterm .xterm-screen {
+  position: relative;
+}
+
+.xterm .xterm-screen canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.xterm .xterm-scroll-area {
+  visibility: hidden;
+}
+
+.xterm-char-measure-element {
+  position: absolute;
+  top: 0;
+  left: -9999em;
+  display: inline-block;
+  visibility: hidden;
+}
+
+.xterm .xterm-accessibility,
+.xterm .xterm-message {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  color: transparent;
+}
+
+.xterm .live-region {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

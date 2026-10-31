@@ -1,0 +1,40 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createDecipheriv,createHash} from 'node:crypto';
+import {Database} from '../server/db.js';
+import {createVault} from '../server/secrets.js';
+const target=process.env.TEST_MIGRATION_DATABASE_URL;
+test('0.1 migration preserves accounts, resource requests and encrypted credentials, and is idempotent',{skip:!target,timeout:30000},async()=>{
+  assert.match(new URL(target).pathname,/^\/community_test_[a-z0-9_]+$/);
+  const config={databaseUrl:target,credentialKey:'ef'.repeat(32),sessionSecret:'migration-only-test-session-'.repeat(3),initialAdmin:{username:'admin',password:'migration-test-password-2026',name:'Test Admin'}};
+  const db=new Database(target);
+  process.env.DATABASE_URL=target;process.env.SESSION_SECRET=config.sessionSecret;
+  let runtime;
+  try{
+    await db.migrate(config.initialAdmin);
+    const admin=await db.userByName('admin');
+    const member=await db.one("INSERT INTO users(username,name,password_hash,role,status) VALUES('member','Member','test-placeholder','user','approved') RETURNING *");
+    await db.query("INSERT INTO project_requests(user_id,project_name,status,config) VALUES($1,'community-member','approved',$2)",[member.id,JSON.stringify({networkName:'private',subnetCidr:'10.42.0.0/24'})]);
+    const encrypted=createVault(config.credentialKey).encrypt({username:'ubuntu',password:'temporary-vm-test-secret'});
+    await db.query("INSERT INTO cloud_actions(user_id,project_name,operation,request,status,result) VALUES($1,'community-member','createServer','{}','completed',$2)",[member.id,JSON.stringify({accessCredentialsEncrypted:encrypted,serverId:'test-server'})]);
+    await db.query("INSERT INTO sessions(sid,sess,expires_at) VALUES('expired-on-upgrade','{}',now()+interval '1 hour')");
+    const {migratePlatform}=await import('../platform/server/community-migration.js');
+    await migratePlatform(config);await migratePlatform(config);
+    runtime=await import('../platform/server/db-runtime.js');
+    assert.equal((await runtime.runtimeFindUserById(member.id)).role,'student');
+    assert.equal((await runtime.runtimeFindUserById(admin.id)).username,'admin');
+    assert.equal((await db.one('SELECT count(*) AS count FROM self_service_project_requests')).count,'1');
+    const action=await db.one('SELECT result_json FROM cloud_console_actions');const result=JSON.parse(action.resultJson);
+    assert.equal(result.credentialUsername,'ubuntu');assert.ok(!result.accessCredentialsEncrypted);
+    const [iv,tag,data]=result.credentialSecret.split('.').map(s=>Buffer.from(s,'base64url'));
+    const decipher=createDecipheriv('aes-256-gcm',createHash('sha256').update(config.sessionSecret).digest(),iv);decipher.setAuthTag(tag);
+    assert.equal(Buffer.concat([decipher.update(data),decipher.final()]).toString(),'temporary-vm-test-secret');
+    assert.equal((await db.one('SELECT count(*) AS count FROM sessions')).count,'0');
+    await runtime.runtimeUpdatePlatformStatus({llmProvider:'custom',llmApiUrl:'https://llm.example.test/v1/chat/completions',llmEnabled:true});
+    await db.query('DELETE FROM community_platform_migrations WHERE version=203');
+    await migratePlatform(config);
+    const upgraded=await runtime.runtimeGetPlatformStatus();
+    assert.equal(upgraded.llmApiUrl,'https://llm.example.test/v1/chat/completions','Explicit deployment endpoints must survive cleanup');
+    assert.equal(upgraded.llmEnabled,true);
+  }finally{if(!runtime)runtime=await import('../platform/server/db-runtime.js');await runtime.runtimeCloseDatabasePool();await db.close();}
+});
