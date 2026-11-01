@@ -300,7 +300,7 @@ export default function PortalLogin(props) {
       document.head.appendChild(faviconLink);
     }
     faviconLink.setAttribute("href", faviconPath);
-    faviconLink.setAttribute("type", useUploadedFavicon ? String(props.platformStatus?.faviconMime || "image/x-icon") : "image/svg+xml");
+    faviconLink.setAttribute("type", useUploadedFavicon ? String(props.platformStatus?.faviconMime || "image/x-icon") : "image/png");
   }, [faviconPath, props.platformStatus?.faviconMime, useUploadedFavicon]);
   useEffect(() => {
     if (!publicCourses.length) {

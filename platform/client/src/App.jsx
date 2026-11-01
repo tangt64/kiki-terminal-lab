@@ -1672,7 +1672,7 @@ export default function App() {
       document.head.appendChild(faviconLink);
     }
     faviconLink.setAttribute("href", faviconHref);
-    faviconLink.setAttribute("type", useUploadedFavicon ? String(app.platformStatus?.faviconMime || "image/x-icon") : "image/svg+xml");
+    faviconLink.setAttribute("type", useUploadedFavicon ? String(app.platformStatus?.faviconMime || "image/x-icon") : "image/png");
   }, [app.platformStatus?.faviconMime, app.platformStatus?.faviconPath, useUploadedFavicon]);
   useEffect(() => {
     if (portalV2Forced && portalUiVersion !== "v2") {

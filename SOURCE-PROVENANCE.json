@@ -1,6 +1,6 @@
 {
   "edition": "kiki-terminal-lab",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "activeSource": "platform/",
   "sourceInventory": "platform/SOURCE-PROVENANCE.json",
   "description": "Standalone snapshot of the original general user and administrator features. Education routes and navigation excluded. Empty education compatibility schema retained. No parent imports, credentials, data, teaching content or Git history included. Lab Board UI, service, assets and dedicated dependencies were removed in 0.2.1.",
@@ -9,5 +9,12 @@
     "education",
     "lab-board"
   ],
-  "previousProduct": "terminal-lab-community"
+  "previousProduct": "terminal-lab-community",
+  "brandAsset": {
+    "sourceProject": "KIKI-OS",
+    "path": "platform/client/public/brand/kikios-dark-blue-app-icon-v7.png",
+    "sourcePath": "assets/brand/kikios-dark-blue-app-icon-v7.png",
+    "sha256": "c74eafa6d76d5591d205ed2a579415b4dfaeed27549b5cecfdd2b0c93dc12fa0",
+    "modified": false
+  }
 }

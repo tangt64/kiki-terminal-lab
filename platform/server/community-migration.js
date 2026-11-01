@@ -69,6 +69,11 @@ export async function migratePlatform(config){
       if(Object.keys(patch).length)await runtime.runtimeUpdatePlatformStatus(patch);
       await client.query('INSERT INTO community_platform_migrations(version) VALUES(204) ON CONFLICT DO NOTHING');
     }
+    if(!(await client.query('SELECT version FROM community_platform_migrations WHERE version=205')).rows.length){
+      const current=await runtime.runtimeGetPlatformStatus();
+      if(String(current.siteVersionNumber||'')==='v0.3.0')await runtime.runtimeUpdatePlatformStatus({siteVersionNumber:'v'+PRODUCT_VERSION});
+      await client.query('INSERT INTO community_platform_migrations(version) VALUES(205) ON CONFLICT DO NOTHING');
+    }
   }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
   finally{await client.end();}
 }
