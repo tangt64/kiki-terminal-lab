@@ -1,6 +1,6 @@
 {
   "name": "kiki-terminal-lab",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -17,7 +17,8 @@
     "check": "node scripts/check.mjs && npm test && npm run build",
     "db:migrate": "node scripts/migrate-platform.mjs",
     "release:pack": "python installer/package.py",
-    "predev": "node scripts/prepare-platform-assets.mjs"
+    "predev": "node scripts/prepare-platform-assets.mjs",
+    "release:publish": "node scripts/release-publish.mjs"
   },
   "dependencies": {
     "@mdxeditor/editor": "^4.1.0",

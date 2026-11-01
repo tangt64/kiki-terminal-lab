@@ -1,4 +1,4 @@
-# KIKI OS TERMINAL-LAB Community 0.3.1
+# KIKI OS TERMINAL-LAB Community 0.3.2
 
 <img src="platform/client/public/brand/kikios-dark-blue-app-icon-v7.png" width="112" height="112" alt="KIKIOS 원본 로고" />
 
@@ -148,6 +148,8 @@ python3 installer/package.py
 일반 테스트에서는 DB 통합 시험을 건너뜁니다. Linux 컨테이너의 실제 설치·백업 복원과 운영 인프라 연결 검증은 별도 환경에서 수행하세요. 소스 ZIP은 `releases/`에 생성하며 `.env`·개인키·데이터·의존성·Git 이력을 제외하고 SHA-256 목록을 포함합니다.
 
 ## 저장소
+
+배포 담당자는 `npm run release:publish` 한 번으로 GitHub와 Gitea에 코드·태그·ZIP·체크섬을 올리고 일치 여부와 비공개 접근을 확인할 수 있습니다. 새 버전을 커밋한 깨끗한 `main`에서 실행합니다. 준비·재시도·검증 전용 옵션은 [양쪽 저장소 배포 안내](docs/releasing.md)를 참조하세요.
 
 저장소는 [tangt64/kiki-terminal-lab](https://github.com/tangt64/kiki-terminal-lab)이며, 현재 **비공개로 유지**합니다. 접근 권한이 있는 계정으로 복제할 수 있습니다. 이 디렉터리의 배포 소스만 포함하며 부모 저장소와 Git 이력, 운영 DB·설정·키·업로드를 포함하지 않습니다. `.gitignore`는 운영 경로를 제외합니다. MIT 라이선스와 의존성 고지는 [LICENSE](LICENSE)·[NOTICE.md](NOTICE.md)에 있으며, 추출 원본 해시는 [출처 기록](platform/SOURCE-PROVENANCE.json)에 있습니다. 공개 연락처는 위의 문의 메일이며 실제 인프라 자격증명은 설치자가 별도로 설정합니다.
 

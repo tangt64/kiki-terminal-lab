@@ -20,6 +20,8 @@
 
 ## 검증
 
+버전 배포는 [GitHub·Gitea 배포 안내](docs/releasing.md)를 따릅니다. `npm run release:publish`는 두 비공개 저장소와 배포 파일을 검증하며, 기존 버전을 덮어쓰지 않습니다.
+
 ```bash
 npm ci
 node scripts/check.mjs
