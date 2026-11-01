@@ -1,6 +1,6 @@
 {
-  "name": "terminal-lab-community",
-  "version": "0.2.2",
+  "name": "kiki-terminal-lab",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -44,7 +44,7 @@
     "@vitejs/plugin-react": "4.4.1",
     "vite": "6.4.3"
   },
-  "description": "Terminal Lab general user and administrator features, excluding education and Lab Board",
+  "description": "KIKI OS TERMINAL-LAB Community Edition: self-hosted OpenStack portal for general users and administrators",
   "author": {
     "name": "Choi Gook Hyun",
     "email": "tang@dustbox.kr",
@@ -52,11 +52,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tangt64/terminal-lab-community.git"
+    "url": "git+https://github.com/tangt64/kiki-terminal-lab.git"
   },
-  "homepage": "https://github.com/tangt64/terminal-lab-community#readme",
+  "homepage": "https://github.com/tangt64/kiki-terminal-lab#readme",
   "bugs": {
-    "url": "https://github.com/tangt64/terminal-lab-community/issues",
+    "url": "https://github.com/tangt64/kiki-terminal-lab/issues",
     "email": "tang@dustbox.kr"
   }
 }

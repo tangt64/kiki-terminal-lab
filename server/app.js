@@ -1,3 +1,4 @@
+import { PRODUCT_ID, PRODUCT_VERSION } from "../platform/shared/product.js";
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes,timingSafeEqual } from 'node:crypto';
@@ -55,7 +56,7 @@ export async function createApplication({db,cloud,config,sessionStore,terminals,
     if(++bucket.count>20)throw problem(429,'시도가 너무 많습니다. 15분 후 다시 시도하세요.');
     attempts.set(key,bucket);
   }
-  app.get('/api/health',wrap(async(req,res)=>{await db.query('SELECT 1');res.json({ok:true,product:'terminal-lab-community',version:'0.1.0'});}));
+  app.get('/api/health',wrap(async(req,res)=>{await db.query('SELECT 1');res.json({ok:true,product:PRODUCT_ID,version:PRODUCT_VERSION});}));
   app.get('/api/auth/csrf',wrap(async(req,res)=>{req.session.csrfToken ||= randomBytes(32).toString('hex');await saveSession(req);res.json({csrfToken:req.session.csrfToken});}));
   app.get('/api/auth/me',wrap(async(req,res)=>{
     const user=req.session.userId?await db.user(req.session.userId):null;

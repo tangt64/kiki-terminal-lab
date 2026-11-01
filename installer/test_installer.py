@@ -28,7 +28,7 @@ class InstallerTests(unittest.TestCase):
     def test_plan_is_read_only_and_scoped_to_community(self):
         with tempfile.TemporaryDirectory() as directory:
             plan = installer.Installer(self.args(directory)).plan()
-            self.assertEqual(plan["product"], "terminal-lab-community")
+            self.assertEqual(plan["product"], "kiki-terminal-lab")
             self.assertEqual(list(Path(directory).iterdir()), [])
             self.assertNotIn("password", json.dumps(plan).lower())
 
@@ -39,6 +39,67 @@ class InstallerTests(unittest.TestCase):
             instance.run = lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=b'[{"Config":{"Labels":{"other":"production"}}}]')
             with self.assertRaisesRegex(RuntimeError, "unowned"):
                 instance.owned("container", "original-terminal-lab")
+
+    def test_legacy_deployment_keeps_its_original_ownership_label(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = {"id": "old-install", "engine": "docker", "prefix": "tl-community-old", "version": "0.2.2"}
+            (Path(directory) / "deployment.json").write_text(json.dumps(state), encoding="utf-8")
+            instance = installer.Installer(self.args(directory))
+            self.assertEqual(instance.engine, "docker")
+            self.assertEqual(instance.label, installer.LEGACY_LABEL)
+            instance.run = lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=json.dumps([{"Config": {"Labels": {installer.LEGACY_LABEL: "old-install"}}}]).encode())
+            self.assertTrue(instance.owned("container", "tl-community-old-app"))
+            self.assertEqual(json.loads((Path(directory) / "deployment.json").read_text()), state)
+
+    def test_new_installation_does_not_adopt_legacy_or_other_installation_labels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            instance = installer.Installer(self.args(directory))
+            instance.state = {"id": "new-install", "ownership_label": installer.LABEL}
+            for labels, allowed in [({installer.LABEL: "new-install"}, True), ({installer.LEGACY_LABEL: "new-install"}, False), ({installer.LABEL: "other-install"}, False)]:
+                instance.run = lambda *args, labels=labels, **kwargs: subprocess.CompletedProcess(args, 0, stdout=json.dumps([{"Config": {"Labels": labels}}]).encode())
+                if allowed:
+                    self.assertTrue(instance.owned("container", "kiki-terminal-lab-new-app"))
+                else:
+                    with self.assertRaisesRegex(RuntimeError, "unowned"):
+                        instance.owned("container", "kiki-terminal-lab-new-app")
+
+    def test_quadlet_names_follow_saved_installation_identity(self):
+        for legacy in (True, False):
+            with self.subTest(legacy=legacy), tempfile.TemporaryDirectory() as directory:
+                instance = installer.Installer(self.args(directory))
+                instance.state = {"id": "test", "database": "saved-db", "network": "saved-net", "volume": "saved-pg", "app": "saved-app", "data_volume": "saved-data", "image": "saved-image", "prefix": "saved", "bind": "127.0.0.1", "port": 4080}
+                if not legacy:
+                    instance.state.update(ownership_label=installer.LABEL, service_prefix=installer.PRODUCT)
+                before = dict(instance.state)
+                instance.quadlets()
+                prefix = "tl-community" if legacy else installer.PRODUCT
+                files = Path(directory) / "systemd"
+                self.assertEqual({p.name for p in files.iterdir()}, {prefix + "-app.container", prefix + "-db.container"})
+                content = (files / (prefix + "-app.container")).read_text()
+                self.assertIn("Requires=" + prefix + "-db.service", content)
+                self.assertIn("Label=" + instance.label + "=test", content)
+                self.assertIn("saved-data:/app/data", content)
+                self.assertEqual(instance.state, before)
+
+    def test_failed_legacy_core_upgrade_does_not_restart_incompatible_old_image(self):
+        with tempfile.TemporaryDirectory() as directory:
+            instance = installer.Installer(self.args(directory))
+            instance.state = {"id": "old", "app": "saved-app", "image": "old-image", "prefix": "saved", "data_volume": "saved-data", "version": "0.1.0"}
+            calls = []
+            instance.owned = lambda *args: True
+            instance.run = lambda *args, **kwargs: (calls.append(args) or subprocess.CompletedProcess(args, 0, stdout=b'[{"Image":"old-image-id"}]'))
+            instance.backup = lambda: calls.append(("backup",))
+            instance.build = lambda: calls.append(("build",))
+            instance.app_arguments = lambda image=None: ["run", image or "new-image"]
+            def unavailable():
+                raise RuntimeError("not healthy")
+            instance.health = unavailable
+            with self.assertRaisesRegex(RuntimeError, "schema transition"):
+                instance.update()
+            self.assertIn(("backup",), calls)
+            self.assertNotIn(("run", "old-image-id"), calls)
+            self.assertEqual(instance.state["data_volume"], "saved-data")
+            self.assertEqual(instance.state["version"], "0.1.0")
 
     def test_app_uses_dedicated_network_and_only_selected_port(self):
         with tempfile.TemporaryDirectory() as directory:

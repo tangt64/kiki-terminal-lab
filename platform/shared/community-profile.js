@@ -1,3 +1,5 @@
+import { PRODUCT_ID, PRODUCT_VERSION } from "./product.js";
+
 // One mandatory edition boundary, used by browser navigation and the HTTP server.
 export const EDUCATION_SECTIONS=new Set(['curriculum2026','courses','iltCourses','onlineCourses','governmentCourses','courseQuotes','writtenExam','labExam','certificates','surveys','surveyResults','offlineSchedule','terminal','arena']);
 export const EDUCATION_ADMIN_TABS=new Set(['access','governmentAccess','schedule','labs','domains','sshRequests','resizeRequests','curricula','courses','iltCourses','onlineCourses','examCourses','surveyResults','textbooks','courseCodes','courseLevels','courseCategories','courseProgramTypes','writtenExams','labExams','certificates','quotes','payments','arena','b2bReport']);
@@ -24,7 +26,7 @@ export function isLabBoardPath(value){
 export function installEducationBoundary(app){
   app.use((req,res,next)=>{
     if(isLabBoardPath(req.path))return res.status(404).json({code:'LAB_BOARD_NOT_INCLUDED',message:'랩보드는 Community 배포본에 포함되지 않습니다.'});
-    if(req.path==='/api/health'){const json=res.json.bind(res);res.json=body=>json({...body,product:'terminal-lab-community',version:'0.2.2'});}
+    if(req.path==='/api/health'){const json=res.json.bind(res);res.json=body=>json({...body,product:PRODUCT_ID,version:PRODUCT_VERSION});}
     if(isEducationApi(req.path))return res.status(404).json({code:'EDUCATION_NOT_INCLUDED',message:'교육 기능은 Community 배포본에 포함되지 않습니다.'});
     if(req.path==='/' && (['terminal','instructor-share'].includes(req.query.popup) || req.query.curriculum==='2026'))return res.status(404).json({code:'EDUCATION_NOT_INCLUDED'});
     if(['/instructor-share','/arena-preview'].some(prefix=>req.path.startsWith(prefix)))return res.status(404).end();

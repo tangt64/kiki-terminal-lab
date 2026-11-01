@@ -5,7 +5,7 @@
 ## 시작하기
 
 1. [설치 안내](docs/installation.md)와 [개발 안내](docs/development.md)를 읽습니다.
-2. 기능 제안이나 일반 오류는 [GitHub Issues](https://github.com/tangt64/terminal-lab-community/issues)에 남깁니다. 변경 범위가 크면 구현 전에 목적과 영향을 설명합니다.
+2. 기능 제안이나 일반 오류는 [GitHub Issues](https://github.com/tangt64/kiki-terminal-lab/issues)에 남깁니다. 변경 범위가 크면 구현 전에 목적과 영향을 설명합니다.
 3. 저장소를 fork하고 작업 브랜치에서 수정합니다. 한 PR에는 관련된 변경을 묶고 무관한 서식 변경은 피합니다.
 4. 변경 목적, 사용자에게 달라지는 동작, 검증 결과와 남은 제한을 PR에 설명합니다.
 

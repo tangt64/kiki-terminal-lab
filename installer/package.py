@@ -6,7 +6,9 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
+RELEASE = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+VERSION = RELEASE["version"]
+PRODUCT = RELEASE["name"]
 FILES = {"package.json", "package-lock.json", "vite.config.js", "Containerfile", ".containerignore", ".gitignore", ".env.example", "README.md", "LICENSE", "NOTICE.md", "AUTHORS.md", "CONTRIBUTING.md", "SUPPORT.md", "CHANGELOG.md", "SOURCE-PROVENANCE.json"}
 DIRECTORIES = {"client", "server", "platform", "installer", "scripts", "docs", "tests", "deploy"}
 EXTENSIONS = {".js", ".jsx", ".mjs", ".css", ".sql", ".html", ".svg", ".png", ".webp", ".excalidrawlib", ".sh", ".py", ".md", ".json", ".yaml", ".txt"}
@@ -40,13 +42,13 @@ def source_files(root=ROOT):
 
 def main():
     files = source_files()
-    output = ROOT / "releases" / f"terminal-lab-community-{VERSION}.zip"
+    output = ROOT / "releases" / f"{PRODUCT}-{VERSION}.zip"
     output.parent.mkdir(exist_ok=True)
     manifest = {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
     with zipfile.ZipFile(output, "x", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in files:
-            archive.write(path, f"terminal-lab-community/{path.relative_to(ROOT).as_posix()}")
-        archive.writestr("terminal-lab-community/SHA256SUMS.json", json.dumps(manifest, indent=2) + "\n")
+            archive.write(path, f"{PRODUCT}/{path.relative_to(ROOT).as_posix()}")
+        archive.writestr(f"{PRODUCT}/SHA256SUMS.json", json.dumps(manifest, indent=2) + "\n")
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
     output.with_suffix(".zip.sha256").write_text(f"{digest}  {output.name}\n", encoding="ascii")
     print(output)

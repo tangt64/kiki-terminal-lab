@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getQuotaUsagePercent, getQuotaUsageToneClass } from "./quota-usage.js";
+import { COMMUNITY_BRAND_NAME } from "./terminal-lab-logo.jsx";
 
 const CREATOR_SIGNATURE = "CHOI GOOKHYUN (TANG)";
 const CLICK_REVEAL_THRESHOLD = 7;
@@ -18,7 +19,7 @@ export default function InteractiveLogoStage({
   className = "",
   quotaStatus,
   children,
-  title = "TERMINAL LAB",
+  title = COMMUNITY_BRAND_NAME,
 }) {
   const [clickCount, setClickCount] = useState(0);
   const [showSignature, setShowSignature] = useState(false);

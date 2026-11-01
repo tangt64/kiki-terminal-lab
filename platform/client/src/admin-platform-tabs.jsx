@@ -379,7 +379,7 @@ function AdminConsultingReplyTemplateSettings(props) {
                 <input
                   value={template.subject || ""}
                   onChange={(event) => updateTemplate(group.key, index, { subject: event.target.value })}
-                  placeholder="[Terminal Lab] 상담 문의 회신 - {{name}}님"
+                  placeholder="[KIKI OS TERMINAL-LAB] 상담 문의 회신 - {{name}}님"
                 />
               </AdminField>
               <AdminField label="회신 문구">
@@ -1237,7 +1237,7 @@ export function AdminPlatformTab(props) {
       openstackStatusProbesEnabled: true,
       siteVersionNumber: "v1.0",
       siteVersionStage: "Release",
-      siteVersionCodename: current.siteVersionCodename || "Terminal Lab",
+      siteVersionCodename: current.siteVersionCodename || "KIKI OS TERMINAL-LAB",
     }));
   };
   const restoreSavedPlatformSettings = () => {
@@ -2328,7 +2328,7 @@ export function AdminPlatformTab(props) {
           ? "warn"
           : "muted";
   const v2ReleaseSnapshotText = [
-    "[Terminal Lab v1.0 릴리즈 점검 요약]",
+    "[KIKI OS TERMINAL-LAB 릴리즈 점검 요약]",
     `생성 시각: ${formatDateTime(new Date().toISOString())}`,
     `릴리즈 표기: ${siteVersionNumber} / ${siteVersionStage}`,
     `사용자 포털 정책: ${portalUiModeSummary.label}`,
@@ -4375,7 +4375,7 @@ export function AdminPlatformTab(props) {
             </select>
           </AdminField>
           <AdminField label="OTP 발급자 이름" hint="인증 앱에 표시될 OTP 발급자 이름입니다.">
-            <input value={props.platformStatus?.otpIssuerName || "Terminal Lab"} onChange={(event) => props.setPlatformStatus((current) => ({ ...current, otpIssuerName: event.target.value }))} placeholder="Terminal Lab" />
+            <input value={props.platformStatus?.otpIssuerName || "KIKI OS TERMINAL-LAB"} onChange={(event) => props.setPlatformStatus((current) => ({ ...current, otpIssuerName: event.target.value }))} placeholder="KIKI OS TERMINAL-LAB" />
           </AdminField>
           <AdminField label="교안 업로드 상한 (MB)" hint="PDF, PPT, DOC 교안과 MP4/WEBM 영상 업로드 시 허용할 최대 파일 크기입니다. base64 전송 오버헤드를 고려해 80MB 이상을 권장합니다.">
             <input

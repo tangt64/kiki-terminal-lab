@@ -1079,3 +1079,28 @@ body {
 .mini-horizon-tabs button.is-group-start{margin-left:8px;border-left:1px solid #cbd5e1;border-radius:0 7px 7px 0}.mini-horizon-create-result{display:grid;gap:7px;padding:11px 13px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534}.mini-horizon-create-result.is-warning{border-color:#fed7aa;background:#fff7ed;color:#9a3412}.mini-horizon-create-result>span{font-size:12px}.mini-horizon-create-result ul{display:grid;gap:4px;margin:0;padding-left:18px}.mini-horizon-create-result li span{display:block;font-size:12px}.mini-horizon-instance-credentials small{flex-basis:100%;color:#64748b}.mini-horizon-shell[aria-busy="true"]{cursor:progress}
 
 .community-auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(350px,550px);gap:40px;align-items:center;max-width:1200px;margin:auto;padding:50px 28px}.community-auth-intro h1{font-size:40px}.community-auth-intro p{font-size:18px;color:#667085}@media(max-width:750px){.community-auth{grid-template-columns:1fr;padding:25px 18px}.community-auth-intro h1{font-size:28px}}
+
+/* Shared Community product identity across login and both consoles. */
+.kiki-os-brand { display: inline-flex; align-items: center; gap: 12px; max-width: 100%; color: #102b3f; text-align: left; }
+.kiki-os-brand .kiki-os-brand-symbol { display: block; flex: 0 0 42px; width: 42px; height: 42px; object-fit: contain; }
+.kiki-os-brand-symbol .kiki-os-symbol { display: block; width: 100%; height: 100%; }
+.kiki-os-brand .kiki-os-brand-copy { display: grid; gap: 4px; }
+.kiki-os-brand .kiki-os-brand-name { color: #102b3f; font-size: 20px; font-weight: 850; line-height: 1; letter-spacing: 0.035em; white-space: nowrap; }
+.kiki-os-brand .kiki-os-brand-product { color: #456273; font-size: 10px; font-weight: 750; line-height: 1.2; letter-spacing: 0.16em; white-space: nowrap; }
+.community-auth-intro .auth-product-brand { gap: 18px; }
+.auth-product-brand .kiki-os-brand-symbol { flex-basis: 76px; width: 76px; height: 76px; }
+.auth-product-brand .kiki-os-brand-name { font-size: clamp(28px, 3vw, 40px); }
+.auth-product-brand .kiki-os-brand-product { font-size: 14px; }
+.community-auth-intro .community-edition-label { margin: 22px 0 10px; color: #39715f; font-size: 11px; font-weight: 800; letter-spacing: 0.16em; }
+.sidebar .sidebar-product-brand { margin-bottom: 4px; }
+.shell .sidebar .brand > .kiki-os-brand.sidebar-product-brand { grid-column: 1 / -1; margin: 0 0 10px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.shell .sidebar .brand .kiki-os-brand-name { color: #102b3f; font-size: 20px; line-height: 1; }
+.shell .sidebar .brand .kiki-os-brand-product { color: #456273; font-size: 10px; line-height: 1.2; }
+.shell.portal-ui-v2 .sidebar .brand::before { content: none; }
+.shell.portal-ui-v2 .sidebar .brand > .sidebar-product-brand { display: inline-flex !important; }
+.shell:not(.portal-ui-v2) .sidebar .brand > .logo-stage-sidebar { display: none; }
+.admin-nav-brand > .kiki-os-brand { padding: 3px 0 10px; }
+@media (max-width: 750px) {
+  .auth-product-brand .kiki-os-brand-symbol { flex-basis: 60px; width: 60px; height: 60px; }
+  .auth-product-brand .kiki-os-brand-product { font-size: 12px; }
+}

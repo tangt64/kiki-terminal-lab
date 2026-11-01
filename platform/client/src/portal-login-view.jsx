@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Field, OtpQrPreview, CoursePriceMeta, SiteFooter, StatusMessage, formatCourseDuration, formatDateTime, getCourseDisplayIcon, getCourseProgramTypeDisplay, getCourseTypeDisplayLabel, getYoutubeLoopEmbedUrl, isGovernmentCourse, resolveCourseSurveyConfig } from "./portal-shared.jsx";
 import { Suspense, lazy } from "react";
 import { api } from "./portal-state.js";
+import { TerminalLabBrand, getTerminalLabFaviconHref } from "./terminal-lab-logo.jsx";
 const LANDING_CLASS_LIMIT = 50;
 const LOGIN_DIALOG_FOCUSABLE_SELECTOR = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
 const GuideMarkdownBlock = lazy(() => import("./guide-renderer.jsx"));
@@ -58,7 +59,7 @@ function TemporaryLandingContent({
           <button className="temp-brand" onClick={() => window.scrollTo({
           top: 0,
           behavior: "smooth"
-        })} type="button"><span aria-hidden="true">&gt;_</span><strong>TERMINAL LAB</strong></button>
+        })} type="button"><span aria-hidden="true">&gt;_</span><strong>KIKI OS TERMINAL-LAB</strong></button>
           <nav aria-label="랜딩 페이지 메뉴"><button onClick={() => scrollToId("temp-platform")} type="button">플랫폼</button><button onClick={() => scrollToId("temp-courses")} type="button">과정</button><button onClick={onQuote} type="button">기업교육</button></nav>
           <div className="temp-nav-actions"><button className="temp-nav-login" onClick={onLogin} type="button">로그인</button><button className="temp-button temp-button-accent" onClick={onStart} type="button">무료로 시작하기</button></div>
         </header>
@@ -176,14 +177,15 @@ export default function PortalLogin(props) {
   const configuredYoutubeUrl = props.platformStatus?.landingYoutubeUrl || "";
   const landingDemoUrl = getYoutubeLoopEmbedUrl(configuredYoutubeUrl);
   const landingVideoPath = props.platformStatus?.landingVideoPath || "";
-  const faviconPath = props.platformStatus?.faviconPath || "/favicon.ico";
+  const useUploadedFavicon = props.platformStatus?.faviconMode === "upload" && Boolean(props.platformStatus?.faviconPath);
+  const faviconPath = useUploadedFavicon ? props.platformStatus.faviconPath : getTerminalLabFaviconHref();
   const useUploadedBrandLogo = props.platformStatus?.landingLogoMode === "upload" && Boolean(props.platformStatus?.landingLogoPath);
   const landingHeroEyebrow = props.platformStatus?.landingHeroEyebrow || "오픈소스 엔지니어링 랩";
   const landingHeroTitle = props.platformStatus?.landingHeroTitle || "리눅스 인프라 엔지니어를 위한 오픈소스 실습 랩";
   const landingHeroCopy = props.platformStatus?.landingHeroCopy || "Linux/Kubernetes/OpenStack/CI/CD/DEV 자동화 실습을 브라우저 콘솔과 교안으로 한 흐름에서 제공합니다.";
   const landingAuthEyebrow = props.platformStatus?.landingAuthEyebrow || "접속 안내";
   const landingAuthTitle = props.platformStatus?.landingAuthTitle || "로그인 또는 회원가입";
-  const landingAuthCopy = props.platformStatus?.landingAuthCopy || "승인된 계정으로 실습 환경과 교육 자료에 바로 접근할 수 있습니다.";
+  const landingAuthCopy = props.platformStatus?.landingAuthCopy || "승인된 계정으로 클라우드와 협업 기능을 이용합니다.";
   const landingFreeTitle = props.platformStatus?.landingFreeTitle || "현재 무료로 운영 중입니다";
   const landingFreeSubtitle = props.platformStatus?.landingFreeSubtitle || "회원가입 후 관리자 승인을 받으면 전체 과정과 랩에 접속할 수 있습니다.";
   const landingCustomerLogosTitle = props.platformStatus?.landingCustomerLogosTitle || "함께한 고객";
@@ -298,7 +300,8 @@ export default function PortalLogin(props) {
       document.head.appendChild(faviconLink);
     }
     faviconLink.setAttribute("href", faviconPath);
-  }, [faviconPath]);
+    faviconLink.setAttribute("type", useUploadedFavicon ? String(props.platformStatus?.faviconMime || "image/x-icon") : "image/svg+xml");
+  }, [faviconPath, props.platformStatus?.faviconMime, useUploadedFavicon]);
   useEffect(() => {
     if (!publicCourses.length) {
       setPreviewCourseId(null);
@@ -493,7 +496,7 @@ export default function PortalLogin(props) {
       termsModalTriggerRef.current?.focus?.();
     };
   }, [termsModalOpen]);
-  return <main className="community-auth"><section className="community-auth-intro"><h1>Terminal Lab Community</h1><p>클라우드·협업·운영을 한곳에서 관리합니다.</p></section><section className="auth-panel" ref={authPanelRef}>
+  return <main className="community-auth"><section className="community-auth-intro"><h1><TerminalLabBrand className="auth-product-brand" logoPath={props.platformStatus?.landingLogoMode === "upload" ? props.platformStatus.landingLogoPath : ""} /></h1><p className="community-edition-label">COMMUNITY EDITION</p><p>클라우드·협업·운영을 한곳에서 관리합니다.</p></section><section className="auth-panel" ref={authPanelRef}>
           <div className="auth-panel-head">
             <p className="card-label">{landingAuthEyebrow}</p>
             <h3>{landingAuthTitle}</h3>

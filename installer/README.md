@@ -1,4 +1,4 @@
-# Community 앱 인스톨러
+# KIKI OS TERMINAL-LAB 인스톨러
 
 실행 예시는 상위 [README](../README.md)를 참조하세요.
 
@@ -19,3 +19,5 @@ Podman 또는 Docker로 Linux 컨테이너를 정상 실행할 수 있는 Linux 
 OS·OpenStack·Kolla 설치, 디스크 파티션 변경, 인증서 발급, DNS 등록과 방화벽 변경은 수행하지 않습니다.
 선택 SSH 허용 대역은 `--ssh-source-cidrs`, 일반 VM 검증용 네트워크는 `--validation-network`로 직접 지정합니다. 두 값 모두 이전 설치의 주소를 기본값으로 사용하지 않습니다.
 오프라인 설치 미디어가 아니므로 최초 설치의 이미지·npm 다운로드에는 네트워크가 필요합니다.
+
+0.3.0 새 설치는 `kiki-terminal-lab-<설치 ID>` 자원명과 KIKI 소유권 라벨, `kiki-terminal-lab-app`·`kiki-terminal-lab-db` Quadlet 이름을 사용합니다. 기존 0.2.x 설치는 새 소스에서 **원래 `--state-dir`**로 `backup`·`update`를 실행하세요. 기존 자원명·라벨·볼륨·키·`tl-community-*` 서비스는 그대로 사용합니다. 상태 파일을 직접 수정하거나 기존 설치에 `install`을 다시 실행하지 않습니다.

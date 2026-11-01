@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import pg from 'pg';
 import {createCipheriv,createHash,randomBytes} from 'node:crypto';
 import {createVault} from '../../server/secrets.js';
+import {PRODUCT_NAME, PRODUCT_VERSION} from '../shared/product.js';
 
 function convertedSecret(password,secret){const key=createHash('sha256').update(secret).digest(),iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv);const data=Buffer.concat([cipher.update(password,'utf8'),cipher.final()]);return [iv,cipher.getAuthTag(),data].map(part=>part.toString('base64url')).join('.');}
 export async function migratePlatform(config){
@@ -56,6 +57,17 @@ export async function migratePlatform(config){
       const inherited=oldEndpoints.has(createHash('sha256').update(String(current.llmApiUrl||'').trim()).digest('hex'));
       await runtime.runtimeUpdatePlatformStatus({siteVersionNumber:'v0.2.2',...(inherited?{llmApiUrl:'',llmEnabled:false}:{})});
       await client.query('INSERT INTO community_platform_migrations(version) VALUES(203) ON CONFLICT DO NOTHING');
+    }
+    if(!(await client.query('SELECT version FROM community_platform_migrations WHERE version=204')).rows.length){
+      const current=await runtime.runtimeGetPlatformStatus();
+      // Change only shipped branding defaults; preserve operator-provided names and assets.
+      const patch={};
+      if(current.landingHeroTitle==='Terminal Lab Community')patch.landingHeroTitle=PRODUCT_NAME;
+      if(current.otpIssuerName==='Terminal Lab')patch.otpIssuerName=PRODUCT_NAME;
+      if(current.mailFromName==='Terminal Lab')patch.mailFromName=PRODUCT_NAME;
+      if(/^v?0\.[12]\.\d+$/.test(String(current.siteVersionNumber||'')))patch.siteVersionNumber='v'+PRODUCT_VERSION;
+      if(Object.keys(patch).length)await runtime.runtimeUpdatePlatformStatus(patch);
+      await client.query('INSERT INTO community_platform_migrations(version) VALUES(204) ON CONFLICT DO NOTHING');
     }
   }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
   finally{await client.end();}

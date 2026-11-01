@@ -3,6 +3,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ADMIN_PERMISSION_OPTIONS, isAdminUserRole, navigate, normalizeAdminPermissions } from "./portal-state.js";
 import NoticeView from "./notice-view.jsx";
 import PortalLogin from "./portal-login-view.jsx";
+import { TerminalLabBrand } from "./terminal-lab-logo.jsx";
 
 import { lazyNamedWithChunkReload, lazyWithChunkReload } from "./dynamic-import-reload.js";
 import { normalizeConsultingReplyTemplates, renderConsultingReplyTemplateNote, renderConsultingReplyTemplateSubject } from "./consulting-reply-templates.js";
@@ -1464,7 +1465,7 @@ export default function AdminView(props) {
               <button className="ghost-btn" onClick={() => setMobileAdminNavOpen(false)} type="button">닫기</button>
             </div>
             <div className="admin-nav-brand">
-              <strong>TERMINAL LAB</strong>
+              <TerminalLabBrand />
               <span>관리자 콘솔</span>
             </div>
             <label className="admin-nav-search">
