@@ -10,6 +10,7 @@ import {createHmac} from 'node:crypto';
 import http from 'node:http';
 import {randomBytes} from 'node:crypto';
 import pg from 'pg';
+import {PRODUCT_VERSION} from '../platform/shared/product.js';
 
 const target=process.env.TEST_PLATFORM_DATABASE_URL;
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -28,7 +29,7 @@ test('full platform: SSO, OTP, notices, community posts and excluded features',{
     function agent(){let cookie='';return async(endpoint,options={})=>{const response=await fetch(origin+endpoint,{method:options.method||'GET',redirect:'manual',headers:{cookie,origin,'Content-Type':'application/json'},body:options.body===undefined?undefined:JSON.stringify(options.body)});const cookies=response.headers.getSetCookie();if(cookies.length)cookie=cookies.at(-1).split(';')[0];const contentType=response.headers.get('content-type')||'';const data=contentType.includes('json')?await response.json():await response.text();return {status:response.status,data,location:response.headers.get('location')};};}
     const admin=agent(),member=agent();let userId,otpSecret;
     const login=agent=>agent('/api/auth/login',{method:'POST',body:{username:'admin',password:'parity-admin-test-password-2026'}});
-    await t.test('the active health endpoint identifies KIKI OS TERMINAL-LAB 0.3.1',async()=>{const result=await admin('/api/health');assert.equal(result.data.product,'kiki-terminal-lab');assert.equal(result.data.version,'0.3.1');});
+    await t.test('the active health endpoint identifies KIKI OS TERMINAL-LAB with the package version',async()=>{const result=await admin('/api/health');assert.equal(result.data.product,'kiki-terminal-lab');assert.equal(result.data.version,PRODUCT_VERSION);});
     await t.test('original administrator account and user-management APIs work',async()=>{
       assert.equal((await login(admin)).status,200);
       const created=await admin('/api/admin/users',{method:'POST',body:{username:'member',name:'Community Member',email:'member@example.test',password:'parity-member-test-password-2026',role:'student',status:'approved'}});assert.equal(created.status,201,JSON.stringify(created.data));userId=created.data.user.id;

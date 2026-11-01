@@ -1,6 +1,6 @@
 {
   "edition": "kiki-terminal-lab",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "activeSource": "platform/",
   "sourceInventory": "platform/SOURCE-PROVENANCE.json",
   "description": "Standalone snapshot of the original general user and administrator features. Education routes and navigation excluded. Empty education compatibility schema retained. No parent imports, credentials, data, teaching content or Git history included. Lab Board UI, service, assets and dedicated dependencies were removed in 0.2.1.",

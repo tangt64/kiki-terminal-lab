@@ -1,6 +1,6 @@
 # 설치 방법·환경 조건·서버 사양
 
-기준: KIKI OS TERMINAL-LAB Community 0.3.1, 2026-11-01.
+기준: KIKI OS TERMINAL-LAB Community 0.3.2, 2026-11-01.
 
 이 문서는 교육 기능과 랩보드를 제외한 일반 사용자·관리자 포털의 설치 안내입니다. 인스톨러는 **포털 앱과 전용 PostgreSQL**을 구성하고, 이미 운영 중인 OpenStack에 연결합니다. OS·컨테이너 엔진·OpenStack 자체를 설치하지 않습니다.
 
@@ -140,7 +140,7 @@ Docker를 선택하면 [공식 Engine 설치 절차](https://docs.docker.com/eng
 제공된 ZIP을 새 디렉터리에 풉니다. GitHub 저장소가 게시되면 해당 저장소의 릴리스 소스도 같은 방식으로 사용할 수 있습니다.
 
 ```bash
-unzip kiki-terminal-lab-0.3.1.zip
+unzip kiki-terminal-lab-0.3.2.zip
 cd kiki-terminal-lab
 COMMUNITY_STATE_DIR="$HOME/.local/state/kiki-terminal-lab"
 COMMUNITY_CLOUD_FILE="$HOME/.config/kiki-terminal-lab/clouds.yaml"
