@@ -1,3 +1,4 @@
+import { PRODUCT_ID } from "../shared/product.js";
 import { installEducationBoundary, isEducationWebSocketPath } from "../shared/community-profile.js";
 import { ADMIN_PERMISSIONS, requiredAdminPermission, canManageAccount, hasAdminPermission, isFullAdministrator } from "../shared/admin-permissions.js";
 import express from "express";
@@ -1424,7 +1425,7 @@ const DEFAULT_CUSTOM_DOMAIN_GUIDANCE = {
   verificationLabel: "검증 TXT",
   verificationText: "TXT 레코드가 없으면 서비스에서 도메인을 인식할 수 없습니다."
 };
-const DEFAULT_OTP_ISSUER_NAME = "Terminal Lab";
+const DEFAULT_OTP_ISSUER_NAME = "KIKI OS TERMINAL-LAB";
 function normalizeCourseOverviewPoints(value, fallback = []) {
   const source = Array.isArray(value) ? value : String(value || "").split(",");
   const normalized = source.map(item => String(item || "").trim()).filter(Boolean).slice(0, 4);
@@ -3619,7 +3620,7 @@ app.use(sessionParser);
 app.get("/api/health", async (_req, res) => {
   const databaseAvailable = DATABASE_AVAILABLE && (await runtimeProbeDatabase());
   sendHealthResponse(res, {
-    product: "terminal-lab-community",
+    product: PRODUCT_ID,
     databaseAvailable,
     instance: APP_INSTANCE_INDEX,
     role: APP_INSTANCE_ROLE
@@ -4036,7 +4037,7 @@ function createFallbackPlatformStatus() {
     mailEnabled: false,
     preSurveyAdminMailEnabled: true,
     mailProvider: "webhook",
-    mailFromName: "Terminal Lab",
+    mailFromName: "KIKI OS TERMINAL-LAB",
     mailFromAddress: "",
     mailSmtpHost: "",
     mailSmtpPort: 587,
@@ -7202,7 +7203,7 @@ function buildCourseSurveyAdminMail({
     return `${index + 1}. ${label}\n- ${value}`;
   }) : Object.entries(answers && typeof answers === "object" ? answers : {}).map(([key, value], index) => `${index + 1}. ${key}\n- ${formatCourseSurveyAnswerValue(null, value)}`);
   return {
-    subject: `[Terminal Lab] ${course?.title || "과정"} ${phaseLabel} 설문 응답 도착`,
+    subject: `[KIKI OS TERMINAL-LAB] ${course?.title || "과정"} ${phaseLabel} 설문 응답 도착`,
     text: [`${phaseLabel} 설문 응답이 접수되었습니다.`, "", `과정명: ${String(course?.title || "").trim() || "-"}`, `응답자: ${userLabel}`, `아이디: ${String(user?.username || "").trim() || "-"}`, `이메일: ${String(user?.email || "").trim() || "-"}`, `제출 시각: ${String(submittedAt || "").trim() || "-"}`, "", "[응답 내용]", ...(answerLines.length ? answerLines : ["- 응답 항목이 없습니다."])].join("\n")
   };
 }
@@ -9056,7 +9057,7 @@ async function buildCourseQuoteInput({
       }
     },
     businessSnapshot: {
-      issuerName: effectivePlatformStatus.footerAdminName || "Terminal Lab",
+      issuerName: effectivePlatformStatus.footerAdminName || "KIKI OS TERMINAL-LAB",
       issuerEmail: effectivePlatformStatus.footerEmail || "",
       businessInfo: effectivePlatformStatus.footerBusinessInfo || "",
       siteVersion: effectivePlatformStatus.siteVersionNumber || ""
@@ -9202,7 +9203,7 @@ async function buildAdminCourseQuoteInput({
       }
     },
     businessSnapshot: {
-      issuerName: effectivePlatformStatus.footerAdminName || "Terminal Lab",
+      issuerName: effectivePlatformStatus.footerAdminName || "KIKI OS TERMINAL-LAB",
       issuerEmail: effectivePlatformStatus.footerEmail || "",
       businessInfo: effectivePlatformStatus.footerBusinessInfo || "",
       siteVersion: effectivePlatformStatus.siteVersionNumber || ""
@@ -9429,7 +9430,7 @@ app.post("/api/admin/coupons", requireAdmin, async (req, res) => {
     sendMailNotification({
       type: "coupon_issued",
       to: user.email,
-      subject: "[Terminal Lab] 할인 쿠폰이 발급되었습니다",
+      subject: "[KIKI OS TERMINAL-LAB] 할인 쿠폰이 발급되었습니다",
       text: [`${user.name || user.username}님, 사용할 수 있는 쿠폰이 발급되었습니다.`, "", `쿠폰 코드: ${coupon.code}`, `혜택: ${renderCouponBenefitLabel(discountType, discountValue)}`, `대상 과정: ${coupon.courseTitle || "전체 과정"}`, `만료일: ${coupon.expiresAt || "-"}`, reason ? `발급 사유: ${reason}` : "", note ? `메모: ${note}` : ""].filter(Boolean).join("\n"),
       metadata: {
         userId: user.id,
@@ -18504,13 +18505,13 @@ app.post("/api/admin/consulting-requests/:id/review", requireAdmin, async (req, 
   let mailResult = null;
   if (status === "answered") {
     const recipientEmail = String(updated?.contactEmail || request.contactEmail || "").trim();
-    const defaultSubject = `[Terminal Lab] 상담 문의 회신 - ${updated?.title || request.title || "상담 문의"}`;
+    const defaultSubject = `[KIKI OS TERMINAL-LAB] 상담 문의 회신 - ${updated?.title || request.title || "상담 문의"}`;
     try {
       mailResult = await sendMailNotification({
         type: "consulting_request_answered",
         to: recipientEmail,
         subject: mailSubject || defaultSubject,
-        text: [`${updated?.contactName || request.contactName || updated?.userName || request.userName || "고객"}님,`, "", "남겨주신 강의/기술 상담 문의에 대한 회신입니다.", "", `요청 제목: ${updated?.title || request.title || "-"}`, `요청 유형: ${updated?.inquiryType || request.inquiryType || "-"}`, "", adminNote, "", "감사합니다.", "Terminal Lab"].join("\n"),
+        text: [`${updated?.contactName || request.contactName || updated?.userName || request.userName || "고객"}님,`, "", "남겨주신 강의/기술 상담 문의에 대한 회신입니다.", "", `요청 제목: ${updated?.title || request.title || "-"}`, `요청 유형: ${updated?.inquiryType || request.inquiryType || "-"}`, "", adminNote, "", "감사합니다.", "KIKI OS TERMINAL-LAB"].join("\n"),
         metadata: {
           purpose: "consulting_reply",
           consultingRequestId: updated?.id || request.id,
@@ -23494,7 +23495,7 @@ function resolveMailProviderSettings(settings) {
   return {
     enabled: Boolean(settings?.mailEnabled),
     provider,
-    fromName: String(settings?.mailFromName || "Terminal Lab").trim() || "Terminal Lab",
+    fromName: String(settings?.mailFromName || "KIKI OS TERMINAL-LAB").trim() || "KIKI OS TERMINAL-LAB",
     fromAddress: String(settings?.mailFromAddress || "").trim(),
     smtpHost: String(settings?.mailSmtpHost || "").trim(),
     smtpPort: Math.max(1, Number(settings?.mailSmtpPort || 587) || 587),
@@ -35237,7 +35238,7 @@ function buildInstanceUsageWarningContent(item = {}, user = {}) {
   const reasons = Array.isArray(item.risk?.reasons) && item.risk.reasons.length ? item.risk.reasons.join(", ") : "관리자 모니터링 기준 사용량 확인 필요";
   const displayName = String(user.name || item.userName || user.username || item.username || "사용자").trim();
   const instanceLabel = [item.label || item.type || "인스턴스", item.courseTitle || item.title || ""].map(part => String(part || "").trim()).filter(Boolean).join(" / ");
-  const subject = "[Terminal Lab] 인스턴스 사용량 확인 요청";
+  const subject = "[KIKI OS TERMINAL-LAB] 인스턴스 사용량 확인 요청";
   const text = [`안녕하세요, ${displayName}님.`, "", "현재 사용 중인 인스턴스에서 높은 사용량 또는 운영상 주의가 필요한 신호가 확인되어 안내드립니다.", "", `대상: ${instanceLabel || `인스턴스 #${item.id || "-"}`}`, `상태: ${item.status || "-"}`, `CPU: ${formatMonitorPercent(metrics.cpuUsagePercent)}`, `MEM: ${formatMonitorPercent(metrics.memoryUsagePercent)}`, `DISK I/O: ${formatMonitorBytes(diskReadBytes + diskWriteBytes)} (Read ${formatMonitorBytes(diskReadBytes)} / Write ${formatMonitorBytes(diskWriteBytes)})`, `NET: 오늘 ${formatMonitorBytes(networkDailyBytes)} / 누적 ${formatMonitorBytes(networkTotalBytes)} (RX ${formatMonitorBytes(networkRxBytes)} / TX ${formatMonitorBytes(networkTxBytes)})`, `확인 사유: ${reasons}`, "", "불필요한 다운로드, 대용량 전송, 백그라운드 프로세스, 무한 루프성 작업이 있다면 중지해 주세요.", "실습이 끝났거나 더 이상 필요하지 않은 VM은 정리해 주세요.", "사용량이 계속 높거나 외부 노출 위험이 지속되면 관리자 조치(일시중지, VM 권한 제한, 인스턴스 제거)가 진행될 수 있습니다.", "", "감사합니다.", "Terminal Lab 운영팀"].join("\n");
   return {
     subject,

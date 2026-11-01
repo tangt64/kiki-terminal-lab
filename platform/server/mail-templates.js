@@ -2,7 +2,7 @@ const MAIL_TEMPLATE_CATALOG = {
   signup_pending: {
     label: "회원가입 접수",
     placeholders: ["name", "username", "signupReason", "targetCourseTitle", "inviteCourseTitle", "welcomeCouponCode", "welcomeCouponBenefitLabel"],
-    subject: "[Terminal Lab] 회원가입이 접수되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 회원가입이 접수되었습니다",
     text: [
       "{name}님, 회원가입이 정상적으로 접수되었습니다.",
       "",
@@ -17,7 +17,7 @@ const MAIL_TEMPLATE_CATALOG = {
   signup_approved: {
     label: "회원가입 승인",
     placeholders: ["name", "username"],
-    subject: "[Terminal Lab] 계정 승인이 완료되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 계정 승인이 완료되었습니다",
     text: [
       "{name}님, 관리자 승인 처리가 완료되었습니다.",
       "",
@@ -28,7 +28,7 @@ const MAIL_TEMPLATE_CATALOG = {
   purchase_requested: {
     label: "과정 신청 접수",
     placeholders: ["name", "requestLabel", "courseTitle", "formattedPrice", "approvalGuide"],
-    subject: "[Terminal Lab] {requestLabel}이 접수되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] {requestLabel}이 접수되었습니다",
     text: [
       "{name}님, {requestLabel}이 접수되었습니다.",
       "",
@@ -40,7 +40,7 @@ const MAIL_TEMPLATE_CATALOG = {
   purchase_request_approved: {
     label: "과정 신청 승인",
     placeholders: ["name", "requestLabel", "courseTitle"],
-    subject: "[Terminal Lab] {requestLabel}이 승인되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] {requestLabel}이 승인되었습니다",
     text: [
       "{name}님, {requestLabel}이 승인되었습니다.",
       "",
@@ -51,7 +51,7 @@ const MAIL_TEMPLATE_CATALOG = {
   purchase_request_rejected: {
     label: "과정 신청 반려",
     placeholders: ["name", "requestLabel", "courseTitle", "reviewNote"],
-    subject: "[Terminal Lab] {requestLabel}이 반려되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] {requestLabel}이 반려되었습니다",
     text: [
       "{name}님, {requestLabel}이 반려되었습니다.",
       "",
@@ -62,7 +62,7 @@ const MAIL_TEMPLATE_CATALOG = {
   signup_welcome_coupon: {
     label: "회원가입 웰컴 쿠폰",
     placeholders: ["name", "couponCode", "benefitLabel", "expiresAt"],
-    subject: "[Terminal Lab] 회원가입 웰컴 쿠폰이 도착했습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 회원가입 웰컴 쿠폰이 도착했습니다",
     text: [
       "{name}님, 회원가입 웰컴 쿠폰이 발급되었습니다.",
       "",
@@ -75,7 +75,7 @@ const MAIL_TEMPLATE_CATALOG = {
   payment_paid: {
     label: "일반 결제 완료",
     placeholders: ["name", "courseTitle", "formattedAmount"],
-    subject: "[Terminal Lab] 결제가 완료되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 결제가 완료되었습니다",
     text: [
       "{name}님의 결제가 완료되었습니다.",
       "",
@@ -87,7 +87,7 @@ const MAIL_TEMPLATE_CATALOG = {
   payment_failed: {
     label: "일반 결제 실패",
     placeholders: ["name", "orderId", "failureDetail"],
-    subject: "[Terminal Lab] 결제 실패 안내",
+    subject: "[KIKI OS TERMINAL-LAB] 결제 실패 안내",
     text: [
       "{name}님의 결제가 실패로 기록되었습니다.",
       "",
@@ -98,7 +98,7 @@ const MAIL_TEMPLATE_CATALOG = {
   payment_refunded: {
     label: "일반 결제 환불",
     placeholders: ["name", "reason", "formattedAmount"],
-    subject: "[Terminal Lab] 환불 처리되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 환불 처리되었습니다",
     text: [
       "{name}님의 환불이 처리되었습니다.",
       "",
@@ -109,7 +109,7 @@ const MAIL_TEMPLATE_CATALOG = {
   custom_lab_payment_paid: {
     label: "PoC 결제 완료",
     placeholders: ["name", "requestTitle", "orderId", "formattedAmount"],
-    subject: "[Terminal Lab] PoC 결제가 완료되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] PoC 결제가 완료되었습니다",
     text: [
       "{name}님의 PoC 결제가 완료되었습니다.",
       "",
@@ -122,7 +122,7 @@ const MAIL_TEMPLATE_CATALOG = {
   custom_lab_payment_failed: {
     label: "PoC 결제 실패",
     placeholders: ["name", "requestTitle", "reason"],
-    subject: "[Terminal Lab] PoC 결제가 실패했습니다",
+    subject: "[KIKI OS TERMINAL-LAB] PoC 결제가 실패했습니다",
     text: [
       "{name}님의 PoC 결제가 실패로 기록되었습니다.",
       "",
@@ -134,7 +134,7 @@ const MAIL_TEMPLATE_CATALOG = {
   custom_lab_quoted: {
     label: "PoC 견적 안내",
     placeholders: ["name", "requestTitle", "formattedQuotedAmount", "reviewNote", "nextStepGuide"],
-    subject: "[Terminal Lab] PoC 견적이 등록되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] PoC 견적이 등록되었습니다",
     text: [
       "{name}님, PoC 견적이 등록되었습니다.",
       "",
@@ -147,7 +147,7 @@ const MAIL_TEMPLATE_CATALOG = {
   custom_lab_rejected: {
     label: "PoC 구성 반려",
     placeholders: ["name", "requestTitle", "reviewNote"],
-    subject: "[Terminal Lab] PoC 구성이 반려되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] PoC 구성이 반려되었습니다",
     text: [
       "{name}님, PoC 구성이 반려되었습니다.",
       "",
@@ -158,7 +158,7 @@ const MAIL_TEMPLATE_CATALOG = {
   course_assigned: {
     label: "관리자 과정 할당",
     placeholders: ["name", "courseTitle"],
-    subject: "[Terminal Lab] 과정이 할당되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 과정이 할당되었습니다",
     text: [
       "{name}님께 과정이 할당되었습니다.",
       "",
@@ -169,7 +169,7 @@ const MAIL_TEMPLATE_CATALOG = {
   external_ssh_approved: {
     label: "외부 SSH 승인",
     placeholders: ["name", "host", "ports", "sshUser"],
-    subject: "[Terminal Lab] 외부 SSH 요청이 승인되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 외부 SSH 요청이 승인되었습니다",
     text: [
       "{name}님의 외부 SSH 요청이 승인되었습니다.",
       "",
@@ -181,7 +181,7 @@ const MAIL_TEMPLATE_CATALOG = {
   external_ssh_rejected: {
     label: "외부 SSH 반려",
     placeholders: ["name", "reviewNote"],
-    subject: "[Terminal Lab] 외부 SSH 요청이 반려되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 외부 SSH 요청이 반려되었습니다",
     text: [
       "{name}님의 외부 SSH 요청이 반려되었습니다.",
       "",
@@ -191,9 +191,9 @@ const MAIL_TEMPLATE_CATALOG = {
   invite_created: {
     label: "초대장 발급",
     placeholders: ["inviteCode", "courseTitle", "expiresAt"],
-    subject: "[Terminal Lab] 초대장이 발급되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 초대장이 발급되었습니다",
     text: [
-      "Terminal Lab 초대장이 발급되었습니다.",
+      "KIKI OS TERMINAL-LAB 초대장이 발급되었습니다.",
       "",
       "초대장 코드: {inviteCode}",
       "연결 과정: {courseTitle}",
@@ -204,7 +204,7 @@ const MAIL_TEMPLATE_CATALOG = {
   written_exam_result: {
     label: "지식 시험 결과",
     placeholders: ["name", "courseTitle", "examTitle", "score", "totalPoints", "resultLabel"],
-    subject: "[Terminal Lab] 지식 시험 결과 - {courseTitle}",
+    subject: "[KIKI OS TERMINAL-LAB] 지식 시험 결과 - {courseTitle}",
     text: [
       "{name}님의 지식 시험 결과입니다.",
       "",
@@ -217,7 +217,7 @@ const MAIL_TEMPLATE_CATALOG = {
   lab_exam_result: {
     label: "랩 시험 결과",
     placeholders: ["name", "courseTitle", "examTitle", "score", "totalPoints", "resultLabel", "reviewStatusLabel", "reviewNote", "snapshotUrl"],
-    subject: "[Terminal Lab] 랩 시험 결과 - {courseTitle}",
+    subject: "[KIKI OS TERMINAL-LAB] 랩 시험 결과 - {courseTitle}",
     text: [
       "{name}님의 랩 시험 결과입니다.",
       "",
@@ -233,7 +233,7 @@ const MAIL_TEMPLATE_CATALOG = {
   course_survey_submitted: {
     label: "과정 설문 제출",
     placeholders: ["name", "courseTitle", "phaseLabel", "submittedAt"],
-    subject: "[Terminal Lab] {phaseLabel} 설문이 제출되었습니다 - {courseTitle}",
+    subject: "[KIKI OS TERMINAL-LAB] {phaseLabel} 설문이 제출되었습니다 - {courseTitle}",
     text: [
       "{name}님의 {phaseLabel} 설문이 정상적으로 제출되었습니다.",
       "",
@@ -245,7 +245,7 @@ const MAIL_TEMPLATE_CATALOG = {
   certificate_issued: {
     label: "자격증 발급",
     placeholders: ["name", "courseTitle", "certificateCode", "verifyPath"],
-    subject: "[Terminal Lab] 자격증이 발급되었습니다 - {courseTitle}",
+    subject: "[KIKI OS TERMINAL-LAB] 자격증이 발급되었습니다 - {courseTitle}",
     text: [
       "{name}님의 자격증이 발급되었습니다.",
       "",
@@ -257,7 +257,7 @@ const MAIL_TEMPLATE_CATALOG = {
   admin_created_user: {
     label: "관리자 생성 계정 안내",
     placeholders: ["name", "username"],
-    subject: "[Terminal Lab] 계정이 생성되었습니다",
+    subject: "[KIKI OS TERMINAL-LAB] 계정이 생성되었습니다",
     text: [
       "{name}님 계정이 생성되었습니다.",
       "",
@@ -268,7 +268,7 @@ const MAIL_TEMPLATE_CATALOG = {
   admin_test: {
     label: "관리자 테스트 메일",
     placeholders: ["adminNameOrUsername", "sentAt"],
-    subject: "[Terminal Lab] 메일 설정 테스트",
+    subject: "[KIKI OS TERMINAL-LAB] 메일 설정 테스트",
     text: [
       "관리자 메일 설정 테스트 메시지입니다.",
       "",

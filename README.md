@@ -1,4 +1,10 @@
-# Terminal Lab Community 0.2.2
+# KIKI OS TERMINAL-LAB Community 0.3.0
+
+![KIKI OS TERMINAL-LAB](platform/client/public/kiki-os-terminal-lab.svg)
+
+제품 브랜드는 **KIKI OS TERMINAL-LAB · Community Edition**입니다. KIKI OS의 K 심볼과 터미널 프롬프트를 조합한 로고를 로그인·사용자 포털·관리자 콘솔에 사용합니다.
+
+0.3.0부터 저장소·패키지·배포 파일은 `kiki-terminal-lab` 이름을 사용합니다. 기존 Terminal Lab Community 0.2.x 설치의 상태 경로와 볼륨·키는 유지하며, [이름 전환 절차](docs/installation.md#02x-community에서-kiki-030으로-이름-전환)로 업데이트합니다.
 
 Maintained by **Choi Gook Hyun ([tangt64](https://github.com/tangt64))** · 문의: [tang@dustbox.kr](mailto:tang@dustbox.kr) · MIT
 
@@ -31,11 +37,11 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 
 교육 과정·커리큘럼·교재·강의 일정·수강 권한·교육 랩실·시험·수료증·교육 설문·과정 견적/결제·강사 공유·교육 역량 진단은 제외했습니다. 교육 보고서·교육 랩 터미널·강사 공유 WebSocket·검증용 과정 생성 경로도 제거했습니다. 일반 PoC/사용자 자원 요청, 자원 터미널과 마케팅 설문은 유지합니다.
 
-공통 쿼리 호환성을 위해 DB의 교육 호환 테이블과 일부 비활성 호환 코드·빈 화면 스텁은 남아 있습니다. 이 배포본의 초기화는 교육 콘텐츠를 생성하지 않습니다. 원본 수강생 정보·운영 DB·운영 자격증명 파일과 원문 커리큘럼 데이터는 현재 배포 소스에서 제외합니다. 과거 커밋·이전 릴리스의 콘텐츠는 현재 소스 수정과 별도로 정리해야 하므로, 정리 전까지 저장소를 비공개로 유지합니다.
+공통 쿼리 호환성을 위해 DB의 교육 호환 테이블과 일부 비활성 호환 코드·빈 화면 스텁은 남아 있습니다. 이 배포본의 초기화는 교육 콘텐츠를 생성하지 않습니다. 원본 수강생 정보·운영 DB·운영 자격증명 파일과 원문 커리큘럼 데이터는 현재 배포 소스에서 제외합니다. 과거 교육 콘텐츠가 포함된 이력·릴리스는 별도 비공개 아카이브에 보존했습니다. 현재 저장소에는 정리된 Community 이력만 포함하며 계속 비공개로 유지합니다.
 
 ## 화면 미리보기
 
-Terminal Lab Community 0.2.2의 실제 UI를 데모 데이터로 캡처했습니다(2026-11-01). 계정·게시물·프로젝트·IP는 가상 예시이며 운영 데이터와 인증 정보는 포함하지 않습니다. 클라우드 자원은 브라우저의 데모 API 응답으로 표시했습니다. 이 화면은 실제 OpenStack 연결이나 SSO 공급자 인증을 검증한 결과가 아닙니다.
+KIKI OS TERMINAL-LAB Community 0.3.0의 실제 UI를 데모 데이터로 캡처했습니다(2026-11-01). 계정·게시물·프로젝트·IP는 가상 예시이며 운영 데이터와 인증 정보는 포함하지 않습니다. 클라우드 자원은 브라우저의 데모 API 응답으로 표시했습니다. 이 화면은 실제 OpenStack 연결이나 SSO 공급자 인증을 검증한 결과가 아닙니다.
 
 ### 로그인·SSO·OTP
 
@@ -143,11 +149,11 @@ python3 installer/package.py
 
 ## 저장소
 
-저장소는 [tangt64/terminal-lab-community](https://github.com/tangt64/terminal-lab-community)이며, 현재 **비공개로 유지**합니다. 접근 권한이 있는 계정으로 복제할 수 있습니다. 이 디렉터리의 배포 소스만 포함하며 부모 저장소와 Git 이력, 운영 DB·설정·키·업로드를 포함하지 않습니다. `.gitignore`는 운영 경로를 제외합니다. MIT 라이선스와 의존성 고지는 [LICENSE](LICENSE)·[NOTICE.md](NOTICE.md)에 있으며, 추출 원본 해시는 [출처 기록](platform/SOURCE-PROVENANCE.json)에 있습니다. 공개 연락처는 위의 문의 메일이며 실제 인프라 자격증명은 설치자가 별도로 설정합니다.
+저장소는 [tangt64/kiki-terminal-lab](https://github.com/tangt64/kiki-terminal-lab)이며, 현재 **비공개로 유지**합니다. 접근 권한이 있는 계정으로 복제할 수 있습니다. 이 디렉터리의 배포 소스만 포함하며 부모 저장소와 Git 이력, 운영 DB·설정·키·업로드를 포함하지 않습니다. `.gitignore`는 운영 경로를 제외합니다. MIT 라이선스와 의존성 고지는 [LICENSE](LICENSE)·[NOTICE.md](NOTICE.md)에 있으며, 추출 원본 해시는 [출처 기록](platform/SOURCE-PROVENANCE.json)에 있습니다. 공개 연락처는 위의 문의 메일이며 실제 인프라 자격증명은 설치자가 별도로 설정합니다.
 
 ```bash
-git clone https://github.com/tangt64/terminal-lab-community.git
-cd terminal-lab-community
+git clone https://github.com/tangt64/kiki-terminal-lab.git
+cd kiki-terminal-lab
 ```
 
 개발자 정보는 [AUTHORS.md](AUTHORS.md), 기여 방법은 [CONTRIBUTING.md](CONTRIBUTING.md), 코드 구조·주석·테스트는 [개발 안내](docs/development.md), 문의·문제 제보는 [SUPPORT.md](SUPPORT.md), 변경 이력은 [CHANGELOG.md](CHANGELOG.md)를 참조하세요.

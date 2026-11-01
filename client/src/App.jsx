@@ -8,7 +8,7 @@ export default function App(){
   const [session,setSession]=useState(undefined);
   const [error,setError]=useState('');
   useEffect(()=>{api('/api/auth/me').then(result=>setSession(result.user)).catch(error=>setError(error.message));},[]);
-  if(session===undefined)return <main className="boot"><h1>Terminal Lab Community</h1>{error?<div role="alert">{error}<button onClick={()=>location.reload()}>다시 시도</button></div>:<p role="status">연결 확인 중…</p>}</main>;
+  if(session===undefined)return <main className="boot"><h1>KIKI OS TERMINAL-LAB</h1>{error?<div role="alert">{error}<button onClick={()=>location.reload()}>다시 시도</button></div>:<p role="status">연결 확인 중…</p>}</main>;
   if(!session)return <Login onLogin={setSession}/>;
   return <Portal session={session} onSession={setSession}/>;
 }

@@ -1,6 +1,6 @@
 {
-  "edition": "terminal-lab-community",
-  "version": "0.2.1",
+  "edition": "kiki-terminal-lab",
+  "version": "0.3.0",
   "activeSource": "platform/",
   "sourceInventory": "platform/SOURCE-PROVENANCE.json",
   "description": "Standalone snapshot of the original general user and administrator features. Education routes and navigation excluded. Empty education compatibility schema retained. No parent imports, credentials, data, teaching content or Git history included. Lab Board UI, service, assets and dedicated dependencies were removed in 0.2.1.",
@@ -8,5 +8,6 @@
   "excludedFeatures": [
     "education",
     "lab-board"
-  ]
+  ],
+  "previousProduct": "terminal-lab-community"
 }

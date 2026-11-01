@@ -370,7 +370,7 @@ function buildOpenstackDiagnosticReport(apiMonitor = {}, platformStatus = {}) {
     .sort((a, b) => b.percent - a.percent)
     .slice(0, 6);
   const lines = [
-    "[Terminal Lab OpenStack 진단 리포트]",
+    "[KIKI OS TERMINAL-LAB OpenStack 진단 리포트]",
     `생성 시각: ${new Date().toLocaleString("ko-KR")}`,
     `최근 점검: ${formatApiMonitorReportValue(apiMonitor.checkedAt, "기록 없음")}`,
     "",

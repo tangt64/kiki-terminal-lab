@@ -3330,7 +3330,7 @@ export async function ensureSelfServiceOpenstackProject({
       token: adminAuth.token,
       projectName: normalizedProjectName,
       domainId,
-      description: `Terminal Lab dedicated project${ownerLabel ? ` for ${ownerLabel}` : ""}`,
+      description: `KIKI OS TERMINAL-LAB dedicated project${ownerLabel ? ` for ${ownerLabel}` : ""}`,
     });
     markStep("project", "Keystone 프로젝트 준비", "success", project.created ? "새 프로젝트 생성" : "기존 프로젝트 확인");
   } catch (error) {
@@ -4484,7 +4484,7 @@ async function ensureOpenstackSecurityGroup({ networkEndpoint, token, projectId,
         body: {
           security_group: {
             name: normalizedName,
-            description: "Terminal Lab self-service VM access",
+            description: "KIKI OS TERMINAL-LAB self-service VM access",
             project_id: projectId,
           },
         },

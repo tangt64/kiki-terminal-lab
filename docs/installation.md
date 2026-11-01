@@ -1,6 +1,6 @@
 # 설치 방법·환경 조건·서버 사양
 
-기준: Terminal Lab Community 0.2.2, 2026-11-01.
+기준: KIKI OS TERMINAL-LAB Community 0.3.0, 2026-11-01.
 
 이 문서는 교육 기능과 랩보드를 제외한 일반 사용자·관리자 포털의 설치 안내입니다. 인스톨러는 **포털 앱과 전용 PostgreSQL**을 구성하고, 이미 운영 중인 OpenStack에 연결합니다. OS·컨테이너 엔진·OpenStack 자체를 설치하지 않습니다.
 
@@ -140,11 +140,11 @@ Docker를 선택하면 [공식 Engine 설치 절차](https://docs.docker.com/eng
 제공된 ZIP을 새 디렉터리에 풉니다. GitHub 저장소가 게시되면 해당 저장소의 릴리스 소스도 같은 방식으로 사용할 수 있습니다.
 
 ```bash
-unzip terminal-lab-community-0.2.2.zip
-cd terminal-lab-community
-COMMUNITY_STATE_DIR="$HOME/.local/state/terminal-lab-community"
-COMMUNITY_CLOUD_FILE="$HOME/.config/terminal-lab-community/clouds.yaml"
-install -d -m 700 "$HOME/.config/terminal-lab-community"
+unzip kiki-terminal-lab-0.3.0.zip
+cd kiki-terminal-lab
+COMMUNITY_STATE_DIR="$HOME/.local/state/kiki-terminal-lab"
+COMMUNITY_CLOUD_FILE="$HOME/.config/kiki-terminal-lab/clouds.yaml"
+install -d -m 700 "$HOME/.config/kiki-terminal-lab"
 cp deploy/clouds.example.yaml "$COMMUNITY_CLOUD_FILE"
 chmod 600 "$COMMUNITY_CLOUD_FILE"
 ```
@@ -231,7 +231,7 @@ curl --fail http://127.0.0.1:4080/api/health
 cat "$COMMUNITY_STATE_DIR/initial-admin.txt"
 ```
 
-헬스 응답에서 `ok: true`, `product: terminal-lab-community`, DB 연결 상태를 확인합니다. 관리자 비밀번호는 해당 파일에서 확인하고 로그인 후 변경합니다. 운영 도메인에서도 로그인과 새로고침, 세션 유지, WebSocket 연결을 확인합니다.
+헬스 응답에서 `ok: true`, `product: kiki-terminal-lab`, DB 연결 상태를 확인합니다. 관리자 비밀번호는 해당 파일에서 확인하고 로그인 후 변경합니다. 운영 도메인에서도 로그인과 새로고침, 세션 유지, WebSocket 연결을 확인합니다.
 
 첫 설정 순서:
 
@@ -266,6 +266,21 @@ python3 installer/install.py status --state-dir "$COMMUNITY_STATE_DIR"
 ```
 
 업데이트는 새 버전 소스의 루트에서 같은 `--state-dir`을 지정합니다.
+
+### 0.2.x Community에서 KIKI 0.3.0으로 이름 전환
+
+새 설치의 ZIP·폴더·패키지 이름은 `kiki-terminal-lab`입니다. 기존 설치는 원래 `deployment.json`·`app.env`·`database.env`·`secrets/`가 들어 있는 **상태 경로를 그대로 지정**합니다. 아래 예시는 이전 문서의 기본 상태 경로를 사용하며, 실제 경로가 다르면 변경하세요.
+
+```bash
+cd kiki-terminal-lab
+KIKI_STATE_DIR="$HOME/.local/state/terminal-lab-community"
+python3 installer/install.py backup --state-dir "$KIKI_STATE_DIR"
+python3 installer/install.py update --state-dir "$KIKI_STATE_DIR"
+```
+
+이전 설치에서 소스 폴더 아래 `runtime/deployment/`를 사용했다면 새 소스 폴더의 빈 경로를 지정하지 말고 **이전 폴더의 절대 상태 경로**를 지정합니다. 이름 변경만을 위해 상태·볼륨·키를 복사하거나 기존 설치에 `install`을 다시 실행하지 않습니다. 기존 `tl-community-*` 자원·서비스와 소유권 라벨은 유지되며, 새 설치만 `kiki-terminal-lab-*` 이름을 사용합니다. PostgreSQL DB/사용자·클라우드 별칭·`COMMUNITY_*` 환경변수·DB 마이그레이션 표식은 호환성을 위해 유지합니다. 기존 `clouds.yaml`과 앱 환경변수는 자동 덮어쓰지 않습니다.
+
+0.1에서의 전환은 데이터 스키마 변경도 포함합니다. 실패 후 복구 조건은 [운영 안내](operations.md)를 따릅니다.
 
 ```bash
 python3 installer/install.py update --state-dir "$COMMUNITY_STATE_DIR"

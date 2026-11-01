@@ -102,7 +102,7 @@ const BACKUP_TABLE_DUMP_POLICIES = {
 };
 
 const DEFAULT_LLM_SYSTEM_PROMPT = [
-  "당신은 Terminal Lab Community의 클라우드·시스템 운영 도우미입니다.",
+  "당신은 KIKI OS TERMINAL-LAB의 클라우드·시스템 운영 도우미입니다.",
   "",
   "목표:",
   "- 사용자가 가상머신, 컨테이너, 쿠버네티스 클러스터를 이해하고 운영 문제를 해결하도록 돕습니다.",
@@ -312,7 +312,7 @@ const DEFAULT_CUSTOM_DOMAIN_GUIDANCE = {
   verificationLabel: "검증 TXT",
   verificationText: "TXT 레코드가 없으면 서비스에서 도메인을 인식할 수 없습니다.",
 };
-const DEFAULT_OTP_ISSUER_NAME = "Terminal Lab";
+const DEFAULT_OTP_ISSUER_NAME = "KIKI OS TERMINAL-LAB";
 const DEFAULT_ZUN_API_URL = "";
 const DEFAULT_POC_PROJECT_NAME = "PoC-example.com";
 const DEFAULT_MAIL_WEBHOOK_URL = String(process.env.MAIL_WEBHOOK_URL || "").trim();
@@ -5992,7 +5992,7 @@ async function pgGetPlatformStatus() {
     oauthRedirectUri: String(values.get("oauthRedirectUri") || process.env.OAUTH_REDIRECT_URI || "").trim(),
     mailEnabled: values.get("mailEnabled") === "true",
     mailProvider: String(values.get("mailProvider") || "webhook").trim() || "webhook",
-    mailFromName: String(values.get("mailFromName") || "Terminal Lab").trim() || "Terminal Lab",
+    mailFromName: String(values.get("mailFromName") || "KIKI OS TERMINAL-LAB").trim() || "KIKI OS TERMINAL-LAB",
     mailFromAddress: String(values.get("mailFromAddress") || "").trim(),
     mailSmtpHost: String(values.get("mailSmtpHost") || "").trim(),
     mailSmtpPort: Math.max(1, Number(values.get("mailSmtpPort") || 587) || 587),

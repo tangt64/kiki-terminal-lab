@@ -704,7 +704,7 @@ const EMPTY_PUBLIC_ROUTE = { domainType: "managed", subdomain: "", customDomain:
 const EMPTY_PUBLIC_TCP_ROUTE = { targetPort: "", nodeId: "" };
 const EMPTY_PROFILE = { name: "", email: "", username: "", role: "", status: "", currentPassword: "", newPassword: "", confirmPassword: "", courseCode: "", otpEnabled: false, otpSetupSecret: "", otpSetupUri: "", otpSetupCode: "", otpDisableCode: "" };
 const EMPTY_RESET_PIN_FORM = { username: "", pin: "", newPassword: "", confirmPassword: "" };
-const EMPTY_PENDING_OTP_ENROLLMENT = { active: false, userId: null, username: "", name: "", role: "", secret: "", otpauthUrl: "", issuerName: "Terminal Lab", code: "" };
+const EMPTY_PENDING_OTP_ENROLLMENT = { active: false, userId: null, username: "", name: "", role: "", secret: "", otpauthUrl: "", issuerName: "KIKI OS TERMINAL-LAB", code: "" };
 const EMPTY_ADMIN_USER_FORM = { name: "", email: "", username: "", password: "", role: "student", status: "approved" };
 const EMPTY_ADMIN_BATCH_USER_FORM = { usernamePrefix: "user", namePrefix: "user", startNumber: "1", endNumber: "10", password: "", role: "student", status: "approved" };
 const EMPTY_ADMIN_MAIL_FORM = { recipientMode: "manual", to: "", subject: "", text: "" };
@@ -1154,7 +1154,7 @@ const EMPTY_PLATFORM_STATUS = {
   mailEnabled: false,
   preSurveyAdminMailEnabled: true,
   mailProvider: "webhook",
-  mailFromName: "Terminal Lab",
+  mailFromName: "KIKI OS TERMINAL-LAB",
   mailFromAddress: "",
   mailSmtpHost: "",
   mailSmtpPort: 587,
@@ -1173,7 +1173,7 @@ const EMPTY_PLATFORM_STATUS = {
   supportUnavailableMessage: "현재 관리자가 부재중입니다. 운영지원 대화는 잠시 후 다시 이용해 주세요.",
   otpAdminRequired: false,
   otpUserEnabled: false,
-  otpIssuerName: "Terminal Lab",
+  otpIssuerName: "KIKI OS TERMINAL-LAB",
 };
 
 export function normalizeCourseQuoteAccessMode(value) {
@@ -4410,7 +4410,7 @@ export function usePortalApp() {
           role: error.payload?.user?.role || "",
           secret: error.payload?.setup?.secret || "",
           otpauthUrl: error.payload?.setup?.otpauthUrl || "",
-          issuerName: error.payload?.setup?.issuerName || platformStatus.otpIssuerName || "Terminal Lab",
+          issuerName: error.payload?.setup?.issuerName || platformStatus.otpIssuerName || "KIKI OS TERMINAL-LAB",
           code: "",
         });
         setAuthStatus({ tone: "error", message: error.message });

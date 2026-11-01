@@ -4,7 +4,7 @@ import { api, canUseCourseQuotePortal, usePortalApp } from "./portal-state.js";
 import { AdminField } from "./admin-field.jsx";
 import { formatBuildBranch, formatBuildCommit } from "./build-info.js";
 import { getQuotaUsagePercent, getQuotaUsageToneClass } from "./quota-usage.js";
-import TerminalLabLogo, { getTerminalLabFaviconDataUri } from "./terminal-lab-logo.jsx";
+import TerminalLabLogo, { COMMUNITY_BRAND_NAME, TerminalLabBrand, getTerminalLabFaviconHref } from "./terminal-lab-logo.jsx";
 import { getStandaloneExamCourseIds, isLearningLabResource, isStandaloneExamCourse } from "./course-visibility.js";
 const GuideMarkdownBlock = lazy(() => import("./guide-renderer.jsx"));
 const InteractiveLogoStage = lazy(() => import("./interactive-logo-stage.jsx"));
@@ -1664,7 +1664,7 @@ export default function App() {
     }
   }
   useEffect(() => {
-    const faviconHref = useUploadedFavicon ? app.platformStatus.faviconPath : getTerminalLabFaviconDataUri();
+    const faviconHref = useUploadedFavicon ? app.platformStatus.faviconPath : getTerminalLabFaviconHref();
     let faviconLink = document.querySelector("link[rel='icon']");
     if (!faviconLink) {
       faviconLink = document.createElement("link");
@@ -1959,10 +1959,11 @@ export default function App() {
 
           <div className="brand">
             <Suspense fallback={<div className="logo-stage logo-stage-sidebar is-loading"><TerminalLabLogo className="brand-logo" /></div>}>
-              <InteractiveLogoStage className="logo-stage-sidebar" quotaStatus={app.quotaStatus} title="TERMINAL LAB">
-                {useUploadedBrandLogo ? <img alt="TERMINAL LAB 로고" className="brand-logo" src={app.platformStatus.landingLogoPath} /> : <TerminalLabLogo className="brand-logo" />}
+              <InteractiveLogoStage className="logo-stage-sidebar" quotaStatus={app.quotaStatus} title={COMMUNITY_BRAND_NAME}>
+                {useUploadedBrandLogo ? <img alt={`${COMMUNITY_BRAND_NAME} 로고`} className="brand-logo" src={app.platformStatus.landingLogoPath} /> : <TerminalLabLogo className="brand-logo" />}
               </InteractiveLogoStage>
             </Suspense>
+            <TerminalLabBrand className="sidebar-product-brand" logoPath={useUploadedBrandLogo ? app.platformStatus.landingLogoPath : ""} />
             <strong className="brand-user-row">
               <span className="brand-user-name">{portalApp.session.name}</span>
               {portalUiV2Active ? <button aria-label={totalUnreadAlerts ? `알림 및 운영지원 ${totalUnreadAlerts}건 확인` : "알림함 열기"} className={`sidebar-alert-pill ${totalUnreadAlerts ? "has-unread" : ""}`} onClick={openSidebarAlertShortcut} title={totalUnreadAlerts ? `미확인 알림/운영지원 ${totalUnreadAlerts}건` : "알림함 열기"} type="button">

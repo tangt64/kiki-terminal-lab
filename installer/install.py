@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install only Terminal Lab Community and its private PostgreSQL instance.
+"""Install only KIKI OS TERMINAL-LAB and its private PostgreSQL instance.
 
 No OS installation, OpenStack deployment or parent project operations are performed.
 Python 3.9+, Docker or rootless Podman. Inspect with `plan` before installation.
@@ -20,8 +20,12 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-LABEL = "io.terminallab.community.installation"
-VERSION = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
+LABEL = "io.kikios.terminal-lab.installation"
+LEGACY_LABEL = "io.terminallab.community.installation"
+LEGACY_PRODUCT = "terminal-lab-community"
+RELEASE = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+PRODUCT = RELEASE["name"]
+VERSION = RELEASE["version"]
 
 
 def write_private(path, value):
@@ -56,11 +60,19 @@ class Installer:
         self.state = json.loads(self.state_file.read_text(encoding="utf-8")) if self.state_file.exists() else None
         self.engine = self.state["engine"] if self.state else args.engine
 
+    @property
+    def label(self):
+        # Old deployment files keep their original ownership boundary.
+        label = self.state.get("ownership_label", LEGACY_LABEL) if self.state else LABEL
+        if label not in (LABEL, LEGACY_LABEL):
+            raise ValueError("Unknown installation ownership label")
+        return label
+
     def run(self, *args, check=True, stdout=subprocess.PIPE):
         result = subprocess.run([self.engine, *map(str, args)], check=False, stdout=stdout, stderr=subprocess.PIPE)
         if check and result.returncode:
             # Engine errors may contain secrets from runtime configuration: do not echo full output.
-            raise RuntimeError(f"{self.engine} {args[0]} failed ({result.returncode}). Inspect the named Community containers with the engine CLI.")
+            raise RuntimeError(f"{self.engine} {args[0]} failed ({result.returncode}). Inspect the named KIKI containers with the engine CLI.")
         return result
 
     def save(self):
@@ -72,18 +84,18 @@ class Installer:
             return False
         data = json.loads(result.stdout)[0]
         labels = data.get("Labels") or data.get("Config", {}).get("Labels") or {}
-        if labels.get(LABEL) != self.state["id"]:
+        if labels.get(self.label) != self.state["id"]:
             raise RuntimeError(f"Refusing to modify an unowned {kind}: {name}")
         return True
 
     def plan(self):
-        return {"product": "terminal-lab-community", "version": VERSION, "engine": self.engine,
+        return {"product": PRODUCT, "version": VERSION, "engine": self.engine,
                 "state_dir": str(self.state_dir), "public_url": validate_url(self.args.public_url),
                 "host_port": self.args.port, "bind": self.args.bind,
                 "ssh_source_cidrs": validate_source_cidrs(getattr(self.args, "ssh_source_cidrs", "")),
                 "validation_network": getattr(self.args, "validation_network", ""),
                 "actions": ["build independent application image", "create separately labelled network, database volume and application-data volume",
-                            "start PostgreSQL without a published database port", "start Community on the selected free port",
+                            "start PostgreSQL without a published database port", "start KIKI OS TERMINAL-LAB on the selected free port",
                             "check /api/health", "write optional user-systemd Quadlet files"],
                 "requirements": ["existing OpenStack", "clouds.yaml for a service account allowed to create dedicated projects", "Docker or rootless Podman", "network for npm and container images unless preloaded"],
                 "original_terminal_lab": "no access or modifications"}
@@ -107,8 +119,8 @@ class Installer:
         if self.args.username == "" or not self.args.username.isascii() or not self.args.username.replace("-", "").replace("_", "").isalnum():
             raise ValueError("username must contain ASCII letters, numbers, hyphens or underscores")
         install_id = secrets.token_hex(6)
-        prefix = "tl-community-" + install_id
-        self.state = {"id": install_id, "engine": self.engine, "prefix": prefix, "version": VERSION,
+        prefix = PRODUCT + "-" + install_id
+        self.state = {"product": PRODUCT, "ownership_label": LABEL, "service_prefix": PRODUCT, "id": install_id, "engine": self.engine, "prefix": prefix, "version": VERSION,
                       "network": prefix + "-net", "volume": prefix + "-pgdata", "data_volume": prefix + "-appdata", "database": prefix + "-db",
                       "app": prefix + "-app", "image": prefix + f"-app:{VERSION}", "public_url": public_url,
                       "port": self.args.port, "bind": self.args.bind, "stage": "prepared",
@@ -142,16 +154,16 @@ class Installer:
                 os.chmod(file, 0o644)
             os.chmod(self.state_dir / "secrets", 0o700)
         self.build()
-        self.run("network", "create", "--label", f"{LABEL}={install_id}", self.state["network"])
-        self.run("volume", "create", "--label", f"{LABEL}={install_id}", self.state["volume"])
-        self.run("volume", "create", "--label", f"{LABEL}={install_id}", self.state["data_volume"])
+        self.run("network", "create", "--label", f"{self.label}={install_id}", self.state["network"])
+        self.run("volume", "create", "--label", f"{self.label}={install_id}", self.state["volume"])
+        self.run("volume", "create", "--label", f"{self.label}={install_id}", self.state["data_volume"])
         self.start()
         self.quadlets()
         print(f"Installed: {public_url}\nInitial credentials: {self.state_dir / 'initial-admin.txt'}\nChange the initial password after login.")
 
     def require_state(self):
         if not self.state:
-            raise RuntimeError("No Community deployment state exists in this directory")
+            raise RuntimeError("No KIKI deployment state exists in this directory")
 
     def resume(self):
         self.require_state()
@@ -165,13 +177,13 @@ class Installer:
         self.save()
         for kind, key in (("network", "network"), ("volume", "volume"), ("volume", "data_volume")):
             if not self.owned(kind, self.state[key]):
-                self.run(kind, "create", "--label", f"{LABEL}={self.state['id']}", self.state[key])
+                self.run(kind, "create", "--label", f"{self.label}={self.state['id']}", self.state[key])
         self.start()
         self.quadlets()
 
     def build(self):
         self.require_state()
-        self.run("build", "--label", f"{LABEL}={self.state['id']}", "-f", ROOT / "Containerfile", "-t", self.state["image"], ROOT)
+        self.run("build", "--label", f"{self.label}={self.state['id']}", "-f", ROOT / "Containerfile", "-t", self.state["image"], ROOT)
 
     def app_arguments(self, image=None):
         s = self.state
@@ -187,7 +199,7 @@ class Installer:
         if s.get("tcp_forwarding"):
             first, last = s["tcp_port_start"], s["tcp_port_end"]
             ports += ["-p", f"{s['tcp_bind']}:{first}-{last}:{first}-{last}"]
-        return ["run", "-d", "--name", s["app"], "--label", f"{LABEL}={s['id']}", "--restart", "unless-stopped",
+        return ["run", "-d", "--name", s["app"], "--label", f"{self.label}={s['id']}", "--restart", "unless-stopped",
                 "--network", s["network"], "--env-file", self.state_dir / "app.env", "--security-opt", "no-new-privileges",
                 "--cap-drop", "ALL", *user, *mounts, *ports, image or s["image"]]
 
@@ -196,7 +208,7 @@ class Installer:
         s = self.state
         if not s.get("data_volume"):
             s["data_volume"] = s["prefix"] + "-appdata"
-            self.run("volume", "create", "--label", f"{LABEL}={s['id']}", s["data_volume"])
+            self.run("volume", "create", "--label", f"{self.label}={s['id']}", s["data_volume"])
             self.save()
         elif not self.owned("volume", s["data_volume"]):
             raise RuntimeError("The owned application-data volume is missing; refusing to start with empty upload/template storage")
@@ -205,14 +217,14 @@ class Installer:
         if self.owned("container", s["database"]):
             self.run("start", s["database"])
         else:
-            self.run("run", "-d", "--name", s["database"], "--label", f"{LABEL}={s['id']}", "--restart", "unless-stopped",
+            self.run("run", "-d", "--name", s["database"], "--label", f"{self.label}={s['id']}", "--restart", "unless-stopped",
                      "--network", s["network"], "--env-file", self.state_dir / "database.env", "-v", f"{s['volume']}:/var/lib/postgresql/data", "docker.io/postgres:17-bookworm")
         for _ in range(60):
             if self.run("exec", s["database"], "pg_isready", "-U", "community", "-d", "community", check=False).returncode == 0:
                 break
             time.sleep(1)
         else:
-            raise RuntimeError("Community PostgreSQL did not become ready")
+            raise RuntimeError("KIKI PostgreSQL did not become ready")
         if self.owned("container", s["app"]):
             self.run("start", s["app"])
         else:
@@ -227,12 +239,12 @@ class Installer:
             try:
                 with urlopen(url, timeout=3) as response:
                     data = json.load(response)
-                if data.get("ok") and data.get("product") == "terminal-lab-community":
+                if data.get("ok") and data.get("product") in (PRODUCT, LEGACY_PRODUCT):
                     return
             except (OSError, ValueError):
                 pass
             time.sleep(1)
-        raise RuntimeError("Community application health check failed; original services were not changed")
+        raise RuntimeError("KIKI application health check failed; original services were not changed")
 
     def stop(self):
         self.require_state()
@@ -254,8 +266,8 @@ class Installer:
     def backup(self):
         self.require_state()
         if not self.owned("container", self.state["database"]):
-            raise RuntimeError("Community database is not running")
-        destination = self.state_dir / "backups" / time.strftime("community-%Y%m%d-%H%M%S.dump")
+            raise RuntimeError("KIKI database is not running")
+        destination = self.state_dir / "backups" / time.strftime("kiki-terminal-lab-%Y%m%d-%H%M%S.dump")
         destination.parent.mkdir(parents=True, exist_ok=True)
         # O_EXCL prevents overwriting a backup taken in the same second.
         app_running = False
@@ -272,7 +284,7 @@ class Installer:
             if self.state.get("data_volume") and self.owned("volume", self.state["data_volume"]):
                 files_fd = os.open(str(files_destination), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
                 with os.fdopen(files_fd, "wb") as output:
-                    self.run("run", "--rm", "--label", f"{LABEL}={self.state['id']}", "--network", "none", "--user", "0:0", "--entrypoint", "tar", "-v", f"{self.state['data_volume']}:/backup:ro", self.state["image"], "-C", "/backup", "-czf", "-", ".", stdout=output)
+                    self.run("run", "--rm", "--label", f"{self.label}={self.state['id']}", "--network", "none", "--user", "0:0", "--entrypoint", "tar", "-v", f"{self.state['data_volume']}:/backup:ro", self.state["image"], "-C", "/backup", "-czf", "-", ".", stdout=output)
                 print(f"Application files backup: {files_destination}")
         except Exception:
             destination.unlink(missing_ok=True)
@@ -293,7 +305,7 @@ class Installer:
         self.backup()
         if not self.state.get("data_volume"):
             self.state["data_volume"] = self.state["prefix"] + "-appdata"
-            self.run("volume", "create", "--label", f"{LABEL}={self.state['id']}", self.state["data_volume"])
+            self.run("volume", "create", "--label", f"{self.label}={self.state['id']}", self.state["data_volume"])
             self.save()
         self.state["image"] = self.state["prefix"] + f"-app:{VERSION}"
         self.build()
@@ -307,13 +319,13 @@ class Installer:
                 self.run("stop", self.state["app"], check=False)
                 self.run("rm", self.state["app"])
             previous_version = self.state.get("version", "")
-            if previous_version.startswith("0.1.") and VERSION.startswith("0.2."):
-                raise RuntimeError("Update failed during the 0.1-to-0.2 schema transition. The application is stopped, the database and both backups are preserved. Restore the matching pre-upgrade DB before starting the previous image.")
+            if previous_version.startswith("0.1.") and not VERSION.startswith("0.1."):
+                raise RuntimeError("Update failed during the 0.1-to-platform schema transition. The application is stopped, the database and both backups are preserved. Restore the matching pre-upgrade DB before starting the previous image.")
             self.run(*self.app_arguments(previous))
-            raise RuntimeError("Update failed; previous application image was restarted. Inspect Community state before retrying.")
+            raise RuntimeError("Update failed; previous application image was restarted. Inspect KIKI state before retrying.")
         self.state["version"] = VERSION
         self.save()
-        print("Community updated; database volume and credential keys preserved.")
+        print("KIKI OS TERMINAL-LAB updated; database volume and credential keys preserved.")
 
     def uninstall(self):
         self.require_state()
@@ -323,36 +335,39 @@ class Installer:
                 self.run("rm", name)
         self.state["stage"] = "uninstalled-data-preserved"
         self.save()
-        print("Community containers removed. Database volume, network, secrets and backups are preserved. `start` reinstalls containers.")
+        print("KIKI containers removed. Database volume, network, secrets and backups are preserved. `start` reinstalls containers.")
 
     def quadlets(self):
         if self.engine != "podman":
             return
         s = self.state
+        unit_prefix = s.get("service_prefix", "tl-community")
+        if unit_prefix not in (PRODUCT, "tl-community"):
+            raise ValueError("Unknown service prefix")
         directory = self.state_dir / "systemd"
         directory.mkdir(exist_ok=True)
         for file in [self.state_dir, ROOT]:
             if any(c in str(file) for c in ('\n', '\r', '"', '%')):
                 raise ValueError("The deployment path cannot contain newlines, quotes or systemd specifiers")
         # Export only. Enabling boot services requires an explicit operator action documented in README.
-        (directory / "tl-community-db.container").write_text(f'''[Unit]
-Description=Terminal Lab Community PostgreSQL
+        (directory / f"{unit_prefix}-db.container").write_text(f'''[Unit]
+Description=KIKI OS TERMINAL-LAB PostgreSQL
 [Container]
 Image=docker.io/postgres:17-bookworm
 ContainerName={s['database']}
 Network={s['network']}
 EnvironmentFile="{self.state_dir / 'database.env'}"
 Volume={s['volume']}:/var/lib/postgresql/data
-Label={LABEL}={s['id']}
+Label={self.label}={s['id']}
 [Service]
 Restart=on-failure
 [Install]
 WantedBy=default.target
 ''', encoding="utf-8")
-        (directory / "tl-community-app.container").write_text(f'''[Unit]
-Description=Terminal Lab Community Portal
-Requires=tl-community-db.service
-After=tl-community-db.service
+        (directory / f"{unit_prefix}-app.container").write_text(f'''[Unit]
+Description=KIKI OS TERMINAL-LAB Portal
+Requires={unit_prefix}-db.service
+After={unit_prefix}-db.service
 [Container]
 Image={s['image']}
 ContainerName={s['app']}
@@ -362,7 +377,7 @@ Volume="{self.state_dir / 'secrets'}:/app/secrets:ro,Z"
 Volume={s.get('data_volume', s['prefix'] + '-appdata')}:/app/data
 UserNS=keep-id:uid=1000,gid=1000
 PublishPort={s['bind']}:{s['port']}:4080
-Label={LABEL}={s['id']}
+Label={self.label}={s['id']}
 DropCapability=all
 NoNewPrivileges=true
 [Service]

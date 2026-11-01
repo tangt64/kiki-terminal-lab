@@ -20,7 +20,7 @@
 
 ## 백업·복원
 
-`backup`은 앱을 잠시 중지하고 동일 시점의 `community-*.dump`와 `community-*.files.tar.gz`를 만듭니다. 앱이 실행 중이었다면 백업 후 다시 시작합니다. 별도로 `app.env`·`database.env`·`deployment.json`·`secrets/`도 보호된 장소에 복사합니다.
+`backup`은 앱을 잠시 중지하고 동일 시점의 `kiki-terminal-lab-*.dump`와 `kiki-terminal-lab-*.files.tar.gz`를 만듭니다. 앱이 실행 중이었다면 백업 후 다시 시작합니다. 이전 버전의 `community-*` 백업 파일도 보존합니다. 별도로 `app.env`·`database.env`·`deployment.json`·`secrets/`도 보호된 장소에 복사합니다.
 
 복원은 운영자가 설치 ID·컨테이너 이름·대상 볼륨·백업 쌍을 확인한 후 수행합니다. 대상 Community 데이터가 덮어써집니다.
 
