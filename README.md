@@ -1,8 +1,8 @@
-# KIKI OS TERMINAL-LAB Community 0.3.0
+# KIKI OS TERMINAL-LAB Community 0.3.1
 
-![KIKI OS TERMINAL-LAB](platform/client/public/kiki-os-terminal-lab.svg)
+<img src="platform/client/public/brand/kikios-dark-blue-app-icon-v7.png" width="112" height="112" alt="KIKIOS 원본 로고" />
 
-제품 브랜드는 **KIKI OS TERMINAL-LAB · Community Edition**입니다. KIKI OS의 K 심볼과 터미널 프롬프트를 조합한 로고를 로그인·사용자 포털·관리자 콘솔에 사용합니다.
+제품 브랜드는 **KIKI OS TERMINAL-LAB · Community Edition**입니다. KIKI-OS 설치기에 선택된 남색·민트색 KIKIOS 웃는 얼굴 로고(v7)를 원본 그대로 사용합니다. 로그인·사용자 포털·관리자 콘솔에서 `KIKIOS`와 `TERMINAL-LAB`을 함께 표시하며, 파비콘과 관리자 미리보기에도 같은 원본을 사용합니다. 로고 출처와 별도 라이선스는 [브랜드 고지](platform/client/public/brand/ORIGIN.md)를 참조하세요.
 
 0.3.0부터 저장소·패키지·배포 파일은 `kiki-terminal-lab` 이름을 사용합니다. 기존 Terminal Lab Community 0.2.x 설치의 상태 경로와 볼륨·키는 유지하며, [이름 전환 절차](docs/installation.md#02x-community에서-kiki-030으로-이름-전환)로 업데이트합니다.
 
@@ -41,7 +41,7 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 
 ## 화면 미리보기
 
-KIKI OS TERMINAL-LAB Community 0.3.0의 실제 UI를 데모 데이터로 캡처했습니다(2026-11-01). 계정·게시물·프로젝트·IP는 가상 예시이며 운영 데이터와 인증 정보는 포함하지 않습니다. 클라우드 자원은 브라우저의 데모 API 응답으로 표시했습니다. 이 화면은 실제 OpenStack 연결이나 SSO 공급자 인증을 검증한 결과가 아닙니다.
+KIKI OS TERMINAL-LAB Community 0.3.1의 실제 UI를 데모 데이터로 캡처했습니다(2026-11-01). 계정·게시물·프로젝트·IP는 가상 예시이며 운영 데이터와 인증 정보는 포함하지 않습니다. 클라우드 자원은 브라우저의 데모 API 응답으로 표시했습니다. 이 화면은 실제 OpenStack 연결이나 SSO 공급자 인증을 검증한 결과가 아닙니다.
 
 ### 로그인·SSO·OTP
 

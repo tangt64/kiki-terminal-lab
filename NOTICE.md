@@ -10,3 +10,7 @@ Sharp is distributed under Apache-2.0; its native packages include libvips and o
 
 `npm run build` generates browser dependency notices and copies them into `platform/dist/licenses/`. The noVNC npm package is unmodified; its matching source is available from the resolved package tarball in `package-lock.json` and https://github.com/novnc/noVNC/tree/v1.5.0. Installed server dependencies retain their license files. Node, PostgreSQL, kubectl and runtime image components retain upstream licenses.
 
+
+## KIKIOS brand asset
+
+`platform/client/public/brand/kikios-dark-blue-app-icon-v7.png` is the unchanged logo from the KIKI-OS project by Choi Gook Hyun. Its source, SHA-256 and retained GPL v3 license are documented in [the brand notice](platform/client/public/brand/ORIGIN.md). The application code remains MIT licensed.
