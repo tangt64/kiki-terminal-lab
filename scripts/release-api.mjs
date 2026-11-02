@@ -212,7 +212,7 @@ export class ReleaseTarget {
       const location = response.headers.get('location');
       if (this.kind === 'github' && this.private === false) {
         const redirect = location ? new URL(location, url) : null;
-        const downloadable = [301,302,303,307,308].includes(response.status) && redirect?.protocol === 'https:' && (redirect.hostname === 'github.com' || redirect.hostname.endsWith('.githubusercontent.com'));
+        const downloadable = [301,302,303,307,308].includes(response.status) && redirect?.protocol === 'https:' && (redirect.hostname === 'github.com' && !/^\/(?:login|session|sessions)(?:\/|$)/.test(redirect.pathname) || redirect.hostname.endsWith('.githubusercontent.com'));
         if (response.status !== 200 && !downloadable) throw new Error('Public GitHub download verification failed.');
         await response.body?.cancel();
         continue;
