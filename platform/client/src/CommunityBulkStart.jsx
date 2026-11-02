@@ -1,8 +1,8 @@
 import {useRef,useState} from 'react';
-import {runCloudBulkActions} from './cloud-bulk-actions.js';
+import {runCloudBulkActions,selectBulkStartTargets} from './cloud-bulk-actions.js';
 export default function CommunityBulkStart({instances,projectName,busy,onBusy,onAction}){
  const [ids,setIds]=useState([]),[message,setMessage]=useState('');const lock=useRef(false);
- const stopped=instances.filter(vm=>String(vm.status).toUpperCase()==='SHUTOFF');
+ const stopped=selectBulkStartTargets(instances);
  const selected=stopped.filter(vm=>ids.includes(String(vm.id)));
  async function start(){
   if(busy||lock.current||!selected.length)return;
@@ -18,3 +18,4 @@ export default function CommunityBulkStart({instances,projectName,busy,onBusy,on
   <button type="button" disabled={busy||!selected.length} onClick={()=>void start()}>선택 {selected.length}대 순차 시작</button><p role="status">{message}</p>
  </section>;
 }
+
