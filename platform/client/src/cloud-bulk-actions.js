@@ -1,3 +1,11 @@
+export function selectBulkStartTargets(instances, isBusy = () => false) {
+  const seen = new Set();
+  return instances.filter(vm => {
+    const id = String(vm.id);
+    if (seen.has(id) || String(vm.status).toUpperCase() !== 'SHUTOFF' || vm['OS-EXT-STS:task_state'] || isBusy(vm.id)) return false;
+    seen.add(id); return true;
+  });
+}
 export async function runCloudBulkActions({ instances, operation, runAction, onProgress = () => {} }) {
   if (!["delete", "reboot", "start"].includes(operation)) throw new Error("지원하지 않는 일괄 작업입니다.");
   if (operation === 'start' && (!instances.length || instances.some(instance => String(instance.status).toUpperCase() !== 'SHUTOFF') || new Set(instances.map(instance => String(instance.id))).size !== instances.length)) throw new Error('중지된 가상머신만 중복 없이 선택해 주세요.');
