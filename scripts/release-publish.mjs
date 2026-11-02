@@ -177,7 +177,7 @@ export async function main(argv = process.argv.slice(2)) {
   --python PATH        Python 3.9+ executable
   --notes-file PATH    Optional UTF-8 release notes
 Credentials: existing Git Credential Manager, or RELEASE_GITHUB_TOKEN / RELEASE_GITEA_TOKEN.
-Published versions are never overwritten. Both repositories must already be private.`);
+Published versions are never overwritten. GitHub may be public; Gitea must remain private.`);
     return;
   }
   if (path.resolve(textGit(['rev-parse', '--show-toplevel'])) !== ROOT) throw new Error('Expected the independent repository root.');
@@ -237,8 +237,8 @@ Published versions are never overwritten. Both repositories must already be priv
   }
   if (options.dryRun) {
     console.log(JSON.stringify({mode: 'dry-run', tag, commit, branch: options.branch,
-      targets: targets.map(target => ({remote: target.remote, repository: target.location.webUrl, id: target.id, private: true})),
-      actions: ['build', 'package committed sources', 'push branch and tag', 'upload immutable assets', 'verify remote bytes and private access']}, null, 2));
+      targets: targets.map(target => ({remote: target.remote, repository: target.location.webUrl, id: target.id, private: target.private ?? true})),
+      actions: ['build', 'package committed sources', 'push branch and tag', 'upload immutable assets', 'verify remote bytes and per-repository access']}, null, 2));
     return;
   }
   fs.mkdirSync(stateDirectory, {recursive: true});

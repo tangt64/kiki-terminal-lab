@@ -26,7 +26,7 @@ export function parseChecksum(body, filename) {
 }
 
 export function assertPrivateRepository(repo, location, {id, kind} = {}) {
-  if (!repo || !Number.isSafeInteger(Number(repo.id)) || Number(repo.id) < 1 || repo.private !== true || repo.archived ||
+  if (!repo || !Number.isSafeInteger(Number(repo.id)) || Number(repo.id) < 1 || (repo.private !== true && !(kind === 'github' && repo.private === false)) || repo.archived ||
       String(repo.full_name).toLowerCase() !== location.fullName.toLowerCase() ||
       (id !== undefined && String(repo.id) !== String(id))) {
     throw new Error('Repository identity, private visibility or active state does not match.');
@@ -89,7 +89,9 @@ export class ReleaseTarget {
   async inspect() {
     const repo = await this.request(this.repoPath);
     assertPrivateRepository(repo, this.location, {id: this.id, kind: this.kind});
+    if (this.private !== undefined && this.private !== repo.private) throw new Error('Repository visibility changed during release.');
     this.id = repo.id;
+    this.private = repo.private;
     return repo;
   }
 
@@ -208,6 +210,13 @@ export class ReleaseTarget {
       try { response = await this.fetch(url.href, {redirect: 'manual', signal: AbortSignal.timeout(30000)}); }
       catch { throw new Error(`${this.remote}: anonymous verification failed.`); }
       const location = response.headers.get('location');
+      if (this.kind === 'github' && this.private === false) {
+        const redirect = location ? new URL(location, url) : null;
+        const downloadable = [301,302,303,307,308].includes(response.status) && redirect?.protocol === 'https:' && (redirect.hostname === 'github.com' || redirect.hostname.endsWith('.githubusercontent.com'));
+        if (response.status !== 200 && !downloadable) throw new Error('Public GitHub download verification failed.');
+        await response.body?.cancel();
+        continue;
+      }
       const login = location ? new URL(location, url) : null;
       const denied = [401, 403, 404].includes(response.status) ||
         ([301, 302, 303, 307, 308].includes(response.status) && login?.origin === url.origin && login.pathname.startsWith('/user/login'));
@@ -279,10 +288,10 @@ export async function publishBoth({targets, files, tag, commit, notes, prereleas
     await verifyAssets(target, release, files);
     const managed = {...release, assets: release.assets.filter(asset => files.some(file => file.name === asset.name))};
     await target.checkAnonymous(managed);
-    results.push({remote: target.remote, repository: target.location.webUrl, id: target.id, private: true,
+    results.push({remote: target.remote, repository: target.location.webUrl, id: target.id, private: target.private ?? true,
       release: release.html_url || `${target.location.webUrl}/releases/tag/${tag}`, commit,
       assets: managed.assets.map(asset => ({name: asset.name, size: asset.size, sha256: files.find(file => file.name === asset.name).sha256}))});
-    log(`${target.remote}: private release and SHA-256 verified`);
+    log(`${target.remote}: release visibility and SHA-256 verified`);
   }
   return results;
 }
