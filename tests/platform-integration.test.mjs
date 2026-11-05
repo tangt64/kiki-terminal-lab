@@ -21,7 +21,7 @@ test('full platform: SSO, OTP, notices, community posts and excluded features',{
   const origin=`http://127.0.0.1:${port}`;
   const data=await fs.mkdtemp(path.join(os.tmpdir(),'community-parity-'));
   const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-  const child=spawn(process.execPath,['tests/platform-server.mjs'],{cwd:root,windowsHide:true,env:{...process.env,PORT:String(port),HOST:'127.0.0.1',PUBLIC_URL:origin,DATA_ROOT_DIR:data,SESSION_SECRET:'test-parity-session-'.repeat(4),CREDENTIAL_KEY:'cd'.repeat(32),INITIAL_ADMIN_USERNAME:'admin',INITIAL_ADMIN_PASSWORD:'parity-admin-test-password-2026',HEAT_DRIVER:'openstack',NODE_ENV:'development'}});
+  const child=spawn(process.execPath,['tests/platform-server.mjs'],{cwd:root,windowsHide:true,env:{...process.env,PORT:String(port),HOST:'127.0.0.1',PUBLIC_URL:origin,DATA_ROOT_DIR:data,SESSION_SECRET:'test-parity-session-'.repeat(4),CREDENTIAL_KEY:'cd'.repeat(32),INITIAL_ADMIN_USERNAME:'admin',INITIAL_ADMIN_PASSWORD:'parity-admin-test-password-2026',HEAT_DRIVER:'openstack',NODE_ENV:'development',PAYMENT_GATEWAY_PROVIDER:'tosspayments',PAYMENT_GATEWAY_USE_DOCS_TEST_KEYS:'true',TOSS_PAYMENTS_USE_DOCS_TEST_KEYS:'true',PAYMENT_GATEWAY_PUBLIC_KEY:'',PAYMENT_GATEWAY_SECRET_KEY:'',TOSS_PAYMENTS_CLIENT_KEY:'',TOSS_PAYMENTS_SECRET_KEY:''}});
   let logs='';child.stdout.on('data',value=>logs+=value);child.stderr.on('data',value=>logs+=value);
   try{
     let ready=false;for(let attempt=0;attempt<100;attempt++){if(child.exitCode!==null)throw Error(logs);try{const r=await fetch(origin+'/api/health');if(r.ok){ready=true;break;}}catch{}await delay(150);}
@@ -35,6 +35,16 @@ test('full platform: SSO, OTP, notices, community posts and excluded features',{
       const created=await admin('/api/admin/users',{method:'POST',body:{username:'member',name:'Community Member',email:'member@example.test',password:'parity-member-test-password-2026',role:'student',status:'approved'}});assert.equal(created.status,201,JSON.stringify(created.data));userId=created.data.user.id;
       assert.equal((await member('/api/auth/login',{method:'POST',body:{username:'member',password:'parity-member-test-password-2026'}})).status,200);
       assert.equal((await member('/api/admin/users')).status,403);
+    });
+    await t.test('legacy documentation-key flags cannot supply credentials; explicit admin settings still work',async()=>{
+      const read=async()=>{const r=await admin('/api/platform-status');assert.equal(r.status,200);return r.data.status||r.data.platformStatus||r.data;};
+      const initial=await read();
+      assert.equal(initial.paymentGatewayPublicKey,'');assert.equal(initial.paymentGatewaySecretKey,'');
+      const explicit={paymentGatewayPublicKey:'fixture-public-'+randomBytes(8).toString('hex'),paymentGatewaySecretKey:'fixture-secret-'+randomBytes(8).toString('hex')};
+      const update=await admin('/api/admin/platform-status',{method:'PUT',body:{...initial,...explicit}});assert.equal(update.status,200,JSON.stringify(update.data));
+      const configured=await read();assert.equal(configured.paymentGatewayPublicKey,explicit.paymentGatewayPublicKey);assert.equal(configured.paymentGatewaySecretKey,explicit.paymentGatewaySecretKey);
+      const clear=await admin('/api/admin/platform-status',{method:'PUT',body:{...configured,paymentGatewayPublicKey:'',paymentGatewaySecretKey:''}});assert.equal(clear.status,200);
+      const cleared=await read();assert.equal(cleared.paymentGatewayPublicKey,'');assert.equal(cleared.paymentGatewaySecretKey,'');
     });
     await t.test('notices and non-course Q&A preserve original create/read operations',async()=>{
       const notice=await admin('/api/admin/notices',{method:'POST',body:{title:'Platform notice',body:'General operations notice',isPinned:true}});assert.equal(notice.status,201);

@@ -7663,11 +7663,11 @@ async function onCheckLabDomain(labOverride = null) {
     }
   }
   async function onResetPassword(user) {
-    const password = window.prompt(`${user.username} 사용자의 새 비밀번호를 입력해 주세요.`, "Temp12345!");
+    const password = window.prompt(`${user.username} 사용자의 새 비밀번호를 입력해 주세요.`, "");
     if (!password) return;
     try {
       await api(`/api/admin/users/${user.id}/reset-password`, { method: "POST", body: { password } });
-      setAdminStatus(`비밀번호를 초기화했습니다. 새 비밀번호: ${password}`);
+      setAdminStatus("비밀번호를 초기화했습니다.");
     } catch (error) {
       setAdminStatus(error.message);
     }

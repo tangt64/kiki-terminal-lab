@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="352" height="352" viewBox="0 0 352 352" role="img" aria-labelledby="title desc">
+  <title id="title">KIKIOS yellow mascot</title>
+  <desc id="desc">노란색 화면과 웃는 얼굴이 있는 KIKI 박스 마스코트</desc>
+  <!-- Mascot geometry retained from KIKI-OS kikios-kiki-wordmark-v1.svg; wordmark omitted and square canvas applied. -->
+  <g id="mascot" transform="translate(18 25)">
+    <rect x="0" y="0" width="295" height="295" rx="72" fill="#071b43"/>
+    <path d="M53 270v18c0 13 10 23 23 23h29c12 0 22-10 22-22v-8M176 281v8c0 12 10 22 22 22h29c13 0 23-10 23-23v-18" fill="#071b43"/>
+    <rect x="35" y="47" width="225" height="187" rx="37" fill="#ffca16"/>
+    <rect x="84" y="90" width="29" height="69" rx="14" fill="#071b43"/>
+    <rect x="182" y="90" width="29" height="69" rx="14" fill="#071b43"/>
+    <circle cx="69" cy="183" r="17" fill="#ffa526"/>
+    <circle cx="226" cy="183" r="17" fill="#ffa526"/>
+    <path d="M116 183c19 30 44 30 63 0" fill="none" stroke="#071b43" stroke-width="16" stroke-linecap="round"/>
+    <circle cx="215" cy="257" r="12" fill="#ffca16"/>
+    <circle cx="249" cy="257" r="12" fill="#ffca16"/>
+  </g>
+</svg>

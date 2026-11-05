@@ -13,4 +13,4 @@ Sharp is distributed under Apache-2.0; its native packages include libvips and o
 
 ## KIKIOS brand asset
 
-`platform/client/public/brand/kikios-dark-blue-app-icon-v7.png` is the unchanged logo from the KIKI-OS project by Choi Gook Hyun. Its source, SHA-256 and retained GPL v3 license are documented in [the brand notice](platform/client/public/brand/ORIGIN.md). The application code remains MIT licensed.
+`platform/client/public/brand/kikios-kiki-wordmark-v1.png` is the unchanged yellow KIKI logo from the KIKI-OS project by Choi Gook Hyun. `kikios-yellow-mascot.svg` retains the mascot shapes from its existing vector source with a square canvas and no wordmark. Their sources, SHA-256 hashes and retained GPL v3 license are documented in [the brand notice](platform/client/public/brand/ORIGIN.md). The application code remains MIT licensed.

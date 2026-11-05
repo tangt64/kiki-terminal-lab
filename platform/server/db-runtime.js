@@ -373,9 +373,6 @@ const ENV_PAYMENT_GATEWAY_API_BASE_URL = String(process.env.PAYMENT_GATEWAY_API_
 const ENV_PAYMENT_GATEWAY_PUBLIC_KEY = String(process.env.PAYMENT_GATEWAY_PUBLIC_KEY || process.env.TOSS_PAYMENTS_PUBLIC_KEY || "").trim();
 const ENV_PAYMENT_GATEWAY_SECRET_KEY = String(process.env.PAYMENT_GATEWAY_SECRET_KEY || process.env.TOSS_PAYMENTS_SECRET_KEY || "").trim();
 const ENV_PAYMENT_GATEWAY_WEBHOOK_SECRET = String(process.env.PAYMENT_GATEWAY_WEBHOOK_SECRET || process.env.TOSS_PAYMENTS_WEBHOOK_SECRET || "").trim();
-const ENV_PAYMENT_GATEWAY_USE_DOCS_TEST_KEYS = String(process.env.PAYMENT_GATEWAY_USE_DOCS_TEST_KEYS || process.env.TOSS_PAYMENTS_USE_DOCS_TEST_KEYS || "").trim().toLowerCase();
-const DOCS_TOSS_PUBLIC_KEY = "test_ck_zxvM9w2DlxHaKo1E5WvJ7PBI";
-const DOCS_TOSS_SECRET_KEY = "test_sk_zXLkKEypNArWmo50nX3lmeaxYG5R";
 let pool = null;
 let pgSchemaEnsured = false;
 
@@ -389,10 +386,6 @@ function resolveEnvPaymentGatewayProvider() {
 function resolveEnvPaymentGatewayEnabled() {
   if (!ENV_PAYMENT_GATEWAY_ENABLED) return null;
   return ["1", "true", "yes", "on", "enabled"].includes(ENV_PAYMENT_GATEWAY_ENABLED);
-}
-
-function useDocsTossTestKeys() {
-  return ["1", "true", "yes", "on", "enabled"].includes(ENV_PAYMENT_GATEWAY_USE_DOCS_TEST_KEYS);
 }
 
 const COURSE_SELECT = `
@@ -5683,13 +5676,12 @@ async function pgGetPlatformStatus() {
   const paymentGatewayApiBaseUrl = values.has("paymentGatewayApiBaseUrl")
     ? String(values.get("paymentGatewayApiBaseUrl") || "").trim()
     : (ENV_PAYMENT_GATEWAY_API_BASE_URL || (paymentGatewayProvider === "tosspayments" ? "https://api.tosspayments.com" : ""));
-  const docsTestKeysEnabled = useDocsTossTestKeys() && paymentGatewayProvider === "tosspayments";
   const paymentGatewayPublicKey = values.has("paymentGatewayPublicKey")
     ? String(values.get("paymentGatewayPublicKey") || "").trim()
-    : (ENV_PAYMENT_GATEWAY_PUBLIC_KEY || (docsTestKeysEnabled ? DOCS_TOSS_PUBLIC_KEY : ""));
+    : ENV_PAYMENT_GATEWAY_PUBLIC_KEY;
   const paymentGatewaySecretKey = values.has("paymentGatewaySecretKey")
     ? String(values.get("paymentGatewaySecretKey") || "").trim()
-    : (ENV_PAYMENT_GATEWAY_SECRET_KEY || (docsTestKeysEnabled ? DOCS_TOSS_SECRET_KEY : ""));
+    : ENV_PAYMENT_GATEWAY_SECRET_KEY;
   const oauthGoogleClientId = values.has("oauthGoogleClientId")
     ? String(values.get("oauthGoogleClientId") || "").trim()
     : String(process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "").trim();

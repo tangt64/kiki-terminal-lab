@@ -4,7 +4,7 @@ import { api, canUseCourseQuotePortal, usePortalApp } from "./portal-state.js";
 import { AdminField } from "./admin-field.jsx";
 import { formatBuildBranch, formatBuildCommit } from "./build-info.js";
 import { getQuotaUsagePercent, getQuotaUsageToneClass } from "./quota-usage.js";
-import TerminalLabLogo, { COMMUNITY_BRAND_NAME, TerminalLabBrand, getTerminalLabFaviconHref } from "./terminal-lab-logo.jsx";
+import TerminalLabLogo, { COMMUNITY_BRAND_NAME, TerminalLabBrand, KIKIOS_LOGO_MIME_TYPE, getTerminalLabFaviconHref } from "./terminal-lab-logo.jsx";
 import { getStandaloneExamCourseIds, isLearningLabResource, isStandaloneExamCourse } from "./course-visibility.js";
 const GuideMarkdownBlock = lazy(() => import("./guide-renderer.jsx"));
 const InteractiveLogoStage = lazy(() => import("./interactive-logo-stage.jsx"));
@@ -1672,7 +1672,7 @@ export default function App() {
       document.head.appendChild(faviconLink);
     }
     faviconLink.setAttribute("href", faviconHref);
-    faviconLink.setAttribute("type", useUploadedFavicon ? String(app.platformStatus?.faviconMime || "image/x-icon") : "image/png");
+    faviconLink.setAttribute("type", useUploadedFavicon ? String(app.platformStatus?.faviconMime || "image/x-icon") : KIKIOS_LOGO_MIME_TYPE);
   }, [app.platformStatus?.faviconMime, app.platformStatus?.faviconPath, useUploadedFavicon]);
   useEffect(() => {
     if (portalV2Forced && portalUiVersion !== "v2") {

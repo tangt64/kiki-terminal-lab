@@ -12,9 +12,14 @@
   "previousProduct": "terminal-lab-community",
   "brandAsset": {
     "sourceProject": "KIKI-OS",
-    "path": "platform/client/public/brand/kikios-dark-blue-app-icon-v7.png",
-    "sourcePath": "assets/brand/kikios-dark-blue-app-icon-v7.png",
-    "sha256": "c74eafa6d76d5591d205ed2a579415b4dfaeed27549b5cecfdd2b0c93dc12fa0",
-    "modified": false
+    "path": "platform/client/public/brand/kikios-yellow-mascot.svg",
+    "sourcePath": "assets/brand/kikios-kiki-wordmark-v1.svg#mascot",
+    "sha256": "81901c7f74d740070196f71c27888cfd3fa3cd34d6d0ad904928ee0c9231975a",
+    "modified": true,
+    "modification": "Retained mascot geometry and colors; omitted wordmark; applied square canvas.",
+    "referencePath": "platform/client/public/brand/kikios-kiki-wordmark-v1.png",
+    "referenceSourcePath": "assets/brand/kikios-kiki-wordmark-v1.png",
+    "referenceSha256": "bcbaa57611504f275a12c71fd53a2df7cf4020943620ce1163374531be373172",
+    "referenceModified": false
   }
 }
