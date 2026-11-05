@@ -7667,7 +7667,7 @@ async function onCheckLabDomain(labOverride = null) {
     if (!password) return;
     try {
       await api(`/api/admin/users/${user.id}/reset-password`, { method: "POST", body: { password } });
-      setAdminStatus(`비밀번호를 초기화했습니다. 새 비밀번호: ${password}`);
+      setAdminStatus("비밀번호를 초기화했습니다.");
     } catch (error) {
       setAdminStatus(error.message);
     }

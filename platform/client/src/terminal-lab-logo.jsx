@@ -1,5 +1,7 @@
 export const COMMUNITY_BRAND_NAME = "KIKI OS TERMINAL-LAB";
-export const KIKIOS_LOGO_PATH = "/brand/kikios-dark-blue-app-icon-v7.png";
+export const KIKIOS_LOGO_PATH = "/brand/kikios-yellow-mascot.svg";
+
+export const KIKIOS_LOGO_MIME_TYPE = "image/svg+xml";
 
 export function getTerminalLabFaviconHref() {
   return KIKIOS_LOGO_PATH;

@@ -1,8 +1,8 @@
 # KIKI OS TERMINAL-LAB Community 0.3.2
 
-<img src="platform/client/public/brand/kikios-dark-blue-app-icon-v7.png" width="112" height="112" alt="KIKIOS 원본 로고" />
+<img src="platform/client/public/brand/kikios-kiki-wordmark-v1.png" width="360" height="120" alt="노란색 KIKI 박스 마스코트와 KIKI · 키키 로고" />
 
-제품 브랜드는 **KIKI OS TERMINAL-LAB · Community Edition**입니다. KIKI-OS 설치기에 선택된 남색·민트색 KIKIOS 웃는 얼굴 로고(v7)를 원본 그대로 사용합니다. 로그인·사용자 포털·관리자 콘솔에서 `KIKIOS`와 `TERMINAL-LAB`을 함께 표시하며, 파비콘과 관리자 미리보기에도 같은 원본을 사용합니다. 로고 출처와 별도 라이선스는 [브랜드 고지](platform/client/public/brand/ORIGIN.md)를 참조하세요.
+제품 브랜드는 **KIKI OS TERMINAL-LAB · Community Edition**입니다. KIKI-OS의 노란색 박스 마스코트를 사용합니다. 위 이미지는 원본 KIKI · 키키 로고이며, UI용 아이콘은 기존 벡터 원본에서 마스코트 도형을 그대로 분리했습니다. 로그인·사용자 포털·관리자 콘솔에서 `KIKIOS`와 `TERMINAL-LAB`을 함께 표시하며, 파비콘과 관리자 미리보기에도 같은 마스코트 아이콘을 사용합니다. 로고 출처와 별도 라이선스는 [브랜드 고지](platform/client/public/brand/ORIGIN.md)를 참조하세요.
 
 0.3.0부터 저장소·패키지·배포 파일은 `kiki-terminal-lab` 이름을 사용합니다. 기존 Terminal Lab Community 0.2.x 설치의 상태 경로와 볼륨·키는 유지하며, [이름 전환 절차](docs/installation.md#02x-community에서-kiki-030으로-이름-전환)로 업데이트합니다.
 
@@ -19,7 +19,7 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 - **Linux 배포판:** Podman 또는 Docker로 Linux 컨테이너를 정상 실행할 수 있으면 사용 가능합니다. Python과 선택한 엔진의 네트워크·볼륨·사용자 권한 조건도 충족해야 합니다. 특정 배포판으로 제한하지 않으며, 모든 배포판의 설치 검증을 완료한 상태는 아닙니다.
 - **CPU:** 현재 x86 계열의 **64비트 x86_64/amd64만 지원 대상**입니다. 32비트 x86과 ARM64는 현재 지원하지 않습니다.
 - **기반 인프라:** 현재 OpenStack 기반으로 사용할 수 있으며, 기존 OpenStack의 인증·컴퓨트·이미지·네트워크 API에 연결합니다. 사용 기능별로 필요한 서비스가 있어야 합니다.
-- **개발 중:** 현재 **OpenStack과 호환되는 경량 플랫폼을 구성 중**입니다. 해당 플랫폼 연동은 준비 단계이며, 현재 설치 안내는 기존 OpenStack 환경을 기준으로 합니다. 지원 범위와 제공 일정은 확정 후 안내합니다.
+- **개발 중:** 현재 **OpenStack과 호환되는 경량 플랫폼을 구성 중**입니다. 해당 플랫폼 연동은 준비 단계이며, 기본적인 기능검증 및 구현이 되면 릴리즈할 예정입니다.
 
 0.2.2에서 제한 관리자 권한 상승을 차단하고, 교육 진입점·커리큘럼 데이터·기존 내부망 기본값을 정리했습니다. 검증 내용과 공개 전 남은 작업은 [공개·운영 전 정리 항목](docs/development.md#공개운영-전-정리-항목)을 참조하세요. 실제 Linux 설치·복원과 운영 인프라 연결은 별도 검증 대상이며, 저장소는 비공개로 유지합니다.
 
@@ -35,13 +35,14 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 | 관리자 도구 | 모니터링·진단, 보안점검, 감사·접속 로그, 자원 정리, CI/CD·Jenkins, LLM, 템플릿 관리 |
 | 배포 | 독립 앱 이미지, 전용 PostgreSQL·파일 볼륨, Podman/Docker 인스톨러, 백업·업데이트 |
 
-교육 과정·커리큘럼·교재·강의 일정·수강 권한·교육 랩실·시험·수료증·교육 설문·과정 견적/결제·강사 공유·교육 역량 진단은 제외했습니다. 교육 보고서·교육 랩 터미널·강사 공유 WebSocket·검증용 과정 생성 경로도 제거했습니다. 일반 PoC/사용자 자원 요청, 자원 터미널과 마케팅 설문은 유지합니다.
+기존 터미널 랩에서 제공하였던 **교육 과정·커리큘럼·교재·강의 일정·수강 권한·교육 랩실·시험·수료증·교육 설문·과정 견적/결제·강사 공유·교육 역량 진단**은 제외했습니다.
+**교육 보고서·교육 랩 터미널·강사 공유 WebSocket·검증용 과정 생성 경로도 제거**했습니다. 
 
 공통 쿼리 호환성을 위해 DB의 교육 호환 테이블과 일부 비활성 호환 코드·빈 화면 스텁은 남아 있습니다. 이 배포본의 초기화는 교육 콘텐츠를 생성하지 않습니다. 원본 수강생 정보·운영 DB·운영 자격증명 파일과 원문 커리큘럼 데이터는 현재 배포 소스에서 제외합니다. 과거 교육 콘텐츠가 포함된 이력·릴리스는 별도 비공개 아카이브에 보존했습니다. 현재 저장소에는 정리된 Community 이력만 포함하며 계속 비공개로 유지합니다.
 
 ## 화면 미리보기
 
-KIKI OS TERMINAL-LAB Community 0.3.1의 실제 UI를 데모 데이터로 캡처했습니다(2026-11-01). 계정·게시물·프로젝트·IP는 가상 예시이며 운영 데이터와 인증 정보는 포함하지 않습니다. 클라우드 자원은 브라우저의 데모 API 응답으로 표시했습니다. 이 화면은 실제 OpenStack 연결이나 SSO 공급자 인증을 검증한 결과가 아닙니다.
+KIKI OS TERMINAL-LAB Community 0.3.2의 실제 UI를 노란색 KIKI 마스코트와 데모 데이터로 캡처했습니다(2026-11-03). 계정·게시물·프로젝트·IP는 가상 예시이며 운영 데이터와 인증 정보는 포함하지 않습니다. 클라우드 자원은 브라우저의 데모 API 응답으로 표시했습니다. 이 화면은 실제 OpenStack 연결이나 SSO 공급자 인증을 검증한 결과가 아닙니다.
 
 ### 로그인·SSO·OTP
 

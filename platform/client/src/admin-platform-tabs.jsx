@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, navigate } from "./portal-state.js";
-import TerminalLabLogo from "./terminal-lab-logo.jsx";
+import TerminalLabLogo, { KIKIOS_LOGO_PATH } from "./terminal-lab-logo.jsx";
 import { CONSULTING_REPLY_PLACEHOLDERS, DEFAULT_CONSULTING_REPLY_TEMPLATES, normalizeConsultingReplyTemplates } from "./consulting-reply-templates.js";
 import { AdminDisclosureCard, AdminField, AdminSecretInput, PanelStatusMessage, StatusMessage, applyTossTestDefaults, formatCurrency, formatDateTime, getNormalizedSshPublicHost, getYoutubeLoopEmbedUrl, renderZunStatus, safeStringifyJson, useImeBufferedInput } from "./portal-views.jsx";
 
@@ -4689,7 +4689,7 @@ export function AdminPlatformTab(props) {
                 </div>
                 <div className="simple-status-list compact-status-list">
                   <div>{`현재 표시 모드: ${props.platformStatus?.landingLogoMode === "upload" ? "업로드 이미지" : "기본 코드 로고"}`}</div>
-                  <div>{`현재 로고 경로: ${props.platformStatus?.landingLogoPath || "/brand/kikios-dark-blue-app-icon-v7.png"}`}</div>
+                  <div>{`현재 로고 경로: ${props.platformStatus?.landingLogoPath || KIKIOS_LOGO_PATH}`}</div>
                   <div>{`현재 로고 형식: ${props.platformStatus?.landingLogoMime || "-"}`}</div>
                 </div>
                 <div className="landing-brand-preview">
@@ -4728,7 +4728,7 @@ export function AdminPlatformTab(props) {
                 </div>
                 <div className="simple-status-list compact-status-list">
                   <div>{`현재 표시 모드: ${props.platformStatus?.faviconMode === "upload" ? "업로드 자산" : "기본 코드 favicon"}`}</div>
-                  <div>{`현재 favicon 경로: ${props.platformStatus?.faviconPath || "/brand/kikios-dark-blue-app-icon-v7.png"}`}</div>
+                  <div>{`현재 favicon 경로: ${props.platformStatus?.faviconPath || KIKIOS_LOGO_PATH}`}</div>
                   <div>{`현재 favicon 형식: ${props.platformStatus?.faviconMime || "-"}`}</div>
                 </div>
                 <div className="landing-brand-preview">
