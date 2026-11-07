@@ -1921,7 +1921,7 @@ export default function App() {
         <MarketingConsentDecisionGate authStatus={portalApp.authStatus} onDecideMarketingConsent={portalApp.onDecideMarketingConsent} />
       </div>;
   }
-  const sectionLabel = SECTION_LABELS[portalApp.section] || SECTION_LABELS.notices;
+  const sectionLabel = ["resources", "terminalCloud"].includes(portalApp.section) ? "클라우드 콘솔" : SECTION_LABELS[portalApp.section] || SECTION_LABELS.notices;
   const versionLabel = portalUiV2Active ? "v2.0" : "v1.0";
   const sidebarHidden = sidebarOverlayMode && !mobileNavOpen;
   const compactWorkspaceOverview = !["resources", "terminal", "llm"].includes(portalApp.section);
@@ -2088,7 +2088,7 @@ export default function App() {
 
           {portalUiV2Active ? null : null}
 
-          {portalUiV2Active && ["terminalCloud", "zunConsole", "opsMonitor"].includes(portalApp.section) ? null : <UserWorkspaceOverview app={portalApp} compact={compactWorkspaceOverview} onOpenServiceSection={openServiceSection} portalUiV2Active={portalUiV2Active} setMobileNavOpen={setMobileNavOpen} />}
+          {["resources","terminalCloud","zun","magnum","trove","aiGpu","llm","cicd","internalImageServer","zunConsole","opsMonitor"].includes(portalApp.section) ? null : <UserWorkspaceOverview app={portalApp} compact={compactWorkspaceOverview} onOpenServiceSection={openServiceSection} portalUiV2Active={portalUiV2Active} setMobileNavOpen={setMobileNavOpen} />}
 
           {portalApp.section === "resources" ? <RecentNoticeStrip notices={portalApp.notices} onViewAll={() => switchSection(portalApp, setMobileNavOpen, "notices", {
           closeMobileNav: false
@@ -2116,10 +2116,10 @@ export default function App() {
             {portalApp.section === "marketingSurveys" ? <MarketingSurveyView {...portalApp} /> : null}
             {portalApp.section === "opsMonitor" && portalApp.isAdmin ? <OpsMonitorView {...portalApp} /> : null}
             {portalApp.section === "opsMonitor" && !portalApp.isAdmin ? <div className="global-banner is-danger">운영 모니터는 관리자만 사용할 수 있습니다.</div> : null}
-            {portalApp.section === "resources" ? <TerminalCloudView {...portalApp} onOpenTerminalCloudIntent={openTerminalCloudIntent} portalUiV2Active={portalUiV2Active} /> : null}
+            {portalApp.section === "resources" ? <TerminalCloudView {...portalApp} terminalCloudIntent={terminalCloudIntent} onOpenTerminalCloudIntent={openTerminalCloudIntent} portalUiV2Active={portalUiV2Active} /> : null}
             {portalApp.section === "surveys" ? <SurveyView {...portalApp} /> : null}
             {portalApp.section === "surveyResults" ? <SurveyResultsView {...portalApp} /> : null}
-            {portalUiV2Active && portalApp.section === "terminalCloud" ? <TerminalCloudView {...portalApp} terminalCloudIntent={terminalCloudIntent} /> : null}
+            {portalApp.section === "terminalCloud" ? <TerminalCloudView {...portalApp} terminalCloudIntent={terminalCloudIntent} /> : null}
             {portalApp.section === "internalImageServer" ? <InternalImageServerView {...portalApp} /> : null}
             {portalApp.section === "cicd" ? <CicdView {...portalApp} /> : null}
             {portalApp.section === "zun" ? <ZunView {...portalApp} /> : null}
