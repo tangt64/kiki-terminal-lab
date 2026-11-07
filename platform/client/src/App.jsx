@@ -1,3 +1,5 @@
+import {CommunityNavigation,CommunityServiceLinks} from './community-workspace.jsx';
+import {CommunityUiMemory} from './community-ui-memory.jsx';
 import { communitySection } from "../../shared/community-profile.js";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { api, canUseCourseQuotePortal, usePortalApp } from "./portal-state.js";
@@ -1923,7 +1925,7 @@ export default function App() {
   const versionLabel = portalUiV2Active ? "v2.0" : "v1.0";
   const sidebarHidden = sidebarOverlayMode && !mobileNavOpen;
   const compactWorkspaceOverview = !["resources", "terminal", "llm"].includes(portalApp.section);
-  return <div className={`shell ${portalUiV2Active ? "portal-ui-v2" : ""}`}>
+  return <CommunityUiMemory key={String(portalApp.session.id)}><div className={`shell community-modern-workspace ${portalUiV2Active ? "portal-ui-v2" : ""}`}>
       <a className="skip-link" href="#portal-workspace">본문으로 건너뛰기</a>
       <Suspense fallback={null}>
         <ToastStack onDismiss={app.dismissToast} toasts={app.toasts} />
@@ -1949,255 +1951,8 @@ export default function App() {
         </div> : null}
       <main className="app-shell">
         {sidebarOverlayMode && mobileNavOpen ? <div className="sidebar-backdrop" onClick={() => setMobileNavOpen(false)} role="presentation" /> : null}
-        <aside aria-hidden={sidebarHidden ? "true" : undefined} aria-label="포털 메뉴" className={`sidebar ${mobileNavOpen ? "is-mobile-open" : ""}`} id="portal-sidebar" inert={sidebarHidden ? "" : undefined} ref={sidebarRef}>
-          <div className="sidebar-mobile-head">
-            <strong>메뉴</strong>
-            <button className="ghost-btn" onClick={() => setMobileNavOpen(false)} type="button">
-              닫기
-            </button>
-          </div>
+        <CommunityNavigation section={portalApp.section} isAdmin={portalApp.isAdmin} onNavigate={key=>switchSection(portalApp,setMobileNavOpen,key)} onLogout={portalApp.onLogout} onAdmin={()=>portalApp.navigate('/admin')} onCommunity={()=>openCommunitySection()} onSupport={()=>openInquirySection('support')}/>
 
-          <div className="brand">
-            <Suspense fallback={<div className="logo-stage logo-stage-sidebar is-loading"><TerminalLabLogo className="brand-logo" /></div>}>
-              <InteractiveLogoStage className="logo-stage-sidebar" quotaStatus={app.quotaStatus} title={COMMUNITY_BRAND_NAME}>
-                {useUploadedBrandLogo ? <img alt={`${COMMUNITY_BRAND_NAME} 로고`} className="brand-logo" src={app.platformStatus.landingLogoPath} /> : <TerminalLabLogo className="brand-logo" />}
-              </InteractiveLogoStage>
-            </Suspense>
-            <TerminalLabBrand className="sidebar-product-brand" logoPath={useUploadedBrandLogo ? app.platformStatus.landingLogoPath : ""} />
-            <strong className="brand-user-row">
-              <span className="brand-user-name">{portalApp.session.name}</span>
-              {portalUiV2Active ? <button aria-label={totalUnreadAlerts ? `알림 및 운영지원 ${totalUnreadAlerts}건 확인` : "알림함 열기"} className={`sidebar-alert-pill ${totalUnreadAlerts ? "has-unread" : ""}`} onClick={openSidebarAlertShortcut} title={totalUnreadAlerts ? `미확인 알림/운영지원 ${totalUnreadAlerts}건` : "알림함 열기"} type="button">
-                  <span className="sidebar-alert-dot" aria-hidden="true" />
-                  <span className="sidebar-alert-label">알림</span>
-                  {totalUnreadAlerts ? <span className="sidebar-alert-count">{sidebarAlertCountLabel}</span> : null}
-                </button> : portalApp.qnaUnreadCount > 0 ? <span className="sidebar-badge">{portalApp.qnaUnreadCount}</span> : null}
-            </strong>
-            <span>{portalApp.isAdmin ? "관리자 계정" : "사용자 포털"}</span>
-            {portalUiV2Active ? <PortalStatusBadge accessStats={app.apiMonitor?.access || app.adminAccessStats} platformStatus={app.platformStatus} quotaStatus={app.quotaStatus} /> : null}
-            {!portalUiV2Active ? <small className="brand-version">{versionLabel}</small> : null}
-          </div>
-
-          {portalApp.isAdmin ? <SidebarSection defaultOpen isActive={["opsMonitor"].includes(portalApp.section)} title="운영실">
-              <SidebarItem active={portalApp.section === "opsMonitor"} label="운영 모니터" tag="LIVE" onClick={() => {
-            portalApp.navigate?.("/ops-monitor");
-            switchSection(portalApp, setMobileNavOpen, "opsMonitor", {
-              closeMobileNav: false
-            });
-          }} />
-            </SidebarSection> : null}
-
-          <SidebarSection defaultOpen isActive={learningSectionKeys.includes(portalApp.section)} title="내 작업">
-            <SidebarItem active={portalApp.section === "resources"} label="내 자원" onClick={() => switchSection(portalApp, setMobileNavOpen, "resources")} />
-            {portalApp.isAdmin ? null : null}
-
-
-            <SidebarSubmenu defaultOpen isActive={["terminal", "terminalCloud", "internalImageServer", "cicd", "selfServiceVm", "zun", "zunConsole", "magnum", "trove", "aiGpu", "customLabs"].includes(portalApp.section)} title="클라우드 / 자원">
-
-              {portalUiV2Active && portalApp.section === "terminal" ? <SidebarServiceHint description="콘솔, 교안, 영상, 외부 접속을 현재 랩 기준으로 이어갑니다." items={[{
-              key: "terminal",
-              label: "터미널",
-              enabled: Boolean(portalApp.activeLab)
-            }, {
-              key: "guide",
-              label: "교안",
-              enabled: true
-            }, {
-              key: "media",
-              label: "영상",
-              enabled: true
-            }, {
-              key: "access",
-              label: "접속",
-              enabled: Boolean(portalApp.activeLab)
-            }]} onClick={() => openTerminalSection(portalApp, setMobileNavOpen)} onItemClick={() => openTerminalSection(portalApp, setMobileNavOpen)} title="랩실에서 바로 진행" tone="lab" /> : null}
-              {portalUiV2Active ? <>
-                  <SidebarItem active={portalApp.section === "terminalCloud"} label="클라우드 콘솔" tag="신청/관리" onClick={() => openTerminalCloudIntent({
-                sourceSection: "sidebar"
-              })} />
-                  {portalApp.section === "terminalCloud" ? <SidebarServiceHint description="VM, 네트워크, 비용/정리 상태를 여기서 처리합니다." items={[{
-                key: "vm",
-                label: "VM",
-                enabled: portalApp.platformStatus?.selfServiceVmServiceEnabled !== false
-              }, {
-                key: "network",
-                label: "네트워크",
-                enabled: true
-              }, {
-                key: "quota",
-                label: "Quota",
-                enabled: true
-              }]} onClick={() => openTerminalCloudIntent({
-                sourceSection: "sidebar"
-              })} onItemClick={item => openTerminalCloudIntent({
-                ...(TERMINAL_CLOUD_SERVICE_HINT_INTENTS[item.key] || {
-                  tab: "overview"
-                }),
-                sourceSection: `sidebar:${item.key || "cloud"}`
-              })} title="클라우드 콘솔 작업" tone="cloud" /> : null}
-                  <SidebarItem active={portalApp.section === "trove"} label="데이터베이스" tag="DB" onClick={() => openTrovePanel("create")} />
-                  {portalApp.section === "trove" ? <SidebarServiceHint description="Trove DB를 생성하고 인스턴스와 접속 정보를 관리합니다." items={[{
-                key: "create",
-                label: "DB 생성",
-                enabled: Boolean(portalApp.platformStatus?.troveEnabled)
-              }, {
-                key: "instances",
-                label: "인스턴스",
-                enabled: true
-              }, {
-                key: "credentials",
-                label: "접속정보",
-                enabled: true
-              }]} onClick={() => openTrovePanel("create")} onItemClick={item => openTrovePanel(item.key)} title="데이터베이스 작업" tone="cloud" /> : null}
-                  <SidebarItem active={portalApp.section === "internalImageServer"} label="내부 이미지 서버" tag="검색" onClick={() => switchSection(portalApp, setMobileNavOpen, "internalImageServer", {
-                closeMobileNav: false
-              })} />
-                  {portalApp.section === "internalImageServer" ? <SidebarServiceHint description="내부 레지스트리 이미지를 검색하고 pull 명령을 복사합니다." items={[{
-                key: "search",
-                label: "검색",
-                enabled: true
-              }, {
-                key: "pull",
-                label: "Pull",
-                enabled: true
-              }, {
-                key: "request",
-                label: "요청",
-                enabled: true
-              }]} onClick={() => switchSection(portalApp, setMobileNavOpen, "internalImageServer", {
-                closeMobileNav: false
-              })} onItemClick={() => switchSection(portalApp, setMobileNavOpen, "internalImageServer", {
-                closeMobileNav: false
-              })} title="내부 이미지 서버" tone="cloud" /> : null}
-                  <SidebarItem active={portalApp.section === "zun"} label="컨테이너 랩" tag="Zun" onClick={() => openServiceSection("zun", () => switchSection(portalApp, setMobileNavOpen, "zun", {
-                closeMobileNav: false
-              }))} />
-                  {portalApp.section === "zun" ? <SidebarServiceHint description="허용 이미지를 선택해 짧은 컨테이너 실습을 실행합니다." items={[{
-                key: "zun",
-                label: "Zun",
-                enabled: Boolean(portalApp.platformStatus?.zunEnabled)
-              }, {
-                key: "image",
-                label: "이미지",
-                enabled: Boolean(portalApp.platformStatus?.zunEnabled)
-              }, {
-                key: "console",
-                label: "콘솔",
-                enabled: Boolean(portalApp.platformStatus?.zunEnabled)
-              }]} onClick={() => openServiceSection("zun", () => switchSection(portalApp, setMobileNavOpen, "zun", {
-                closeMobileNav: false
-              }))} onItemClick={() => openServiceSection("zun", () => switchSection(portalApp, setMobileNavOpen, "zun", {
-                closeMobileNav: false
-              }))} title="컨테이너 랩" tone="cloud" /> : null}
-                  <SidebarItem active={portalApp.section === "aiGpu"} label="AI 랩" tag="VM/Container" onClick={() => openServiceSection("aiGpu", () => switchSection(portalApp, setMobileNavOpen, "aiGpu", {
-                closeMobileNav: false
-              }))} />
-                  <SidebarItem active={portalApp.section === "magnum"} label="쿠버네티스 클러스터" tag="clusterctl" onClick={() => switchSection(portalApp, setMobileNavOpen, "magnum", {
-                closeMobileNav: false
-              })} />
-                  {portalApp.section === "magnum" ? <SidebarServiceHint description="CAPO 기반 클러스터 요청과 상태를 확인합니다." items={[{
-                key: "clusterctl",
-                label: "clusterctl",
-                enabled: Boolean(portalApp.platformStatus?.magnumEnabled)
-              }, {
-                key: "capo",
-                label: "CAPO",
-                enabled: Boolean(portalApp.platformStatus?.magnumEnabled)
-              }, {
-                key: "k8s",
-                label: "K8s",
-                enabled: Boolean(portalApp.platformStatus?.magnumEnabled)
-              }]} onClick={() => switchSection(portalApp, setMobileNavOpen, "magnum", {
-                closeMobileNav: false
-              })} onItemClick={() => switchSection(portalApp, setMobileNavOpen, "magnum", {
-                closeMobileNav: false
-              })} title="쿠버네티스 클러스터" tone="cloud" /> : null}
-                  <SidebarItem active={portalApp.section === "cicd"} label="CI/CD 파이프라인" tag="실행" onClick={() => switchSection(portalApp, setMobileNavOpen, "cicd", {
-                closeMobileNav: false
-              })} />
-                  {portalApp.section === "cicd" ? <SidebarServiceHint description="Source, Build, Test, Deploy 흐름과 실행 이력을 확인합니다." items={[{
-                key: "source",
-                label: "Source",
-                enabled: true
-              }, {
-                key: "build",
-                label: "Build",
-                enabled: true
-              }, {
-                key: "test",
-                label: "Test",
-                enabled: true
-              }, {
-                key: "deploy",
-                label: "Deploy",
-                enabled: true
-              }]} onClick={() => switchSection(portalApp, setMobileNavOpen, "cicd", {
-                closeMobileNav: false
-              })} onItemClick={() => switchSection(portalApp, setMobileNavOpen, "cicd", {
-                closeMobileNav: false
-              })} title="파이프라인 작업 흐름" tone="cicd" /> : null}
-                </> : <>
-                  <SidebarItem active={portalApp.section === "cicd"} label="CI/CD 파이프라인" tag="실행" onClick={() => switchSection(portalApp, setMobileNavOpen, "cicd", {
-                closeMobileNav: false
-              })} />
-                  <SidebarItem active={portalApp.section === "internalImageServer"} label="내부 이미지 서버" onClick={() => switchSection(portalApp, setMobileNavOpen, "internalImageServer", {
-                closeMobileNav: false
-              })} />
-                  <SidebarItem active={portalApp.section === "zun"} label="컨테이너 랩" onClick={() => openServiceSection("zun", () => switchSection(portalApp, setMobileNavOpen, "zun", {
-                closeMobileNav: false
-              }))} />
-                  <SidebarItem active={portalApp.section === "magnum"} label="쿠버네티스 클러스터" tag="승인" onClick={() => openServiceSection("magnum", () => switchSection(portalApp, setMobileNavOpen, "magnum", {
-                closeMobileNav: false
-              }))} />
-                  <SidebarItem active={portalApp.section === "trove"} label="데이터베이스" tag="비용" onClick={() => openServiceSection("trove", () => switchSection(portalApp, setMobileNavOpen, "trove", {
-                closeMobileNav: false
-              }))} />
-                </>}
-              {!portalUiV2Active ? <SidebarItem active={portalApp.section === "aiGpu"} label="AI 랩" tag="VM/Container" onClick={() => openServiceSection("aiGpu", () => switchSection(portalApp, setMobileNavOpen, "aiGpu", {
-              closeMobileNav: false
-            }))} /> : null}
-            </SidebarSubmenu>
-            <SidebarItem active={portalApp.section === "llm"} label="AI 질문" onClick={() => openServiceSection("llm", () => switchSection(portalApp, setMobileNavOpen, "llm", {
-            closeMobileNav: false
-          }))} />
-          </SidebarSection>
-
-          <SidebarSection defaultOpen isActive={["notices"].includes(portalApp.section)} title="안내">
-            <SidebarItem active={portalApp.section === "notices"} label="공지사항" onClick={() => switchSection(portalApp, setMobileNavOpen, "notices")} />
-          </SidebarSection>
-
-
-
-
-
-          <SidebarSection defaultOpen={!portalUiV2Active} isActive={["luckyDraw", "marketingSurveys", "messages", "qna", "consulting"].includes(portalApp.section)} title="혜택 / 문의">
-            <SidebarItem active={portalApp.section === "luckyDraw"} label="쿠폰 / 이벤트" onClick={() => switchSection(portalApp, setMobileNavOpen, "luckyDraw")} />
-            <SidebarItem active={portalApp.section === "marketingSurveys"} label="설문 투표" onClick={() => switchSection(portalApp, setMobileNavOpen, "marketingSurveys")} />
-            <SidebarItem active={portalApp.section === "consulting"} label="상담 및 문의" onClick={() => openInquirySection("service")} />
-            <SidebarItem active={portalApp.section === "qna"} badge={portalApp.qnaUnreadCount} label="커뮤니티" onClick={() => openCommunitySection()} />
-            <SidebarItem active={portalApp.section === "messages"} badge={portalApp.messageUnreadCount} label="운영지원" onClick={() => openInquirySection("support")} />
-          </SidebarSection>
-
-
-          <SidebarSection defaultOpen={!portalUiV2Active} isActive={["profile"].includes(portalApp.section)} title="내 계정">
-            <SidebarItem active={portalApp.section === "profile"} label="내 정보" onClick={() => switchSection(portalApp, setMobileNavOpen, "profile")} />
-            {portalApp.isAdmin ? <SidebarItem active={false} label="관리자 포털" onClick={() => {
-            setMobileNavOpen(false);
-            portalApp.navigate("/admin");
-          }} /> : null}
-          </SidebarSection>
-
-          <div className="sidebar-footer">
-            <button className="ghost-btn" onClick={portalApp.onLogout} type="button">
-              로그아웃
-            </button>
-            <div className="sidebar-contact">
-              <span>문의</span>
-              <a href={`mailto:${portalApp.platformStatus?.footerEmail || "tang@dustbox.kr"}`}>
-                {portalApp.platformStatus?.footerEmail || "tang@dustbox.kr"}
-              </a>
-            </div>
-          </div>
-        </aside>
 
         <section className="workspace" id="portal-workspace" tabIndex={-1}>
           <header className="workspace-header">
@@ -2325,6 +2080,7 @@ export default function App() {
                 </div> : null}
             </div>
           </header>
+          <CommunityServiceLinks section={portalApp.section} onInstances={()=>openTerminalCloudIntent({tab:'instances'})} onServices={()=>openTerminalCloudIntent({tab:'services'})} onService={key=>{const action=()=>switchSection(portalApp,setMobileNavOpen,key);if(['zun','magnum','trove','aiGpu','llm'].includes(key))openServiceSection(key,action);else action();}}/>
 
           {portalUiV2Active ? <LabSwitcherDock app={portalApp} setMobileNavOpen={setMobileNavOpen} /> : null}
 
@@ -2377,7 +2133,7 @@ export default function App() {
         </section>
       </main>
       <SiteFooter platformStatus={app.platformStatus} />
-    </div>;
+    </div></CommunityUiMemory>;
 }
 function SidebarSection({
   title,

@@ -1,3 +1,5 @@
+import {CommunityAdminNavigation} from './community-workspace.jsx';
+import {COMMUNITY_ADMIN_GROUPS} from './community-workspace.js';
 import { isEducationAdminTab } from "../../shared/community-profile.js";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ADMIN_PERMISSION_OPTIONS, isAdminUserRole, navigate, normalizeAdminPermissions } from "./portal-state.js";
@@ -76,39 +78,7 @@ const ADMIN_TAB_LABELS = {
   llm: "LLM 설정",
   qna: "커뮤니티 관리"
 };
-const ADMIN_TAB_GROUPS = [{
-  key: "today",
-  label: "오늘 처리",
-  tabs: ["approvalCenter", "cloudConsole", "instanceMonitor", "messages", "consulting", "qna"]
-}, {
-  key: "accounts",
-  label: "계정 / 권한",
-  tabs: ["users"]
-}, {
-  key: "classes",
-  label: "자원 운영",
-  tabs: ["zun", "magnum", "trove"]
-}, {
-  key: "learning",
-  label: "운영 문서",
-  tabs: ["adminManual"]
-}, {
-  key: "infra",
-  label: "인프라 / 진단",
-  tabs: ["cloudConsole", "aiLabs", "loadBalancers", "imageMirroring", "monitor", "securityInspection", "openstackCleanup", "cicd", "b2bReport", "logs", "llm"]
-}, {
-  key: "marketing",
-  label: "마케팅 / 매출",
-  tabs: ["activity", "marketingSurveys", "invites", "luckyDrawAdmin", "mailing", "mailLogs"]
-}, {
-  key: "settings",
-  label: "설정 / 감사",
-  tabs: ["platform", "sso", "terms", "notices", "auditLogs", "accessLogs"]
-}, {
-  key: "templates",
-  label: "템플릿",
-  tabs: ["templates", "appYamls", "cloudInit"]
-}];
+const ADMIN_TAB_GROUPS = COMMUNITY_ADMIN_GROUPS.map(group=>({...group,tabs:group.tabs.filter(tab=>ADMIN_TAB_LABELS[tab]&&!isEducationAdminTab(tab))})).filter(group=>group.tabs.length);
 const ADMIN_TAB_LABELS_CLEAN = ADMIN_TAB_LABELS;
 const ADMIN_TAB_GROUPS_CLEAN = ADMIN_TAB_GROUPS;
 const ADMIN_FAVORITE_STORAGE_KEY = "terminal-lab-admin-favorites";
@@ -1459,64 +1429,8 @@ export default function AdminView(props) {
       <AdminSaveDialog dialog={props.adminSaveDialog} onClose={props.closeAdminSaveDialog} />
       <main className={["admin-page", adminTab === "users" ? "is-users-tab" : "", adminDensity === "compact" ? "is-compact-density" : ""].filter(Boolean).join(" ")}>
         <div className="admin-layout">
-          <aside className={`admin-nav-panel ${mobileAdminNavOpen ? "is-mobile-open" : ""}`}>
-            <div className="sidebar-mobile-head">
-              <strong>관리 메뉴</strong>
-              <button className="ghost-btn" onClick={() => setMobileAdminNavOpen(false)} type="button">닫기</button>
-            </div>
-            <div className="admin-nav-brand">
-              <TerminalLabBrand />
-              <span>관리자 콘솔</span>
-            </div>
-            <label className="admin-nav-search">
-              <span className="card-label">빠른 찾기</span>
-              <input type="search" {...adminNavFilterInput} placeholder="메뉴 검색" />
-            </label>
-            {favoriteTabs.length ? <div className="admin-nav-block">
-                <div className="admin-nav-group-title">즐겨찾기</div>
-                <div className="admin-favorite-list">
-                  {favoriteTabs.map(tab => <button key={`favorite-${tab}`} className={`ghost-btn admin-favorite-chip ${adminTab === tab ? "is-active" : ""}`} onClick={() => openAdminTab(tab)} type="button">
-                      {ADMIN_TAB_LABELS_CLEAN[tab]}
-                    </button>)}
-                </div>
-              </div> : null}
-            {quickTabs.length ? <div className="admin-nav-block">
-                <div className="admin-nav-group-title">빠른 이동</div>
-                <div className="admin-favorite-list">
-                  {quickTabs.map(tab => <button key={`quick-${tab}`} className="ghost-btn admin-favorite-chip" onClick={() => openAdminTab(tab)} type="button">
-                      {ADMIN_TAB_LABELS_CLEAN[tab]}
-                    </button>)}
-                </div>
-              </div> : null}
-            <div className="admin-nav-groups" role="tablist" aria-label="admin">
-              {visibleAdminGroups.map(group => <section className="admin-nav-group" key={group.key}>
-                  <button className={`admin-nav-group-title admin-nav-group-toggle ${expandedAdminGroup === group.key || normalizedAdminNavFilter ? "is-expanded" : ""}`} onClick={() => {
-                if (normalizedAdminNavFilter) return;
-                setExpandedAdminGroup(current => current === group.key ? "" : group.key);
-              }} type="button">
-                    <span>{group.label}</span>
-                    <span>{expandedAdminGroup === group.key || normalizedAdminNavFilter ? "−" : "+"}</span>
-                  </button>
-                  {expandedAdminGroup === group.key || normalizedAdminNavFilter ? <div className="tabs admin-tabs">
-                      {group.tabs.map(tab => <div className="admin-tab-row" key={tab}>
-                          <button className={`tab ${adminTab === tab ? "is-active" : ""}`} onClick={() => {
-                    openAdminTab(tab);
-                  }} type="button">
-                            {ADMIN_TAB_LABELS_CLEAN[tab] || tab}
-                          </button>
-                          <button aria-label={favoriteTabs.includes(tab) ? "즐겨찾기 해제" : "즐겨찾기 추가"} className={`ghost-btn admin-favorite-toggle ${favoriteTabs.includes(tab) ? "is-active" : ""}`} onClick={() => toggleFavoriteTab(tab)} type="button">
-                            {favoriteTabs.includes(tab) ? "★" : "☆"}
-                          </button>
-                        </div>)}
-                    </div> : null}
-                </section>)}
-            </div>
-            {!visibleAdminGroups.length ? <div className="hint">검색 결과가 없습니다.</div> : null}
-            <div className="admin-nav-note">
-              <strong>{activeTabMeta?.groupLabel || "관리 메뉴"}</strong>
-              <span>{`${activeTabLabel} 화면입니다. 즐겨찾기는 최대 8개까지 고정할 수 있습니다.`}</span>
-            </div>
-          </aside>
+          <CommunityAdminNavigation groups={visibleAdminGroups} labels={ADMIN_TAB_LABELS_CLEAN} tab={adminTab} onNavigate={openAdminTab} filterInput={adminNavFilterInput} filter={normalizedAdminNavFilter} favorites={favoriteTabs} onFavorite={toggleFavoriteTab} open={mobileAdminNavOpen} onClose={()=>setMobileAdminNavOpen(false)}/>
+
 
           <div className={`admin-main-rail ${adminTab === "users" ? "is-users-tab" : ""}`}>
             <header className="admin-topbar">
