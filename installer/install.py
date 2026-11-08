@@ -183,7 +183,8 @@ class Installer:
 
     def build(self):
         self.require_state()
-        self.run("build", "--label", f"{self.label}={self.state['id']}", "-f", ROOT / "Containerfile", "-t", self.state["image"], ROOT)
+        image_format = ["--format", "docker"] if self.engine == "podman" else []
+        self.run("build", *image_format, "--label", f"{self.label}={self.state['id']}", "-f", ROOT / "Containerfile", "-t", self.state["image"], ROOT)
 
     def app_arguments(self, image=None):
         s = self.state
