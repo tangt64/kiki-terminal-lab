@@ -1,4 +1,4 @@
-# KIKI OS TERMINAL-LAB Community 0.3.2
+# KIKI OS TERMINAL-LAB Community 0.3.3
 
 <img src="platform/client/public/brand/kikios-kiki-wordmark-v1.png" width="360" height="120" alt="노란색 KIKI 박스 마스코트와 KIKI · 키키 로고" />
 
@@ -50,6 +50,14 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 - 관리자 메뉴를 6개 영역으로 재편하고 메뉴 검색·즐겨찾기를 유지했습니다. 교육·시험·랩보드는 추가하지 않습니다.
 
 이 변경은 Community 소스 개선이며 신규 설치 패키지 발행이나 운영 인프라 변경을 뜻하지 않습니다.
+
+## v0.3.3 개선 화면
+
+2026-11-08 커뮤니티 실제 React UI의 모의 데이터 화면입니다. 실제 자원이나 운영 자격증명은 포함하지 않습니다.
+
+![VM 검색과 선택 대상 안내](docs/screenshots/05-cloud-workspace-v033.png)
+
+![관리자 6개 영역 메뉴](docs/screenshots/06-admin-workspace-v033.png)
 
 ## 화면 미리보기
 
