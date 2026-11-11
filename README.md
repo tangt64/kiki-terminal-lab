@@ -1,4 +1,4 @@
-# KIKI OS TERMINAL-LAB Community 0.3.3
+# KIKI OS TERMINAL-LAB Community 0.3.4
 
 <img src="platform/client/public/brand/kikios-kiki-wordmark-v1.png" width="360" height="120" alt="노란색 KIKI 박스 마스코트와 KIKI · 키키 로고" />
 
@@ -39,6 +39,12 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 **교육 보고서·교육 랩 터미널·강사 공유 WebSocket·검증용 과정 생성 경로도 제거**했습니다. 
 
 공통 쿼리 호환성을 위해 DB의 교육 호환 테이블과 일부 비활성 호환 코드·빈 화면 스텁은 남아 있습니다. 이 배포본의 초기화는 교육 콘텐츠를 생성하지 않습니다. 원본 수강생 정보·운영 DB·운영 자격증명 파일과 원문 커리큘럼 데이터는 현재 배포 소스에서 제외합니다. 과거 교육 콘텐츠가 포함된 이력·릴리스는 별도 비공개 아카이브에 보존했습니다. 현재 저장소에는 정리된 Community 이력만 포함하며 GitHub에서는 공개합니다. 과거 비공개 아카이브는 공개하지 않습니다.
+
+## 0.3.4 보안점검 개선
+
+노드별 서비스·SSH 전후 비교와 OpenSCAP 실패 원인·권장 대응을 표시하고, 실제 검사 시각을 기준으로 오래된 기록을 안내합니다. 관리자 보안점검의 모바일 잘림을 수정했으며 기존 보고서 형식과 조회 전용 권한을 유지합니다.
+
+[GitHub 릴리스](https://github.com/tangt64/kiki-terminal-lab/releases/tag/v0.3.4)의 `kiki-terminal-lab-0.3.4.zip`에는 인스톨러가 포함됩니다. 함께 제공하는 `.zip.sha256`으로 검증한 뒤 [설치·업데이트 안내](docs/installation.md)를 따르세요. 소스 ZIP은 오프라인 설치 이미지가 아닙니다.
 
 ## 2026-11-08 UI/UX 개선
 
