@@ -11,6 +11,44 @@ const nodeId = v => typeof v === 'string' && /^node[1-6]$/.test(v) ? v : fail();
 const unique = values => new Set(values).size === values.length || fail();
 const count = v => Number.isSafeInteger(v) && v >= 0 && v <= 100000 ? v : fail();
 
+function verificationFor(input, target, scans, observedAt, now) {
+  if (!input) return null;
+  const value = {
+    observedAt: time(input.observedAt), note: text(input.note, 1000),
+    diagnosedAt: input.diagnosedAt ? time(input.diagnosedAt) : null,
+    explanations: array(input.explanations || [], 8).map(e => ({
+      ruleId: text(e.ruleId), reason: choice(e.reason, ['explicit-setting-missing', 'conflicting-static-values']),
+      title: text(e.title), evidence: text(e.evidence, 1000), recommendation: text(e.recommendation, 1000),
+    })),
+    ssh: Object.fromEntries(['permitrootlogin', 'permitemptypasswords', 'passwordauthentication', 'kbdinteractiveauthentication']
+      .map(k => [k, choice(input.ssh?.[k], ['yes', 'no', 'prohibit-password', 'forced-commands-only', 'unknown'])])),
+  };
+  if (Date.parse(value.observedAt) > Date.parse(observedAt) || (value.diagnosedAt && Date.parse(value.diagnosedAt) > now + 300000)) fail();
+  unique(value.explanations.map(e => e.ruleId));
+  for (const e of value.explanations) {
+    if (!scans.some(s => s.nodeId === target && s.tool === 'openscap' && s.findings.some(f => f.id === e.ruleId && f.result === 'fail'))) fail();
+  }
+  return value;
+}
+
+function nodeBaseline(input) {
+  const states = value => {
+    const entries = Object.entries(value || {});
+    if (!entries.length || entries.length > 200) fail();
+    return Object.fromEntries(entries.map(([name, state]) => {
+      if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,99}$/.test(name)) fail();
+      return [name, choice(state, ['healthy', 'running', 'unhealthy', 'stopped', 'missing', 'unknown', 'unverified'])];
+    }));
+  };
+  const before = states(input?.before), after = states(input?.after);
+  const continuity = choice(input?.continuity, ['verified', 'changed', 'unverified']);
+  const sshConfigUnchanged = typeof input?.sshConfigUnchanged === 'boolean' ? input.sshConfigUnchanged : null;
+  const names = Object.keys(before);
+  const stable = names.length === Object.keys(after).length && names.every(n => ['healthy', 'running'].includes(before[n]) && before[n] === after[n])
+    && continuity !== 'changed' && sshConfigUnchanged !== false;
+  return { before, after, continuity, sshConfigUnchanged, stable };
+}
+
 export function normalizeReport(input, now = Date.now()) {
   if (input?.schemaVersion !== 2) fail();
   const observedAt = time(input.observedAt);
@@ -62,21 +100,28 @@ export function normalizeReport(input, now = Date.now()) {
     .map(k => [k, choice(value?.[k], ['healthy', 'unverified', 'missing'])]));
   const before = serviceStates(input.baseline?.before), after = serviceStates(input.baseline?.after);
   const stable = Object.keys(before).every(k => before[k] === 'healthy' && after[k] === 'healthy');
-  const verification = input.verification ? {
-    observedAt: time(input.verification.observedAt), note: text(input.verification.note, 1000),
-    ssh: Object.fromEntries(['permitrootlogin', 'permitemptypasswords', 'passwordauthentication', 'kbdinteractiveauthentication']
-      .map(k => [k, choice(input.verification.ssh?.[k], ['yes', 'no', 'prohibit-password', 'forced-commands-only', 'unknown'])])),
-  } : null;
-  if (verification && Date.parse(verification.observedAt) > Date.parse(observedAt)) fail();
+  const verification = verificationFor(input.verification, pilotNode, scans, observedAt, now);
+  const assessments = array(input.assessments || [], 6).map(a => {
+    const target = nodeId(a.nodeId), checked = time(a.observedAt);
+    if (!nodes.some(n => n.id === target) || Date.parse(checked) > Date.parse(observedAt)
+      || scans.some(s => s.nodeId === target && Date.parse(s.completedAt) > Date.parse(checked))) fail();
+    return { nodeId: target, observedAt: checked, baseline: nodeBaseline(a.baseline),
+      verification: verificationFor(a.verification, target, scans, checked, now) };
+  });
+  unique(assessments.map(a => a.nodeId));
+  if (assessments.length && scans.some(s => !assessments.some(a => a.nodeId === s.nodeId))) {
+    fail();
+  }
   return { schemaVersion: 2, reportId: text(input.reportId, 100), observedAt, pilotNode, nodes, scans,
-    baseline: { before, after, stable }, verification, scopeNote: text(input.scopeNote, 1000),
+    baseline: { before, after, stable }, verification, assessments, scopeNote: text(input.scopeNote, 1000),
     limits: { cpuQuotaPercent: count(input.limits?.cpuQuotaPercent), memoryMaxMiB: count(input.limits?.memoryMaxMiB), runtimeMaxSeconds: count(input.limits?.runtimeMaxSeconds) } };
 }
 
 export function inspectionView(report, now = Date.now()) {
   const normalized = report ? normalizeReport(report, now) : null;
+  const scanObservedAt = normalized ? Math.min(Date.parse(normalized.observedAt), ...normalized.scans.map(s => Date.parse(s.completedAt))) : 0;
   return { schemaVersion: 2, mode: normalized ? 'pilot-report' : 'unavailable', executionEnabled: false,
-    stale: !normalized || now - Date.parse(normalized.observedAt) > 86400000,
+    stale: !normalized || now - scanObservedAt > 86400000,
     source: 'incident-security', report: normalized && { ...normalized, scans: normalized.scans.map(s => ({ ...s,
       database: s.database && { ...s.database, stale: now - Date.parse(s.database.builtAt) > 7 * 86400000 },
       findingCount: s.findings.length, findings: s.findings.slice(0, 100), truncated: s.findings.length > 100 })) } };

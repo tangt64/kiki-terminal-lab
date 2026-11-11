@@ -9,7 +9,7 @@
     "server/designate.js": "38730c6d42b045c75cc558d8cc1b89dc19b9db834b849a74bf0b24272436aa34",
     "server/env-loader.js": "e8b8d3d9c9962ead6e4e04471c56fc7f4c032ff3615f74cf1b18efa981cde910",
     "server/heat.js": "9c0b2b354ad269c7cf11ed3b7829737d24b8462cafdb8b9a23a3b895cd3f8421",
-    "server/incident-security/contract.js": "e3e479dd9ea9812b909198585bcd6a7d220d54a24b2faf06b9ea163c7e556a50",
+    "server/incident-security/contract.js": "7cdf1038882f935a5ae42f7f45204b6d34c96170af414fbd9949df404f3316f9",
     "server/incident-security/normalize-pilot.py": "a6c9e7d44908964859a48678420e0ed5b90b9ff3dca7db9da11ed734cc5281ff",
     "server/incident-security/reader.js": "6212150704acea59cecd9c2abbfb849623feddce850d31e25be7f00f7ca308e1",
     "server/index.js": "dc196389c20054838d8625d53d5d607978524c0a6d89cd6974e358fadf86468e",
@@ -48,8 +48,8 @@
     "client/src/admin-marketing-activity-tab.jsx": "7f1673b6e01d1792ad1a556be7debf614f975287c45eb2243f00c11603622363",
     "client/src/admin-ops-tabs.jsx": "9f17d0166bb602b73d40549b6155563691c84144687d92a59892a2ad52af98f8",
     "client/src/admin-platform-tabs.jsx": "5276d6419b44eed316908dae4ccc5e183a79a9e4ba05b965f08946f562833e10",
-    "client/src/admin-security-inspection.css": "b626c25ca9e5e6efc3b89655245aee42eee472fb07bbb8e5171506ae76066a2a",
-    "client/src/admin-security-inspection.jsx": "023c29f502b9ceaad1b2b92de1e55fc1a2ee66cc4984b0e01fb5e127365683df",
+    "client/src/admin-security-inspection.css": "58286bad64571efbd48fce17b4e4c62ea2d6535712c04a7fa0340b4a0b47d1f8",
+    "client/src/admin-security-inspection.jsx": "118e7cc3c75ade1439742009e607fd47976763a0d726f5b2e4c7bfc8de065d1b",
     "client/src/admin-template-tabs.jsx": "aaac2e115da2fcdc77c0f7f9119ebf3abd5aaf8409dfb2d0d2f74075c12cf1a8",
     "client/src/admin-terms-tab.jsx": "590240a7422a2dd123d37b61a8dc961196f89b9604aef25c213c1fcb0a372361",
     "client/src/admin-view.jsx": "2b7ba4fb7c30ab065ef114cc5fc2e2f5ec1b8a56c3e403315cbc34a047c67c8f",
@@ -2148,5 +2148,15 @@
       "client/src/curriculum-2026-data.js"
     ],
     "description": "Education reports, lab terminals, instructor sharing and educational validation seeds removed; compatibility schema and inert shared helpers remain."
+  },
+  "upstreamSync": {
+    "date": "2026-11-11",
+    "scope": "Read-only administrator security-inspection report contract and display; no operating reports, credentials, education or board features imported.",
+    "communityAdjustments": "Scoped grid minimum sizing, wrapping and filter layout to prevent clipped report content in the community administrator interface.",
+    "files": [
+      "server/incident-security/contract.js",
+      "client/src/admin-security-inspection.css",
+      "client/src/admin-security-inspection.jsx"
+    ]
   }
 }

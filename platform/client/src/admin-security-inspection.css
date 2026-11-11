@@ -1,4 +1,4 @@
-.security-inspection { color: var(--text, #18304d); max-width: 1320px; margin: auto; padding: 24px; line-height: 1.65; }
+.security-inspection { width: 100%; min-width: 0; color: var(--text, #18304d); max-width: 1320px; margin: auto; padding: 24px; line-height: 1.65; }
 .security-inspection * { box-sizing: border-box; }
 .security-inspection h2 { font-size: 28px; margin: 4px 0; }
 .security-inspection h3 { margin: 28px 0 12px; }
@@ -16,8 +16,8 @@
 .security-inspection small { color: #546983; font-weight: normal; }
 .security-badge { display: inline-block; background: #edf2fb; color: #355584; border-radius: 6px; font-size: 12px; font-weight: 700; padding: 4px 10px; }
 .security-filters { display: flex; flex-wrap: wrap; gap: 20px; margin: 24px 0; }
-.security-filters label { display: flex; align-items: center; gap: 10px; }
-.security-table-wrap { overflow-x: auto; border: 1px solid #d5dfef; border-radius: 12px; }
+.security-filters label { display: flex; flex: 1 1 200px; min-width: 0; align-items: center; gap: 10px; white-space: nowrap; }
+.security-table-wrap { min-width: 0; max-width: 100%; overflow-x: auto; border: 1px solid #d5dfef; border-radius: 12px; }
 .security-inspection table { width: 100%; border-collapse: collapse; min-width: 590px; text-align: left; background: var(--card-bg, #fff); }
 .security-inspection :is(td, th) { border-bottom: 1px solid #e6ecf4; padding: 14px; }
 .security-scans { display: grid; gap: 16px; margin-bottom: 24px; }
@@ -25,5 +25,12 @@
 .security-fixture-warning { color: #8a4713; font-weight: 600; }
 .security-inspection summary { cursor: pointer; font-weight: 600; }
 .security-inspection li { margin: 12px 0; overflow-wrap: anywhere; }
+.security-rule-explanations { margin-top: 24px; }
+.security-assessments { display: grid; gap: 16px; margin-bottom: 24px; }
+.security-rule-explanations section { margin-top: 14px; padding: 16px; border-left: 3px solid #c18b28; background: #fff9e9; color: #674710; overflow-wrap: anywhere; }
 .security-error { color: #9b2525; border: 1px solid #e2baba; padding: 16px; border-radius: 10px; }
 @media (max-width: 700px) { .security-inspection { padding: 16px; } .security-heading { align-items: start; flex-direction: column; } .security-metrics { grid-template-columns: 1fr; } }
+
+/* Keep the report inside the community administrator grid on narrow screens. */
+.security-filters select { min-width: 0; max-width: 100%; }
+.security-inspection p { overflow-wrap: anywhere; }
