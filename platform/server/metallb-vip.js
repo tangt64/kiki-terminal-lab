@@ -1,4 +1,4 @@
-export const DEFAULT_METALLB_VIP_POOL_CIDR = "10.250.250.0/24";
+export const DEFAULT_METALLB_VIP_POOL_CIDR = "";
 export const DEFAULT_METALLB_VIP_BLOCK_PREFIX = 28;
 
 function parseIpv4Address(value = "") {

@@ -742,7 +742,7 @@ const EMPTY_CUSTOM_LAB = {
     cloudInit: { mode: "none", content: "", fileName: "" },
     publicIp: { enabled: false, externalNetworkName: "net-external" },
     volumes: { enabled: false, count: "1", sizeGb: "100", volumeType: "" },
-    network: { enabled: false, networkName: "", subnetCidr: "10.20.0.0/24", attachRouter: false, externalNetworkName: "net-external" },
+    network: { enabled: false, networkName: "", subnetCidr: "", attachRouter: false, externalNetworkName: "net-external" },
     loadBalancer: { enabled: false, protocol: "TCP", listenerPort: "80", targetPort: "80" },
     database: { enabled: false, engine: "postgresql", version: "16", sizeGb: "20", flavorName: "m1.small", name: "" },
   },
@@ -3169,7 +3169,7 @@ export function usePortalApp() {
     return result;
   }
 
-  async function createCloudConsoleProject({ networkName = "private", subnetCidr = "192.168.10.0/24", quotaProfileId = "basic", requestedQuota = null } = {}) {
+  async function createCloudConsoleProject({ networkName = "private", subnetCidr = "", quotaProfileId = "basic", requestedQuota = null } = {}) {
     setCloudConsoleStatus({ tone: "info", message: "전용 OpenStack 프로젝트를 준비하는 중입니다." });
     try {
       const result = await api("/api/cloud-console/project", { method: "POST", body: { networkName, subnetCidr, quotaProfileId, requestedQuota } });

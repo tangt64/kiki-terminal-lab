@@ -220,6 +220,9 @@ ${spacing}  - ${yamlString(command)}
 }
 
 function buildCapoTemplateVariables({ clusterUuid, projectName, name, profile, nodeCount, masterCount }) {
+  const podCidr = String(process.env.CAPO_POD_CIDR || "").trim();
+  const serviceCidr = String(process.env.CAPO_SERVICE_CIDR || "").trim();
+  if (!podCidr || !serviceCidr) throw new Error("Set CAPO_POD_CIDR and CAPO_SERVICE_CIDR explicitly before creating a cluster.");
   const controlPlaneCount = Math.max(1, Number(masterCount || 1));
   const workerCount = Math.max(0, Number(nodeCount || 1));
   const controlPlaneFlavor = profile.masterFlavorId || profile.flavorId || "";
@@ -244,9 +247,9 @@ function buildCapoTemplateVariables({ clusterUuid, projectName, name, profile, n
     networkName: profile.networkName || "",
     nodeCount: workerCount,
     openstackProject: String(projectName || ""),
-    podCidr: String(process.env.CAPO_POD_CIDR || "192.168.0.0/16"),
+    podCidr,
     projectName: String(projectName || ""),
-    serviceCidr: String(process.env.CAPO_SERVICE_CIDR || "10.96.0.0/12"),
+    serviceCidr,
     sshKeyName: profile.sshKeyName || "",
     workerCount,
     workerFlavor,

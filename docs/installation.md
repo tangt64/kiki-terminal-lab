@@ -1,6 +1,6 @@
 # 설치 방법·환경 조건·서버 사양
 
-기준: KIKI OS TERMINAL-LAB Community 0.3.4 Preview, 2026-11-12.
+기준: KIKI OS TERMINAL-LAB Community 0.3.5 Preview, 2026-11-12.
 
 이 문서는 교육 기능과 랩보드를 제외한 일반 사용자·관리자 포털의 설치 안내입니다. 인스톨러는 **포털 앱과 전용 PostgreSQL**을 구성하고, 이미 운영 중인 OpenStack에 연결합니다. OS·컨테이너 엔진·OpenStack 자체를 설치하지 않습니다.
 
@@ -140,8 +140,8 @@ Docker를 선택하면 [공식 Engine 설치 절차](https://docs.docker.com/eng
 릴리스의 소스 ZIP과 같은 이름의 `.sha256` 파일을 함께 내려받아 검증한 뒤 새 디렉터리에 풉니다. ZIP 안에 인스톨러가 포함됩니다.
 
 ```bash
-sha256sum -c kiki-terminal-lab-0.3.4.zip.sha256
-unzip kiki-terminal-lab-0.3.4.zip
+sha256sum -c kiki-terminal-lab-0.3.5.zip.sha256
+unzip kiki-terminal-lab-0.3.5.zip
 cd kiki-terminal-lab
 COMMUNITY_STATE_DIR="$HOME/.local/state/kiki-terminal-lab"
 COMMUNITY_CLOUD_FILE="$HOME/.config/kiki-terminal-lab/clouds.yaml"
@@ -340,3 +340,8 @@ npm start
 | `/board` 또는 교육 API가 404 | 해당 기능은 이 배포본에서 제외한 정상 동작 |
 
 엔진 로그를 확인할 때 컨테이너 이름은 상태 경로의 `deployment.json`에서 찾습니다. 로그·설정·초기 비밀번호·clouds.yaml을 공개 이슈에 그대로 첨부하지 않습니다.
+
+
+## 네트워크 대역의 명시적 설정 (0.3.5)
+
+새 프로젝트를 요청할 때 설치 환경에 맞는 서브넷 CIDR을 입력합니다. 기존 승인 프로젝트의 저장된 CIDR은 그대로 사용합니다. 선택 CAPO 클러스터를 생성하려면 앱 환경에 `CAPO_POD_CIDR`과 `CAPO_SERVICE_CIDR`을 지정합니다. MetalLB VIP 자동 할당을 사용하면 `METALLB_VIP_POOL_CIDR`도 지정합니다. 미설정 상태에서는 해당 자원 생성을 오류로 안내하며 임의 대역을 선택하지 않습니다. 이 값은 컨테이너 앱 환경에 전달해야 하며 기존 네트워크와 겹치지 않도록 설치자가 결정합니다.

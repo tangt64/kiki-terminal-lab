@@ -5,7 +5,10 @@ import {sshSourceCidrs} from '../platform/server/ssh-source-policy.js';
 import {ensureValidationSecurityGroup} from '../platform/server/kiki-cloud-openstack.js';
 import {buildCapoManifest} from '../platform/server/magnum.js';
 
-test('SSH access requires explicit valid operator CIDRs',async()=>{
+test('SSH access requires explicit valid operator CIDRs',async t=>{
+  const previousNetwork=Object.fromEntries(['CAPO_POD_CIDR','CAPO_SERVICE_CIDR'].map(k=>[k,process.env[k]]));
+  t.after(()=>{for(const[k,v]of Object.entries(previousNetwork)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
+  process.env.CAPO_POD_CIDR='192.0.2.0/24';process.env.CAPO_SERVICE_CIDR='198.51.100.0/24';
   assert.deepEqual(sshSourceCidrs(''),[]);
   for(const value of ['not-a-network','192.0.2.1','192.0.2.1/33','2001:db8::1/129','192.0.2.1/32/extra','192.0.2.1/-1'])assert.throws(()=>sshSourceCidrs(value),/valid IPv4\/IPv6 CIDRs/);
   const prior=process.env.COMMUNITY_SSH_SOURCE_CIDRS;

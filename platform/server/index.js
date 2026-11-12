@@ -13458,7 +13458,7 @@ app.post("/api/cloud-console/project", requireAuth, async (req, res) => {
   }
   const requestedProjectName = sanitizeSelfServiceProjectName("user-" + req.user.id);
   const networkName = sanitizeOpenstackResourceName(req.body?.networkName || "private");
-  const defaultSubnetCidr = "192.168.10.0/24";
+  const defaultSubnetCidr = "";
   const subnetCidr = normalizeIpv4Cidr(req.body?.subnetCidr || defaultSubnetCidr);
   let quotaProfile;
   try {

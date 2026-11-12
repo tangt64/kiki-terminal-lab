@@ -115,14 +115,14 @@ export default function TerminalCloudView(props){
   const [instance,setInstance]=useState({name:"",count:"1",imageRef:"",flavorRef:"",networkId:"",bootVolumeSizeGb:"",bootSource:"image",securityGroupNames:["terminal-lab.kr"]});
   const [volume,setVolume]=useState({name:"",sizeGb:"10",description:""});
   const [network,setNetwork]=useState({name:""});
-  const [subnet,setSubnet]=useState({networkId:"",name:"",cidr:"192.168.10.0/24"});
+  const [subnet,setSubnet]=useState({networkId:"",name:"",cidr:""});
   const [router,setRouter]=useState({name:"",externalNetworkId:""});
   const [routerLink,setRouterLink]=useState({routerId:"",subnetId:""});
   const [floating,setFloating]=useState({floatingNetworkId:"",portId:""});
   const [security,setSecurity]=useState({name:"",description:""});
   const quotaProfiles=props.platformStatus?.selfServiceVmProjectQuotaProfiles||[];
   const quotaMaximum=quotaProfiles.find((profile)=>profile.id==="performance")?.quota||quotaProfiles[0]?.quota||{};
-  const [projectSetup,setProjectSetup]=useState({networkName:"private",subnetCidr:"192.168.10.0/24",quotaProfileId:"basic",requestedQuota:{instances:1,cores:1,ram:1024,volumes:1,gigabytes:10}});
+  const [projectSetup,setProjectSetup]=useState({networkName:"private",subnetCidr:"",quotaProfileId:"basic",requestedQuota:{instances:1,cores:1,ram:1024,volumes:1,gigabytes:10}});
   const [rule,setRule]=useState({securityGroupId:"",direction:"ingress",protocol:"tcp",portMin:"22",portMax:"22",remoteIpPrefix:"0.0.0.0/0"});
   const [localActionError,setLocalActionError]=useState("");
   const snapshot=props.cloudConsoleSnapshot?.projectName===project?props.cloudConsoleSnapshot:EMPTY;

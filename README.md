@@ -1,4 +1,4 @@
-# KIKI OS TERMINAL-LAB Community 0.3.4
+# KIKI OS TERMINAL-LAB Community 0.3.5
 
 <img src="platform/client/public/brand/kikios-kiki-wordmark-v1.png" width="360" height="120" alt="노란색 KIKI 박스 마스코트와 KIKI · 키키 로고" />
 
@@ -39,6 +39,10 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 **교육 보고서·교육 랩 터미널·강사 공유 WebSocket·검증용 과정 생성 경로도 제거**했습니다. 
 
 공통 쿼리 호환성을 위해 DB의 교육 호환 테이블과 일부 비활성 호환 코드·빈 화면 스텁은 남아 있습니다. 이 배포본의 초기화는 교육 콘텐츠를 생성하지 않습니다. 원본 수강생 정보·운영 DB·운영 자격증명 파일과 원문 커리큘럼 데이터는 현재 배포 소스에서 제외합니다. 과거 교육 콘텐츠가 포함된 이력·릴리스는 별도 비공개 아카이브에 보존했습니다. 현재 저장소에는 정리된 Community 이력만 포함하며 GitHub에서는 공개합니다. 과거 비공개 아카이브는 공개하지 않습니다.
+
+## 0.3.5 배포 정보 정리
+
+프로젝트 CIDR, CAPO Pod·Service CIDR, MetalLB VIP 풀은 설치자가 명시합니다. 기존 DB에 저장된 네트워크 설정은 변경하지 않습니다. 배포 코드의 가상 사용자·관리자 프로젝트 미리보기를 제거했으며, 개발자 정보와 일반 기능은 유지합니다.
 
 ## 0.3.4 보안점검 개선
 

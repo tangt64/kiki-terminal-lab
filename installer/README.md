@@ -1,6 +1,6 @@
 # KIKI OS TERMINAL-LAB 인스톨러
 
-현재 배포 버전은 **0.3.4 Preview**입니다. 인스톨러는 함께 배포된 `package.json`에서 버전을 읽어 앱 이미지와 업데이트 버전을 정합니다. `kiki-terminal-lab-0.3.4.zip`에는 설치·패키징 스크립트가 포함됩니다. ZIP 체크섬을 검증한 뒤 실행 예시는 [설치·업데이트 안내](../docs/installation.md)를 따르세요.
+현재 배포 버전은 **0.3.5 Preview**입니다. 인스톨러는 함께 배포된 `package.json`에서 버전을 읽어 앱 이미지와 업데이트 버전을 정합니다. `kiki-terminal-lab-0.3.5.zip`에는 설치·패키징 스크립트가 포함됩니다. ZIP 체크섬을 검증한 뒤 실행 예시는 [설치·업데이트 안내](../docs/installation.md)를 따르세요.
 
 Podman 또는 Docker로 Linux 컨테이너를 정상 실행할 수 있는 Linux 배포판에서 사용 가능합니다. 현재 CPU 지원 대상은 **64비트 x86_64/amd64 전용**이며 32비트 x86·ARM64는 지원하지 않습니다. Python과 엔진별 권한·네트워크·볼륨 조건은 [설치 안내](../docs/installation.md)를 따릅니다.
 
