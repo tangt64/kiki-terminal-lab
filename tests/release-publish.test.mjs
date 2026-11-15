@@ -155,6 +155,8 @@ test('anonymous checks reject an asset that has become public', async () => {
 test('CLI rejects force-like flags, incomplete arguments and reused remote names', () => {
   assert.equal(parseArguments([]).githubRemote, 'origin');
   assert.equal(parseArguments(['--verify-only']).verifyOnly, true);
+  assert.equal(parseArguments(['--allow-public-gitea']).allowPublicGitea,true);
+  assert.equal(parseArguments([]).allowPublicGitea,undefined);
   for (const args of [['--force'], ['--python'], ['--tag', 'refs/heads/main'], ['--github-remote', 'internal'], ['--dry-run', '--verify-only']]) {
     assert.throws(() => parseArguments(args));
   }

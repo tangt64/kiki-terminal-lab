@@ -1,0 +1,18 @@
+.cloud-cleanup-guide{margin:16px 0;padding:16px;border:1px solid #dce5f3;border-radius:12px;background:#f8faff;color:#17325a}
+.cloud-cleanup-guide-heading{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;margin-bottom:12px}
+.cloud-cleanup-guide-heading span,.cloud-cleanup-policy{color:#526787;font-size:12px;line-height:1.65}
+.cloud-cleanup-guide-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cloud-cleanup-scope{min-width:0;padding:14px;border:1px solid #dce5f3;border-radius:10px;background:#fff;overflow-wrap:anywhere}
+.cloud-cleanup-scope strong{color:#17325a;font-size:13px}.cloud-cleanup-scope p{margin:7px 0 0;font-size:12px;line-height:1.7}
+.cloud-cleanup-preserved{color:#426050}.cloud-cleanup-caution{color:#705128}.cloud-cleanup-scope.is-project{border-color:#f0cdcd;background:#fffafa}
+.cloud-cleanup-scope.is-project strong,.cloud-cleanup-scope.is-project .cloud-cleanup-caution{color:#9d3030}.cloud-cleanup-policy{margin:12px 0 0}
+.admin-list-stack>.admin-list-card.community-project-card{display:flex;flex-direction:column;align-items:stretch;gap:12px;min-width:0}
+.community-project-head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:space-between}
+.community-project-identity{flex:1 1 260px;min-width:0;overflow-wrap:anywhere}.community-project-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.community-project-delete-action{display:grid;justify-items:end;gap:5px}.community-project-delete-action small{color:#8d4242;font-size:11px;max-width:250px}
+.community-project-actions button{min-height:40px}.community-project-detail{display:grid;gap:8px}.community-project-detail>.admin-list-card{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
+.community-cleanup-confirm{display:flex;flex-direction:column;gap:16px;width:min(680px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:24px}
+.community-cleanup-confirm h3,.community-cleanup-confirm p{margin:0}.community-cleanup-confirm .button-row{justify-content:flex-end;flex-wrap:wrap}
+.community-cleanup-summary{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}.community-cleanup-summary dd{margin:0;overflow-wrap:anywhere}
+@media(max-width:900px){.cloud-cleanup-guide-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.community-project-identity{flex-basis:auto;width:100%}.community-project-actions{width:100%}.community-project-delete-action{justify-items:start}.community-cleanup-confirm{padding:16px}}

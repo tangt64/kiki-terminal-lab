@@ -25,8 +25,9 @@ export function parseChecksum(body, filename) {
   return match[1].toLowerCase();
 }
 
-export function assertPrivateRepository(repo, location, {id, kind} = {}) {
-  if (!repo || !Number.isSafeInteger(Number(repo.id)) || Number(repo.id) < 1 || (repo.private !== true && !(kind === 'github' && repo.private === false)) || repo.archived ||
+export function assertPrivateRepository(repo, location, {id, kind, allowPublicGitea = false} = {}) {
+  const publicAllowed = kind === 'github' || (kind === 'gitea' && allowPublicGitea === true);
+  if (!repo || !Number.isSafeInteger(Number(repo.id)) || Number(repo.id) < 1 || (repo.private !== true && !(publicAllowed && repo.private === false)) || repo.archived ||
       String(repo.full_name).toLowerCase() !== location.fullName.toLowerCase() ||
       (id !== undefined && String(repo.id) !== String(id))) {
     throw new Error('Repository identity, private visibility or active state does not match.');
@@ -49,13 +50,14 @@ async function limitedBody(response, limit = 256 * 1024 * 1024) {
 }
 
 export class ReleaseTarget {
-  constructor({kind, remote, location, token, fetchImpl = fetch, expectedId}) {
+  constructor({kind, remote, location, token, fetchImpl = fetch, expectedId, allowPublicGitea = false}) {
     this.kind = kind;
     this.remote = remote;
     this.location = location;
     this.token = token;
     this.fetch = fetchImpl;
     this.id = expectedId;
+    this.allowPublicGitea = allowPublicGitea;
     this.apiOrigin = kind === 'github' ? 'https://api.github.com' : location.origin;
     this.apiBase = this.apiOrigin + (kind === 'gitea' ? '/api/v1' : '');
     this.repoPath = `/repos/${location.fullName}`;
@@ -88,7 +90,7 @@ export class ReleaseTarget {
 
   async inspect() {
     const repo = await this.request(this.repoPath);
-    assertPrivateRepository(repo, this.location, {id: this.id, kind: this.kind});
+    assertPrivateRepository(repo, this.location, {id: this.id, kind: this.kind, allowPublicGitea:this.allowPublicGitea});
     if (this.private !== undefined && this.private !== repo.private) throw new Error('Repository visibility changed during release.');
     this.id = repo.id;
     this.private = repo.private;
@@ -215,6 +217,11 @@ export class ReleaseTarget {
         const downloadable = [301,302,303,307,308].includes(response.status) && redirect?.protocol === 'https:' && (redirect.hostname === 'github.com' && !/^\/(?:login|session|sessions)(?:\/|$)/.test(redirect.pathname) || redirect.hostname.endsWith('.githubusercontent.com'));
         if (response.status !== 200 && !downloadable) throw new Error('Public GitHub download verification failed.');
         await response.body?.cancel();
+        continue;
+      }
+      if (this.kind === 'gitea' && this.private === false && this.allowPublicGitea === true) {
+        await response.body?.cancel();
+        if (response.status !== 200) throw new Error('Public Gitea verification requires a direct successful anonymous response.');
         continue;
       }
       const login = location ? new URL(location, url) : null;

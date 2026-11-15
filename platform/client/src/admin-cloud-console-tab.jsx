@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./portal-state.js";
 import { AdminField } from "./admin-field.jsx";
+import CloudCleanupGuide, {CloudCleanupScope} from './cloud-cleanup-scope.jsx';
+import {projectCleanupPlan,projectCleanupRequest} from '../../shared/project-cleanup.js';
 
 const won = new Intl.NumberFormat("ko-KR");
 const statusLabel = (value) => ({ requested:"승인 대기",executing:"실행 중",completed:"완료",approved:"승인",rejected:"반려",failed:"실패" }[String(value||"").toLowerCase()] || value || "-");
@@ -13,6 +15,11 @@ export default function AdminCloudConsoleTab(props) {
   const [flavorCapacity,setFlavorCapacity]=useState({loading:true,projectName:"",flavors:[],message:""});
   const [resources,setResources]=useState({loading:true,projects:[],message:""});
   const [deletionJobs,setDeletionJobs]=useState({loading:true,jobs:[],summary:{active:0,failed:0,completed:0},message:""});
+  const [expandedProjects,setExpandedProjects]=useState([]);
+  const [cleanupTarget,setCleanupTarget]=useState(null);
+  const [cleanupConfirmation,setCleanupConfirmation]=useState('');
+  const cleanupPending=useRef(false);
+  const cleanupTrigger=useRef(null);
   const projects=Array.isArray(props.selfServiceProjectRequests)?props.selfServiceProjectRequests:[];
   const pendingProjects=projects.filter((item)=>item.status==="requested");
   const pendingActions=actions.filter((item)=>item.status==="requested");
@@ -35,6 +42,22 @@ export default function AdminCloudConsoleTab(props) {
   async function deleteExtensionResource(projectName,type,item){const id=item.alarm_id||item.id;setBusy(`${type}:${id}`);try{await api(`/api/cloud-console/${type}/${id}?projectName=${encodeURIComponent(projectName)}`,{method:"DELETE"});await refresh();}catch(error){setNotice({tone:"error",message:error.message||"확장 자원을 삭제하지 못했습니다."});}finally{setBusy("");}}
   async function reconcileDeletionJobs(){setBusy("deletion:reconcile");try{const result=await api("/api/admin/resource-deletion-jobs/reconcile",{method:"POST",body:{}});setNotice({tone:"success",message:result.message||"삭제 작업 상태를 재확인했습니다."});await refresh();}catch(error){setNotice({tone:"error",message:error.message||"삭제 작업 상태를 확인하지 못했습니다."});}finally{setBusy("");}}
   function setProjectApprovalMode(value){props.setPlatformStatus?.((current)=>({...current,selfServiceVmProjectAutoApproveEnabled:value==="auto",...(value==="auto"?{selfServiceVmProjectAutoConfigureEnabled:true,selfServiceVmProjectAutoNetworkEnabled:true}:{})}));}
+  function toggleProject(projectName){setExpandedProjects(current=>current.includes(projectName)?current.filter(name=>name!==projectName):[...current,projectName]);}
+  function closeCleanup(){if(busy)return;setCleanupTarget(null);setCleanupConfirmation('');}
+  function openCleanup(project,event){cleanupTrigger.current=event.currentTarget;setCleanupConfirmation('');setNotice({tone:'',message:''});setCleanupTarget(project);}
+  const cleanupPlan=projectCleanupPlan({project:resources.projects.find(project=>project.projectName===cleanupTarget?.projectName),requests:projects,user:props.session,platformStatus:props.platformStatus,busy:Boolean(busy)});
+  async function runProjectCleanup(){
+    if(busy||cleanupPending.current)return;
+    let body;
+    try{body=projectCleanupRequest(cleanupPlan,cleanupConfirmation);}catch(error){setNotice({tone:'error',message:error.message});return;}
+    cleanupPending.current=true;setBusy('project-cleanup');setNotice({tone:'',message:''});
+    try{
+      const result=await api('/api/admin/self-service-project-requests/delete-records',{method:'POST',body});
+      setCleanupTarget(null);setCleanupConfirmation('');setNotice({tone:'success',message:result.message||'프로젝트 정리를 완료했습니다.'});
+      await Promise.allSettled([refresh(),Promise.resolve().then(()=>props.loadAdmin?.())]);
+    }catch(error){setNotice({tone:'error',message:error.message||'프로젝트를 정리하지 못했습니다. 기존 보호 조건과 잔여 자원을 확인해 주세요.'});}
+    finally{cleanupPending.current=false;setBusy('');}
+  }
   return <div className="admin-tab-stack">
     <section className="admin-simple-card">
       <div className="admin-section-head"><div><strong>클라우드 콘솔 관리</strong><p className="hint">사용자별 전용 프로젝트와 OpenStack 작업을 관리합니다.</p></div><button className="mini-btn" onClick={()=>{refresh();props.loadAdmin?.();}} type="button">새로고침</button></div>
@@ -54,9 +77,30 @@ export default function AdminCloudConsoleTab(props) {
       <div className="hint">자동 승인은 새 프로젝트 요청부터 적용됩니다. 기존 대기 요청은 아래에서 승인해 주세요.</div>
     </section>
     <section className="admin-simple-card">
-      <div className="admin-section-head"><div><strong>실제 OpenStack 자원</strong><p className="hint">승인된 사용자 프로젝트를 Nova에서 직접 조회합니다. 작업 이력이 아닌 현재 상태가 기준입니다.</p></div><button className="mini-btn" disabled={resources.loading} onClick={refresh} type="button">새로고침</button></div>
+      <div className="admin-section-head"><div><strong>실제 OpenStack 자원</strong><p className="hint">승인된 사용자 프로젝트의 현재 자원입니다. 프로젝트 전체 삭제는 카드 상단에서 찾을 수 있으며, 먼저 범위 확인 창이 열립니다.</p></div><button className="mini-btn" disabled={resources.loading||Boolean(busy)} onClick={refresh} type="button">새로고침</button></div>
+      <CloudCleanupGuide />
       {resources.message?<div className="mini-horizon-status is-error">{resources.message}</div>:null}
-      {resources.loading?<div className="empty-state">프로젝트 자원을 조회하고 있습니다.</div>:resources.projects.length?<div className="admin-list-stack">{resources.projects.map((project)=><article className="admin-list-card" key={project.projectName}><div><strong>{project.projectName}</strong><p className="hint">{project.userName||`사용자 #${project.userId||"-"}`} · 인스턴스 {project.instances.length} · 볼륨 {project.volumes.length} · 사용자 네트워크 {project.networks.filter((item)=>!item.shared&&!item["router:external"]).length} · LB {project.loadBalancers.length} · 공유 {project.shares?.length||0} · 예약 {project.reservations?.length||0} · 알림 {project.alarms?.length||0}</p><p className="hint">Octavia {project.services?.octavia?"사용":"없음"} · Manila {project.services?.manila?"사용":"없음"} · Blazar {project.services?.blazar?"사용":"없음"} · Aodh {project.services?.aodh?"사용":"없음"}</p>{project.warnings?.length?<p className="hint">{project.warnings.join(" · ")}</p>:null}</div><span className={`status-chip ${project.ok?"is-success":"is-failed"}`}>{project.ok?"조회 완료":"조회 실패"}</span>{project.instances.map((instance)=><div className="admin-list-card" key={instance.id}><div><strong>{instance.name||instance.id}</strong><p className="hint">{instance.status||"-"} · {Object.values(instance.addresses||{}).flat().map((item)=>item.addr).filter(Boolean).join(", ")||"IP 없음"}</p></div><div className="button-row"><button className="mini-btn" disabled={Boolean(busy)||String(instance.status).toUpperCase()!=="ACTIVE"} onClick={()=>openInstanceConsole(project.projectName,instance)} type="button">VNC</button>{String(instance.status).toUpperCase()==="SHUTOFF"?<button className="mini-btn" disabled={Boolean(busy)} onClick={()=>manageInstance(project.projectName,instance,"start")} type="button">시작</button>:<button className="mini-btn" disabled={Boolean(busy)} onClick={()=>manageInstance(project.projectName,instance,"stop")} type="button">중지</button>}<button className="mini-btn" disabled={Boolean(busy)} onClick={()=>manageInstance(project.projectName,instance,"reboot")} type="button">재부팅</button><button className="mini-btn danger-mini-btn" disabled={Boolean(busy)} onClick={()=>{if(window.confirm(`${instance.name||instance.id} 인스턴스를 삭제할까요?`))manageInstance(project.projectName,instance,"delete");}} type="button">삭제</button></div></div>)}{[["shares",project.shares],["reservations",project.reservations],["alarms",project.alarms]].flatMap(([type,items])=>(items||[]).map((item)=><div className="admin-list-card" key={`${type}:${item.alarm_id||item.id}`}><div><strong>{item.name||item.alarm_id||item.id}</strong><p className="hint">{type==="shares"?"Manila 공유":type==="reservations"?"Blazar 예약":"Aodh 알림"} · {item.status||item.state||"-"}</p></div><button className="mini-btn danger-mini-btn" disabled={Boolean(busy)} onClick={()=>deleteExtensionResource(project.projectName,type,item)} type="button">삭제</button></div>))}</article>)}</div>:<div className="empty-state">승인된 사용자 프로젝트가 없습니다.</div>}
+      {resources.loading?<div className="empty-state">프로젝트 자원을 조회하고 있습니다.</div>:resources.projects.length?<div className="admin-list-stack">{resources.projects.map(project=>{
+        const plan=projectCleanupPlan({project,requests:projects,user:props.session,platformStatus:props.platformStatus,busy:Boolean(busy)});
+        const expanded=expandedProjects.includes(project.projectName);
+        return <article className="admin-list-card community-project-card" key={project.projectName} aria-label={`${project.projectName} 프로젝트 자원`}>
+          <header className="community-project-head">
+            <div className="community-project-identity"><strong>{project.projectName}</strong><p className="hint">{project.userName||`사용자 #${project.userId||'-'}`} · VM {project.instances.length} · 볼륨 {project.volumes.length} · 네트워크 {project.networks.filter(item=>!item.shared&&!item['router:external']).length} · LB {project.loadBalancers.length}</p>{project.warnings?.length?<p className="hint">{project.warnings.join(' · ')}</p>:null}</div>
+            <div className="community-project-actions">
+              <span className={`status-chip ${project.ok?'is-success':'is-failed'}`}>{project.ok?'조회 완료':'조회 실패'}</span>
+              <button className="mini-btn" aria-expanded={expanded} onClick={()=>toggleProject(project.projectName)} type="button">{expanded?'자원 접기':'자원 보기'}</button>
+              <div className="community-project-delete-action"><button className="mini-btn danger-mini-btn" aria-label={`${project.projectName} 프로젝트 전체 삭제`} aria-describedby={`cleanup-scope-${encodeURIComponent(project.projectName)}`} disabled={!plan.allowed} title={plan.reason||'대상과 삭제 범위를 확인하는 창을 엽니다.'} onClick={event=>openCleanup(project,event)} type="button">프로젝트 전체 삭제</button><small id={`cleanup-scope-${encodeURIComponent(project.projectName)}`}>{plan.reason||'VM·볼륨·네트워크 포함 · 확인 후 실행'}</small></div>
+            </div>
+          </header>
+          {expanded?<div className="community-project-detail">
+            <p className="hint">개별 VM 삭제는 프로젝트 전체 삭제와 다릅니다. 볼륨의 자동 삭제 설정도 확인하세요.</p>
+            <p className="hint">Octavia {project.services?.octavia?'사용':'없음'} · Manila {project.services?.manila?'사용':'없음'} · Blazar {project.services?.blazar?'사용':'없음'} · Aodh {project.services?.aodh?'사용':'없음'}</p>
+            {project.instances.map(instance=><div className="admin-list-card" key={instance.id}><div><strong>{instance.name||instance.id}</strong><p className="hint">{instance.status||'-'} · {Object.values(instance.addresses||{}).flat().map(item=>item.addr).filter(Boolean).join(', ')||'IP 없음'}</p></div><div className="button-row"><button className="mini-btn" disabled={Boolean(busy)||String(instance.status).toUpperCase()!=='ACTIVE'} onClick={()=>openInstanceConsole(project.projectName,instance)} type="button">VNC</button>{String(instance.status).toUpperCase()==='SHUTOFF'?<button className="mini-btn" disabled={Boolean(busy)} onClick={()=>manageInstance(project.projectName,instance,'start')} type="button">시작</button>:<button className="mini-btn" disabled={Boolean(busy)} onClick={()=>manageInstance(project.projectName,instance,'stop')} type="button">중지</button>}<button className="mini-btn" disabled={Boolean(busy)} onClick={()=>manageInstance(project.projectName,instance,'reboot')} type="button">재부팅</button><button className="mini-btn danger-mini-btn" disabled={Boolean(busy)} onClick={()=>{if(window.confirm(`${instance.name||instance.id} 인스턴스를 삭제할까요?`))manageInstance(project.projectName,instance,'delete');}} type="button">삭제</button></div></div>)}
+            {[["shares",project.shares],["reservations",project.reservations],["alarms",project.alarms]].flatMap(([type,items])=>(items||[]).map(item=><div className="admin-list-card" key={`${type}:${item.alarm_id||item.id}`}><div><strong>{item.name||item.alarm_id||item.id}</strong><p className="hint">{type==='shares'?'Manila 공유':type==='reservations'?'Blazar 예약':'Aodh 알림'} · {item.status||item.state||'-'}</p></div><button className="mini-btn danger-mini-btn" disabled={Boolean(busy)} onClick={()=>deleteExtensionResource(project.projectName,type,item)} type="button">삭제</button></div>))}
+            {!project.instances.length?<p className="hint">가상머신이 없습니다.</p>:null}
+          </div>:null}
+        </article>;
+      })}</div>:<div className="empty-state">승인된 사용자 프로젝트가 없습니다.</div>}
     </section>
     <section className="admin-simple-card">
       <div className="admin-section-head"><div><strong>클라우드 삭제 작업</strong><p className="hint">사용자 목록에서 숨겨진 뒤에도 원격 삭제가 완료될 때까지 내부적으로 추적합니다.</p></div><button className="mini-btn" disabled={Boolean(busy)||deletionJobs.loading} onClick={reconcileDeletionJobs} type="button">삭제 상태 재확인</button></div>
@@ -78,5 +122,35 @@ export default function AdminCloudConsoleTab(props) {
       <div className="admin-section-head"><div><strong>클라우드 작업</strong><p className="hint">인스턴스, 볼륨, 네트워크, 라우터, Floating IP, 보안그룹 작업 이력입니다.</p></div></div>
       <div className="admin-list-stack">{actions.length?actions.map((item)=><article className="admin-list-card" key={item.id}><div><strong>{item.operation}</strong><p className="hint">{item.projectName} · {item.userName||item.username||`사용자 #${item.userId}`} · 월 {won.format(item.estimatedMonthlyCost||0)}원</p></div><span className={`status-chip is-${item.status}`}>{statusLabel(item.status)}</span>{item.status==="requested"?<div className="button-row"><button className="primary-mini-btn" disabled={Boolean(busy)} onClick={()=>reviewAction(item.id,"approve")} type="button">승인·실행</button><button className="mini-btn danger-mini-btn" disabled={Boolean(busy)} onClick={()=>reviewAction(item.id,"reject")} type="button">반려</button></div>:null}</article>):<div className="empty-state">클라우드 작업 이력이 없습니다.</div>}</div>
     </section>
+    {cleanupTarget?<ProjectCleanupDialog project={cleanupTarget} plan={cleanupPlan} confirmation={cleanupConfirmation} setConfirmation={setCleanupConfirmation} busy={Boolean(busy)} notice={notice} trigger={cleanupTrigger.current} onCancel={closeCleanup} onConfirm={runProjectCleanup}/>:null}
   </div>;
+}
+
+function ProjectCleanupDialog({project,plan,confirmation,setConfirmation,busy,notice,trigger,onCancel,onConfirm}) {
+  const ref=useRef(null),busyRef=useRef(busy),cancelRef=useRef(onCancel);
+  busyRef.current=busy;cancelRef.current=onCancel;
+  useEffect(()=>{
+    const dialog=ref.current;dialog.querySelector('input')?.focus();
+    const keydown=event=>{
+      if(event.key==='Escape'&&!busyRef.current){event.preventDefault();cancelRef.current();}
+      if(event.key!=='Tab')return;
+      const items=[...dialog.querySelectorAll('button:not(:disabled),input:not(:disabled)')];
+      if(!items.length)return;
+      const first=items[0],last=items[items.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    };
+    dialog.addEventListener('keydown',keydown);
+    return()=>{dialog.removeEventListener('keydown',keydown);if(trigger?.isConnected)trigger.focus();};
+  },[trigger]);
+  return <div className="portal-modal-backdrop" onMouseDown={()=>{if(!busy)onCancel();}} role="presentation"><section ref={ref} role="dialog" aria-modal="true" aria-labelledby="community-cleanup-title" className="portal-modal-card community-cleanup-confirm" onMouseDown={event=>event.stopPropagation()}>
+    <h3 id="community-cleanup-title">프로젝트 전체 삭제 확인</h3>
+    <CloudCleanupScope mode="project"/>
+    <dl className="community-cleanup-summary"><dt>프로젝트</dt><dd>{project.projectName}</dd><dt>현재 조회 자원</dt><dd>VM {project.instances.length} · 볼륨 {project.volumes.length} · 네트워크 {project.networks.filter(item=>!item.shared&&!item['router:external']).length}</dd><dt>승인 연결 기록</dt><dd>{plan.requestIds.length}건</dd></dl>
+    <AdminField label="확인 문구를 입력하세요"><input disabled={busy} autoComplete="off" aria-describedby="community-cleanup-phrase" value={confirmation} onChange={event=>setConfirmation(event.target.value)} placeholder={`DELETE ${project.projectName}`}/></AdminField>
+    <p className="hint" id="community-cleanup-phrase">입력할 문구: <strong>DELETE {project.projectName}</strong></p>
+    {!plan.allowed?<p role="status">{plan.reason}</p>:null}
+    {notice.tone==='error'?<p role="alert">{notice.message}</p>:null}
+    <div className="button-row"><button className="mini-btn" type="button" disabled={busy} onClick={onCancel}>취소</button><button className="mini-btn danger-mini-btn" type="button" disabled={busy||!plan.allowed||confirmation.trim()!==plan.confirmation} onClick={onConfirm}>{busy?'정리 중…':'프로젝트 전체 삭제 실행'}</button></div>
+  </section></div>;
 }

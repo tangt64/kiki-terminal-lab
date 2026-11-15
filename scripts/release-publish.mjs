@@ -73,6 +73,7 @@ export function parseArguments(args) {
     } else if (flag === '--stable') result.prerelease = false;
     else if (flag === '--verify-only') result.verifyOnly = true;
     else if (flag === '--dry-run') result.dryRun = true;
+    else if (flag === '--allow-public-gitea') result.allowPublicGitea = true;
     else if (flag === '--help') result.help = true;
     else throw new Error(`Unknown option: ${flag}.`);
   }
@@ -177,7 +178,8 @@ export async function main(argv = process.argv.slice(2)) {
   --python PATH        Python 3.9+ executable
   --notes-file PATH    Optional UTF-8 release notes
 Credentials: existing Git Credential Manager, or RELEASE_GITHUB_TOKEN / RELEASE_GITEA_TOKEN.
-Published versions are never overwritten. GitHub may be public; Gitea must remain private.`);
+Published versions are never overwritten. GitHub may be public. Public Gitea requires --allow-public-gitea.
+This flag accepts an already-public repository; it never changes repository visibility.`);
     return;
   }
   if (path.resolve(textGit(['rev-parse', '--show-toplevel'])) !== ROOT) throw new Error('Expected the independent repository root.');
@@ -214,7 +216,7 @@ Published versions are never overwritten. GitHub may be public; Gitea must remai
     const pin = previous?.targets.find(target => target.remote === remote);
     if (pin && pin.repository !== location.webUrl) throw new Error('The remote changed since the last successful deployment.');
     const secret = credential(kind, location);
-    const target = new ReleaseTarget({kind, remote, location, token: secret.password, expectedId: pin?.id});
+    const target = new ReleaseTarget({kind, remote, location, token: secret.password, expectedId: pin?.id, allowPublicGitea:kind==='gitea'&&options.allowPublicGitea===true});
     target.credential = secret;
     await target.inspect();
     if (!options.dryRun) saveRefreshedCredential(target);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import {CloudCleanupScope} from "./cloud-cleanup-scope.jsx";
 import { ACTIVE_LAB_STATUSES, accessEventLabel, AdminDisclosureCard, AdminField, FlavorBadges, QuotaSummaryBlock, TrafficUsageBlock, VmUsageBlock, formatCurrency, formatDateTime, formatTrafficBytes, labStatus, useImeBufferedInput } from "./portal-views.jsx";
 
 function renderApiMonitorTone(entry) {
@@ -2379,6 +2380,7 @@ export function AdminSelfServiceVmTab(props) {
             </button>
           </div>
         </div>
+        <CloudCleanupScope mode="records"/>
         <div className="self-service-ops-filter-row" aria-label="전용 프로젝트 운영 필터">
           {projectOpsFilterOptions.map((option) => (
             <button
