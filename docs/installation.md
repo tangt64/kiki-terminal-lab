@@ -1,6 +1,6 @@
 # 설치 방법·환경 조건·서버 사양
 
-기준: KIKI OS TERMINAL-LAB Community 0.3.7 Preview, 2026-11-21.
+기준: KIKI OS TERMINAL-LAB Community 0.3.8 Preview, 2026-11-22.
 
 이 문서는 교육 기능과 랩보드를 제외한 일반 사용자·관리자 포털의 설치 안내입니다. 인스톨러는 **포털 앱과 전용 PostgreSQL**을 구성하고, 이미 운영 중인 OpenStack에 연결합니다. OS·컨테이너 엔진·OpenStack 자체를 설치하지 않습니다.
 
@@ -140,8 +140,8 @@ Docker를 선택하면 [공식 Engine 설치 절차](https://docs.docker.com/eng
 릴리스의 소스 ZIP과 같은 이름의 `.sha256` 파일을 함께 내려받아 검증한 뒤 새 디렉터리에 풉니다. ZIP 안에 인스톨러가 포함됩니다.
 
 ```bash
-sha256sum -c kiki-terminal-lab-0.3.7.zip.sha256
-unzip kiki-terminal-lab-0.3.7.zip
+sha256sum -c kiki-terminal-lab-0.3.8.zip.sha256
+unzip kiki-terminal-lab-0.3.8.zip
 cd kiki-terminal-lab
 COMMUNITY_STATE_DIR="$HOME/.local/state/kiki-terminal-lab"
 COMMUNITY_CLOUD_FILE="$HOME/.config/kiki-terminal-lab/clouds.yaml"
@@ -347,8 +347,8 @@ npm start
 새 프로젝트를 요청할 때 설치 환경에 맞는 서브넷 CIDR을 입력합니다. 기존 승인 프로젝트의 저장된 CIDR은 그대로 사용합니다. 선택 CAPO 클러스터를 생성하려면 앱 환경에 `CAPO_POD_CIDR`과 `CAPO_SERVICE_CIDR`을 지정합니다. MetalLB VIP 자동 할당을 사용하면 `METALLB_VIP_POOL_CIDR`도 지정합니다. 미설정 상태에서는 해당 자원 생성을 오류로 안내하며 임의 대역을 선택하지 않습니다. 이 값은 컨테이너 앱 환경에 전달해야 하며 기존 네트워크와 겹치지 않도록 설치자가 결정합니다.
 
 
-### main 개발 소스의 교육 스키마 분리
+### 0.3.8의 교육 스키마 분리
 
-이번 미출시 변경을 적용하면 Community 초기화 과정에서 교육 테이블의 기록을 `community_legacy_records`로 보존하고 활성 스키마에서 교육 테이블을 제거합니다. 일반 계정·자원·기존 숫자 연결 ID와 암호화 값은 유지하며 원격 자원을 삭제하지 않습니다. 운영자 정의 외래키가 교육 테이블을 참조하면 자동으로 제거하지 않고 초기화를 중단·롤백하므로 해당 연결을 검토해야 합니다.
+0.3.8로 업데이트하면 Community 초기화 과정에서 교육 테이블의 기록을 `community_legacy_records`로 보존하고 활성 스키마에서 교육 테이블을 제거합니다. 일반 계정·자원·기존 숫자 연결 ID와 암호화 값은 유지하며 원격 자원을 삭제하지 않습니다. 운영자 정의 외래키가 교육 테이블을 참조하면 자동으로 제거하지 않고 초기화를 중단·롤백하므로 해당 연결을 검토해야 합니다.
 
 현재 백업에는 보관 기록이 포함됩니다. 이전 Community 백업의 교육 행도 보관 기록으로 변환해 복원합니다. 불완전하거나 충돌하는 기록은 일반 데이터를 비우기 전에 거부합니다. 이 변경의 자세한 검증 방법은 [개발 안내](development.md#교육-잔여물-정리)를 참고하세요. 이미 게시된 릴리스 ZIP·태그는 덮어쓰지 않습니다.

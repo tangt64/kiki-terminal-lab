@@ -1,4 +1,4 @@
-# KIKI OS TERMINAL-LAB Community 0.3.7
+# KIKI OS TERMINAL-LAB Community 0.3.8
 
 <img src="platform/client/public/brand/kikios-kiki-wordmark-v1.png" width="360" height="120" alt="노란색 KIKI 박스 마스코트와 KIKI · 키키 로고" />
 
@@ -41,6 +41,10 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 **교육 보고서·교육 랩 터미널·강사 공유 WebSocket·검증용 과정 생성 경로도 제거**했습니다. 
 
 교육 전용 화면·상태·처리기와 일반 SQL의 교육 JOIN을 제거했습니다. 활성 스키마는 교육 테이블 25개를 생성하거나 조회하지 않습니다. 기존 Community DB의 교육 기록은 `community_legacy_records`에 보존한 뒤 교육 테이블을 제거하며 일반 계정·게시글·자원·암호화 데이터와 이전 백업 복원을 유지합니다. 이전 연결 ID 등 숫자 컬럼과 원시 설정 값은 데이터·백업 호환 메타데이터로 남을 수 있으며 교육 기능을 제공하지 않습니다. 세부 동작은 [개발 안내](docs/development.md#교육-잔여물-정리)를 참고하세요. 이 배포본의 초기화는 교육 콘텐츠를 생성하지 않습니다. 원본 운영 DB·환경설정·자격증명과 교육 콘텐츠는 배포하지 않습니다. 과거 비공개 아카이브의 공개 범위는 변경하지 않습니다.
+
+## 0.3.8 교육 스키마와 일반 런타임 분리
+
+교육 테이블 25개·공유 SQL·프런트 상태를 일반 기능에서 분리했습니다. 기존 데이터는 보관 기록으로 유지하고 이전·신규 백업 복원을 지원합니다. 인스톨러 포함 [GitHub 릴리스 ZIP·체크섬](https://github.com/tangt64/kiki-terminal-lab/releases/tag/v0.3.8)과 [Gitea 릴리스](https://git.vlab.dustbox.kr/terminal-lab/kiki-terminal-lab/releases/tag/v0.3.8)를 제공합니다. 업데이트 시 자동 스키마 이전 조건은 [설치 안내](docs/installation.md)를 확인하세요. 이번 버전은 Preview입니다.
 
 ## 0.3.7 공개 저장소와 예제 사이트
 
