@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { api, navigate } from "./portal-state.js";
+import {useEffect,useState} from "react";
+
 import TerminalLabLogo, { KIKIOS_LOGO_PATH } from "./terminal-lab-logo.jsx";
 import { CONSULTING_REPLY_PLACEHOLDERS, DEFAULT_CONSULTING_REPLY_TEMPLATES, normalizeConsultingReplyTemplates } from "./consulting-reply-templates.js";
-import { AdminDisclosureCard, AdminField, AdminSecretInput, PanelStatusMessage, StatusMessage, applyTossTestDefaults, formatCurrency, formatDateTime, getNormalizedSshPublicHost, getYoutubeLoopEmbedUrl, renderZunStatus, safeStringifyJson, useImeBufferedInput } from "./portal-views.jsx";
+import {AdminDisclosureCard,AdminField,AdminSecretInput,PanelStatusMessage,StatusMessage,applyTossTestDefaults,formatCurrency,formatDateTime,getNormalizedSshPublicHost,getYoutubeLoopEmbedUrl,renderZunStatus,useImeBufferedInput} from "./portal-views.jsx";
 
 const OAUTH_PROVIDERS = [
   { key: "Google", label: "Google", provider: "google", className: "is-google", secretRequired: true },
@@ -234,12 +234,7 @@ function listCount(value) {
   return Array.isArray(value) ? value.filter(Boolean).length : 0;
 }
 
-function areSimpleObjectsEqual(left, right) {
-  const leftKeys = Object.keys(left || {});
-  const rightKeys = Object.keys(right || {});
-  return leftKeys.length === rightKeys.length
-    && leftKeys.every((key) => String(left?.[key] ?? "") === String(right?.[key] ?? ""));
-}
+
 
 function normalizePortalUiMode(value, fallback = "legacy") {
   const normalized = String(value || "").trim().toLowerCase();
@@ -1371,7 +1366,7 @@ export function AdminPlatformTab(props) {
       summary: `결제 ${props.serviceValidationStatus?.details?.demoPaymentCount ?? 0} / 쿠폰 ${props.serviceValidationStatus?.details?.demoMarketingCouponCount ?? 0}`,
       items: [
         makeValidationItem(`결제 샘플 수: ${props.serviceValidationStatus?.details?.demoPaymentCount ?? 0}`, Number(props.serviceValidationStatus?.details?.demoPaymentCount ?? 0) === 0),
-        makeValidationItem(`마케팅 무료 강의 뽑기 샘플 수: ${props.serviceValidationStatus?.details?.demoMarketingLuckyDrawCount ?? 0}`, Number(props.serviceValidationStatus?.details?.demoMarketingLuckyDrawCount ?? 0) === 0),
+        makeValidationItem(`마케팅 이벤트 추첨 샘플 수: ${props.serviceValidationStatus?.details?.demoMarketingLuckyDrawCount ?? 0}`, Number(props.serviceValidationStatus?.details?.demoMarketingLuckyDrawCount ?? 0) === 0),
         makeValidationItem(`마케팅 보상 샘플 수: ${props.serviceValidationStatus?.details?.demoMarketingRewardCount ?? 0}`, Number(props.serviceValidationStatus?.details?.demoMarketingRewardCount ?? 0) === 0),
         makeValidationItem(`마케팅 쿠폰 샘플 수: ${props.serviceValidationStatus?.details?.demoMarketingCouponCount ?? 0}`, Number(props.serviceValidationStatus?.details?.demoMarketingCouponCount ?? 0) === 0),
         props.serviceValidationStatus?.details?.marketingLuckyDrawTitle
@@ -3479,12 +3474,7 @@ export function AdminPlatformTab(props) {
                       <option value="disabled">사용 안 함</option>
                     </select>
                   </AdminField>
-                  <AdminField label="랩 시험 결과 쪽지" hint="끄면 시험 결과는 기록과 알림으로만 남고, 쪽지함에는 새 결과 쪽지를 만들지 않습니다.">
-                    <select value={props.platformStatus?.labExamResultMessageEnabled ? "enabled" : "disabled"} onChange={(event) => props.setPlatformStatus((current) => ({ ...current, labExamResultMessageEnabled: event.target.value === "enabled" }))}>
-                      <option value="disabled">사용 안 함</option>
-                      <option value="enabled">사용</option>
-                    </select>
-                  </AdminField>
+
                   <AdminField label="메일 제공자" hint="네이버, Google, 직접 SMTP 또는 Webhook 중 하나를 선택할 수 있습니다.">
                     <select value={props.platformStatus?.mailProvider || "webhook"} onChange={(event) => props.setPlatformStatus((current) => ({ ...current, mailProvider: event.target.value }))}>
                       <option value="naver">네이버 메일</option>
@@ -3659,7 +3649,7 @@ export function AdminPlatformTab(props) {
             </AdminField>
             <div className="admin-form-grid compact-admin-grid">
               {[
-                ["arenaEnabled", "실무 역량 진단"],
+
                 ["selfServiceVmServiceEnabled", "클라우드 콘솔"],
                 ["zunEnabled", "컨테이너 랩"],
                 ["magnumEnabled", "쿠버네티스 클러스터"],
@@ -4284,18 +4274,7 @@ export function AdminPlatformTab(props) {
               <option value="visible">표시</option>
             </select>
           </AdminField>
-          <AdminField label="랜딩 달력 표시" hint="랜딩 히어로에 공개 강의 일정 달력을 표시할지 선택합니다. 숨기면 일정 API도 호출하지 않습니다.">
-            <select
-              value={props.platformStatus?.landingScheduleEnabled === false ? "hidden" : "visible"}
-              onChange={(event) => props.setPlatformStatus((current) => ({
-                ...current,
-                landingScheduleEnabled: event.target.value !== "hidden",
-              }))}
-            >
-              <option value="visible">표시</option>
-              <option value="hidden">숨김</option>
-            </select>
-          </AdminField>
+
           <AdminField label="Google Calendar 자동 동기화" hint="공개 iCal 주소에서 강의 일정을 주기적으로 가져옵니다. 가져온 일정은 이후 상세 내용을 직접 보강할 수 있습니다.">
             <select
               value={props.platformStatus?.googleCalendarSyncEnabled ? "enabled" : "disabled"}
@@ -4343,18 +4322,7 @@ export function AdminPlatformTab(props) {
               <option value="visible">표시</option>
             </select>
           </AdminField>
-          <AdminField label="랜딩 커리큘럼 기본 상태" hint="미리 보는 커리큘럼 섹션을 처음에 접힌 아코디언으로 둘지, 펼친 상태로 둘지 선택합니다.">
-            <select
-              value={props.platformStatus?.landingCurriculumCollapsedByDefault !== false ? "collapsed" : "expanded"}
-              onChange={(event) => props.setPlatformStatus((current) => ({
-                ...current,
-                landingCurriculumCollapsedByDefault: event.target.value !== "expanded",
-              }))}
-            >
-              <option value="collapsed">기본 접힘</option>
-              <option value="expanded">기본 펼침</option>
-            </select>
-          </AdminField>
+
           <AdminField label="랜딩 YouTube URL" hint="YouTube 선택 시 랜딩 데모 영역에 표시할 영상 URL입니다. youtu.be, youtube.com 링크 모두 지원합니다.">
             <input
               value={props.platformStatus?.landingYoutubeUrl || ""}
@@ -4394,16 +4362,7 @@ export function AdminPlatformTab(props) {
               placeholder="예: 입문, 초급, 중급, 고급"
             />
           </AdminField>
-          <AdminField label="과정 카테고리 목록" hint="과정 관리에서 추천할 카테고리 목록입니다. 쉼표로 구분합니다. 기존 카테고리는 직접 입력으로도 유지할 수 있습니다.">
-            <input
-              value={(props.platformStatus?.courseCategoryOptions || []).join(", ")}
-              onChange={(event) => props.setPlatformStatus((current) => ({
-                ...current,
-                courseCategoryOptions: event.target.value.split(",").map((item) => item.trim()).filter(Boolean),
-              }))}
-              placeholder="예: linux, k8s, openstack, ai"
-            />
-          </AdminField>
+
         </div>
         </AdminDisclosureCard>
         <AdminDisclosureCard
@@ -5816,58 +5775,10 @@ export function AdminLlmTab(props) {
               }
             />
           </AdminField>
-          <AdminField label="설문 해설 최대 토큰" hint="사전·사후 설문 AI 해설 생성 길이입니다. CPU 모델에서는 256-384 정도가 응답 시간에 유리합니다.">
-            <input
-              min="64"
-              step="1"
-              type="number"
-              value={String(Math.max(64, Number(props.platformStatus?.llmSurveyFeedbackMaxTokens || 384) || 384))}
-              onChange={(event) =>
-                props.setPlatformStatus((current) => ({
-                  ...current,
-                  llmSurveyFeedbackMaxTokens: Math.max(64, Number(event.target.value || 384) || 384),
-                }))
-              }
-            />
-          </AdminField>
-          <AdminField label="설문 해설 Timeout (ms)" hint="설문 해설 LLM 호출 제한 시간입니다. CPU 기반 Ollama/llama.cpp는 180000-300000ms를 권장합니다.">
-            <input
-              min="30000"
-              step="1000"
-              type="number"
-              value={String(Math.max(30000, Number(props.platformStatus?.llmSurveyFeedbackTimeoutMs || 300000) || 300000))}
-              onChange={(event) =>
-                props.setPlatformStatus((current) => ({
-                  ...current,
-                  llmSurveyFeedbackTimeoutMs: Math.max(30000, Number(event.target.value || 300000) || 300000),
-                }))
-              }
-            />
-          </AdminField>
-          <AdminField label="설문 해설 프롬프트" hint="사전·사후 설문 해설 생성 시 질문과 답변을 어떻게 해석할지 지시합니다. 비워두면 기본 학습 코치 프롬프트를 사용합니다.">
-            <textarea
-              value={props.platformStatus?.llmSurveyFeedbackPrompt || ""}
-              onChange={(event) =>
-                props.setPlatformStatus((current) => ({
-                  ...current,
-                  llmSurveyFeedbackPrompt: event.target.value,
-                }))
-              }
-              placeholder="질문 의미와 답변을 함께 보고 학습자에게 도움이 되는 해설을 작성하도록 지시할 수 있습니다."
-            />
-          </AdminField>
-          <AdminField label="설문 해설 추가 옵션(JSON)" hint='Ollama Native는 {"temperature":0.2,"top_p":0.9}처럼 입력하면 options로 전달합니다. 고급 설정이 필요 없으면 비워두세요.'>
-            <textarea
-              value={props.platformStatus?.llmSurveyFeedbackOptionsJson || ""}
-              onChange={(event) =>
-                props.setPlatformStatus((current) => ({
-                  ...current,
-                  llmSurveyFeedbackOptionsJson: event.target.value,
-                }))
-              }
-              placeholder='{"temperature":0.2,"top_p":0.9}'
-            />
-          </AdminField>
+
+
+
+
           <AdminField label="Thinking 모드" hint="Qwen3, DeepSeek-R1 같은 추론 모델에서 생각 토큰을 생성할지 정합니다. CPU 운영에서는 끄는 쪽이 빠릅니다.">
             <select
               value={props.platformStatus?.llmThinkingMode || "disabled"}

@@ -1,8 +1,8 @@
 # Attribution
 
-KIKI OS TERMINAL-LAB Community reuses the general user and administrator implementation from the local Terminal Lab working tree. `platform/SOURCE-PROVENANCE.json` records source file hashes and the retained/removed route inventory. The standalone distribution has no original Git history, operating data, credentials or training content. Shared modules and empty education compatibility tables remain as documented in README.
+KIKI OS TERMINAL-LAB Community reuses the general user and administrator implementation from the local Terminal Lab working tree. `platform/SOURCE-PROVENANCE.json` records source file hashes and the retained/removed route inventory. The standalone distribution has no original Git history, operating data, credentials or training content. The active runtime excludes education tables and authoring state. Installed historical records are preserved in a generic archive; migration and backup identifiers remain for data compatibility as documented in README.
 
-Project code in this distribution is provided under MIT. Third-party code retains its original license. React, xterm.js and MDXEditor use MIT; noVNC uses MPL-2.0.
+Project code in this distribution is provided under MIT. Third-party code retains its original license. React and xterm.js use MIT; noVNC uses MPL-2.0.
 
 Maintainer: Choi Gook Hyun (tangt64), https://github.com/tangt64. Project inquiries: tang@dustbox.kr. See AUTHORS.md for project attribution; third-party copyright notices remain applicable.
 

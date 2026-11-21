@@ -1,4 +1,4 @@
-import {omitEmptyEducationSnapshots, removeLegacyEducationUserReferences} from './education-schema-cleanup.js';
+import {separateLegacyBackup} from './education-schema-cleanup.js';
 import pg from "pg";
 import { createHash, randomUUID } from "node:crypto";
 import "./env-loader.js";
@@ -156,9 +156,9 @@ const DEFAULT_OPENSTACK_STATUS_CACHE_TTL_MINUTES = Math.max(1, Math.min(1440, Ma
 const DEFAULT_ADMIN_AUTO_REFRESH_INTERVAL_SECONDS = Math.max(10, Math.min(3600, Number(process.env.ADMIN_AUTO_REFRESH_INTERVAL_SECONDS || 60) || 60));
 const DEFAULT_USER_AUTO_REFRESH_INTERVAL_SECONDS = Math.max(10, Math.min(3600, Number(process.env.USER_AUTO_REFRESH_INTERVAL_SECONDS || 60) || 60));
 const DEFAULT_ACCESS_ACTIVE_WITHIN_MINUTES = Math.max(1, Number(process.env.ACCESS_ACTIVE_WITHIN_MINUTES || 2) || 2);
-const COURSE_ACCESS_DEFAULT_DAYS = Math.max(1, Number(process.env.COURSE_ACCESS_DEFAULT_DAYS || 30) || 30);
-const COURSE_ACCESS_MAX_DAYS = Math.max(COURSE_ACCESS_DEFAULT_DAYS, Math.min(36500, Number(process.env.COURSE_ACCESS_MAX_DAYS || 3650) || 3650));
-const COURSE_ACCESS_EXPIRING_SOON_DAYS = Math.max(1, Number(process.env.COURSE_ACCESS_EXPIRING_SOON_DAYS || 7) || 7);
+
+
+
 
 function parseEnvFlag(value, fallback = true) {
   const raw = String(value ?? "").trim().toLowerCase();
@@ -181,67 +181,19 @@ function normalizeStoredLlmThinkingMode(value) {
   return DEFAULT_LLM_THINKING_MODE;
 }
 
-function resolveCourseAccessDays(value, fallback = COURSE_ACCESS_DEFAULT_DAYS) {
-  const fallbackDays = Math.max(1, Math.min(COURSE_ACCESS_MAX_DAYS, Math.floor(Number(fallback || COURSE_ACCESS_DEFAULT_DAYS) || COURSE_ACCESS_DEFAULT_DAYS)));
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 1) return fallbackDays;
-  return Math.max(1, Math.min(COURSE_ACCESS_MAX_DAYS, Math.floor(parsed)));
-}
 
-function resolveCourseAccessExpiryIso(baseValue = Date.now(), days = COURSE_ACCESS_DEFAULT_DAYS) {
-  const parsed = typeof baseValue === "number" ? baseValue : Date.parse(String(baseValue || ""));
-  const baseMs = Number.isFinite(parsed) ? Math.max(parsed, Date.now()) : Date.now();
-  return new Date(baseMs + (resolveCourseAccessDays(days) * 24 * 60 * 60 * 1000)).toISOString();
-}
 
-function getCourseAccessDaysRemaining(expiresAt) {
-  const expiresMs = Date.parse(String(expiresAt || ""));
-  if (!Number.isFinite(expiresMs)) return null;
-  return Math.ceil((expiresMs - Date.now()) / (24 * 60 * 60 * 1000));
-}
 
-function normalizeCourseEnrollmentFields(row) {
-  const enrollmentExpiresAt = String(row?.enrollmentExpiresAt ?? row?.enrollment_expires_at ?? "").trim();
-  const enrollmentDaysRemaining = enrollmentExpiresAt ? getCourseAccessDaysRemaining(enrollmentExpiresAt) : null;
-  const enrollmentExpired = enrollmentDaysRemaining != null && enrollmentDaysRemaining <= 0;
-  const enrollmentExpiringSoon = enrollmentDaysRemaining != null && enrollmentDaysRemaining > 0 && enrollmentDaysRemaining <= COURSE_ACCESS_EXPIRING_SOON_DAYS;
-  const courseAccessDays = resolveCourseAccessDays(row?.courseAccessDays ?? row?.course_access_days);
-  return {
-    enrollmentCreatedAt: row?.enrollmentCreatedAt || row?.enrollment_created_at || null,
-    enrollmentExpiresAt: enrollmentExpiresAt || null,
-    enrollmentDaysRemaining,
-    enrollmentExpired,
-    enrollmentExpiringSoon,
-    courseAccessDays,
-    courseAccessDefaultDays: COURSE_ACCESS_DEFAULT_DAYS,
-    courseAccessExpiringSoonDays: COURSE_ACCESS_EXPIRING_SOON_DAYS,
-  };
-}
 
-function isGovernmentProgramTypeValue(programType) {
-  const normalized = String(programType || "").trim().replace(/\s+/g, "");
-  const lower = normalized.toLowerCase();
-  return normalized.includes("정부")
-    || normalized.includes("국비")
-    || normalized.includes("지원금")
-    || normalized.includes("내일배움")
-    || lower.includes("hrd")
-    || lower.includes("k-digital")
-    || lower.includes("kdigital");
-}
 
-function normalizeCourseProgramTypeValue(programType, fallback = "일반") {
-  const normalized = String(programType || fallback).trim() || fallback;
-  return isGovernmentProgramTypeValue(normalized) ? "정부지원금" : normalized;
-}
 
-function normalizeCourseProgramTypeOptions(options) {
-  const source = Array.isArray(options) && options.length ? options : ["일반", "ILT", "정부지원금", "기업", "학교", "검증"];
-  const normalized = source
-    .map((item) => normalizeCourseProgramTypeValue(item, ""))
-    .filter(Boolean);
-  return Array.from(new Set(normalized));
-}
+
+
+
+
+
+
+
 
 function normalizeCourseOverviewPoints(value, fallback = []) {
   const source = Array.isArray(value) ? value : String(value || "").split(",");
@@ -249,10 +201,7 @@ function normalizeCourseOverviewPoints(value, fallback = []) {
   return normalized.length ? normalized : fallback;
 }
 
-function normalizeCourseQuoteAccessMode(value) {
-  const normalized = String(value || "enabled").trim().toLowerCase();
-  return ["enabled", "admin_only", "disabled"].includes(normalized) ? normalized : "enabled";
-}
+
 
 function normalizePortalUiMode(value, fallback = "legacy") {
   const normalized = String(value || "").trim().toLowerCase();
@@ -359,10 +308,7 @@ const DEFAULT_UNUSED_VM_AUTO_PAUSE_MINUTES = Math.max(
 );
 const ENV_PAYMENT_GATEWAY_PROVIDER = String(process.env.PAYMENT_GATEWAY_PROVIDER || process.env.TOSS_PAYMENTS_PROVIDER || "").trim().toLowerCase();
 
-function normalizeLabBackendType(value) {
-  const backendType = String(value || "vm").trim().toLowerCase();
-  return backendType === "container" ? "container" : "vm";
-}
+
 
 function normalizePocProjectName(value) {
   const normalized = String(value || "").trim();
@@ -389,51 +335,13 @@ function resolveEnvPaymentGatewayEnabled() {
   return ["1", "true", "yes", "on", "enabled"].includes(ENV_PAYMENT_GATEWAY_ENABLED);
 }
 
-const COURSE_SELECT = `
-  SELECT c.id, c.slug, c.category, c.course_type AS "courseType", c.package_items_json AS "packageItemsJson", c.program_type AS "programType", c.title, c.summary, c.price, c.duration, c.course_access_days AS "courseAccessDays", c.level, c.body,
-         c.promo_enabled AS "promoEnabled", c.promo_price AS "promoPrice", c.promo_starts_at AS "promoStartsAt", c.promo_ends_at AS "promoEndsAt",
-         c.youtube_url AS "youtubeUrl", c.online_meeting_url AS "onlineMeetingUrl", c.online_board_url AS "onlineBoardUrl", c.online_course_notice AS "onlineCourseNotice", c.online_session_note AS "onlineSessionNote", c.objectives_json AS "objectivesJson",
-         c.lab_guide_markdown AS "labGuideMarkdown", c.commands_markdown AS "commandsMarkdown", c.ai_system_prompt AS "aiSystemPrompt", c.ai_quick_prompts_json AS "aiQuickPromptsJson", c.materials_json AS "materialsJson", c.course_curriculum_json AS "courseCurriculumJson", c.course_videos_json AS "courseVideosJson", c.course_recordings_json AS "courseRecordingsJson", c.example_files_json AS "exampleFilesJson", c.git_repositories_json AS "gitRepositoriesJson", c.external_tool_links_json AS "externalToolLinksJson", c.external_learning_tools_json AS "externalLearningToolsJson", c.lab_start_checklist_json AS "labStartChecklistJson", c.survey_config_json AS "surveyConfigJson",
-         c.lab_enabled AS "labEnabled", c.lab_approval_mode AS "labApprovalMode", c.public_domain_approval_mode AS "publicDomainApprovalMode",
-         c.public_tcp_approval_mode AS "publicTcpApprovalMode",
-         c.external_ssh_approval_mode AS "externalSshApprovalMode",
-         c.external_rdp_approval_mode AS "externalRdpApprovalMode",
-         c.external_ssh_route_mode AS "externalSshRouteMode",
-         c.lab_backend_type AS "labBackendType", c.container_image_name AS "containerImageName",
-         c.container_command_text AS "containerCommandText", c.container_exposed_port AS "containerExposedPort",
-         c.container_access_mode AS "containerAccessMode", c.container_console_mode AS "containerConsoleMode",
-         c.lab_retention_mode AS "labRetentionMode", c.lab_retention_preset AS "labRetentionPreset",
-         c.lab_retention_days AS "labRetentionDays", c.allow_resume_existing_lab AS "allowResumeExistingLab",
-         c.lab_resize_policy AS "labResizePolicy", c.lab_resize_allowed_flavors AS "labResizeAllowedFlavors",
-         c.terminal_replay_mode AS "terminalReplayMode",
-         c.traffic_monitoring_enabled AS "trafficMonitoringEnabled", c.traffic_daily_limit_gb AS "trafficDailyLimitGb",
-         c.traffic_total_limit_gb AS "trafficTotalLimitGb", c.traffic_exceeded_action AS "trafficExceededAction",
-         c.heat_api_url AS "heatApiUrl", c.heat_template_name AS "heatTemplateName",
-       c.heat_stack_prefix AS "heatStackPrefix", c.heat_parameters_json AS "heatParametersJson",
-       c.terminal_ssh_user AS "terminalSshUser", c.terminal_ssh_port AS "terminalSshPort",
-       c.terminal_jump_host AS "terminalJumpHost", c.terminal_jump_user AS "terminalJumpUser",
-       c.is_published AS "isPublished", c.is_landing_preview AS "isLandingPreview", c.course_status AS "courseStatus",
-       c.release_label AS "releaseLabel", c.access_scope AS "accessScope", c.access_code AS "accessCode",
-       c.created_at AS "createdAt", c.updated_at AS "updatedAt"
-`;
 
-const LAB_SELECT = `
-SELECT lr.*, u.name AS "userName", u.username, c.title AS "courseTitle", c.slug AS "courseSlug",
-       c.summary AS "courseSummary", c.category AS "courseCategory", c.heat_template_name AS "courseHeatTemplateName"
-FROM lab_requests lr
-JOIN users u ON u.id = lr.user_id
-JOIN courses c ON c.id = lr.course_id
-`;
-const LAB_ACTIVE_RECORD_CLAUSE = "COALESCE(lr.archived_at, '') = ''";
-const OLD_LAB_REQUEST_ARCHIVE_STATUSES = ["terminated", "failed", "deleted", "deleting", "cancelled", "canceled", "rejected"];
 
-const ARENA_SCENARIO_SELECT = `
-SELECT s.id, s.code, s.title, s.summary, s.backend_type AS "backendType", s.console_type AS "consoleType",
-       s.tier, s.difficulty, s.ttl_seconds AS "ttlSeconds", s.validator_key AS "validatorKey",
-       s.image_name AS "imageName", s.flavor_name AS "flavorName", s.network_name AS "networkName",
-       s.metadata_json AS "metadataJson", s.created_at AS "createdAt"
-FROM arena_scenarios s
-`;
+
+
+
+
+
 
 function getPool() {
   if (!pool) pool = new Pool({ connectionString: DATABASE_URL, max: DATABASE_POOL_MAX_CONNECTIONS, idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
@@ -518,8 +426,8 @@ async function ensureCicdTables(client) {
     CREATE TABLE IF NOT EXISTS cicd_projects (
       id BIGINT PRIMARY KEY,
       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      course_id BIGINT REFERENCES courses(id) ON DELETE SET NULL,
-      lab_request_id BIGINT REFERENCES lab_requests(id) ON DELETE SET NULL,
+      course_id BIGINT ,
+      lab_request_id BIGINT ,
       name TEXT NOT NULL,
       slug TEXT NOT NULL,
       description TEXT NOT NULL DEFAULT '',
@@ -638,36 +546,10 @@ async function ensurePostgresSchemaCompatibility() {
   const client = await p.connect();
   try {
 
-await client.query(`
-      CREATE TABLE IF NOT EXISTS lab_exam_sessions (
-        id TEXT PRIMARY KEY,
-        course_id BIGINT NOT NULL,
-        exam_title TEXT NOT NULL DEFAULT '',
-        user_id BIGINT NOT NULL REFERENCES users(id),
-        lab_request_id BIGINT,
-        attempt_id TEXT,
-        status TEXT NOT NULL DEFAULT 'preparing',
-        started_at TEXT NOT NULL,
-        expires_at TEXT NOT NULL,
-        ended_at TEXT,
-        grading_started_at TEXT,
-        grading_finished_at TEXT,
-        end_reason TEXT NOT NULL DEFAULT '',
-        error_message TEXT NOT NULL DEFAULT '',
-        metadata_json TEXT NOT NULL DEFAULT '{}',
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_exam_sessions_user_course_status ON lab_exam_sessions(user_id, course_id, status)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_exam_sessions_lab ON lab_exam_sessions(lab_request_id)`);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS lab_exam_configs (
-        course_id BIGINT PRIMARY KEY REFERENCES courses(id) ON DELETE CASCADE,
-        config_json TEXT NOT NULL DEFAULT '{}',
-        updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP::text)
-      )
-    `);
+
+
+
+
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS user_access_logs (
@@ -826,48 +708,24 @@ await client.query(`
         recipient_archived INTEGER NOT NULL DEFAULT 0
       )
     `);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS ai_system_prompt TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS ai_quick_prompts_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_curriculum_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_videos_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS example_files_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS git_repositories_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_enabled INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_price INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_starts_at TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_ends_at TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_access_days INTEGER NOT NULL DEFAULT 30`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_landing_preview INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_status TEXT NOT NULL DEFAULT 'published'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS release_label TEXT NOT NULL DEFAULT ''`);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS textbooks (
-        id BIGINT PRIMARY KEY,
-        slug TEXT NOT NULL UNIQUE,
-        title TEXT NOT NULL,
-        summary TEXT NOT NULL DEFAULT '',
-        content_markdown TEXT NOT NULL DEFAULT '',
-        status TEXT NOT NULL DEFAULT 'draft',
-        version TEXT NOT NULL DEFAULT '1.0',
-        created_by BIGINT REFERENCES users(id),
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS course_textbooks (
-        id BIGINT PRIMARY KEY,
-        course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-        textbook_id BIGINT NOT NULL REFERENCES textbooks(id) ON DELETE CASCADE,
-        sort_order INTEGER NOT NULL DEFAULT 0,
-        required INTEGER NOT NULL DEFAULT 0,
-        visible INTEGER NOT NULL DEFAULT 1,
-        created_at TEXT NOT NULL,
-        UNIQUE(course_id, textbook_id)
-      )
-    `);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_course_textbooks_course_order ON course_textbooks(course_id, sort_order, id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_course_textbooks_textbook ON course_textbooks(textbook_id)`);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     await client.query(`ALTER TABLE user_messages ADD COLUMN IF NOT EXISTS sender_archived INTEGER NOT NULL DEFAULT 0`);
     await client.query(`ALTER TABLE user_messages ADD COLUMN IF NOT EXISTS recipient_archived INTEGER NOT NULL DEFAULT 0`);
     await client.query(`ALTER TABLE user_messages ADD COLUMN IF NOT EXISTS recipient_type TEXT NOT NULL DEFAULT 'user'`);
@@ -881,28 +739,28 @@ await client.query(`
     await client.query(`CREATE INDEX IF NOT EXISTS idx_user_notifications_user_created ON user_notifications(user_id, created_at DESC, id DESC)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_user_messages_recipient_created ON user_messages(recipient_id, recipient_archived, created_at DESC, id DESC)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_user_messages_sender_created ON user_messages(sender_id, sender_archived, created_at DESC, id DESC)`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS purpose TEXT NOT NULL DEFAULT 'learning'`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS exam_session_id TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS archived_at TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS archived_reason TEXT NOT NULL DEFAULT ''`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_exam_session ON lab_requests(exam_session_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_archived_status_created ON lab_requests(archived_at, status, created_at DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_archived_user_created ON lab_requests(archived_at, user_id, created_at DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_archived_course_created ON lab_requests(archived_at, course_id, created_at DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_created ON lab_requests(created_at DESC, id DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_status_created ON lab_requests(status, created_at DESC, id DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_stack_name ON lab_requests(stack_name)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_instance_ip ON lab_requests(instance_ip)`);
+
+
+
+
+
+
+
+
+
+
+
+
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS support_message_enabled INTEGER NOT NULL DEFAULT 0`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS self_service_vm_enabled INTEGER NOT NULL DEFAULT 0`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS poc_free_access_enabled INTEGER NOT NULL DEFAULT 0`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS instructor_share_enabled INTEGER NOT NULL DEFAULT 0`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_permissions_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS external_tool_links_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS external_learning_tools_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_start_checklist_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_recordings_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_exam_config_json TEXT NOT NULL DEFAULT '{}'`);
+
+
+
+
+
 
 await client.query(`
       CREATE TABLE IF NOT EXISTS user_marketing_consents (
@@ -920,80 +778,19 @@ await client.query(`
       )
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_user_marketing_consents_user_created ON user_marketing_consents(user_id, created_at DESC)`);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS payments (
-        id BIGINT PRIMARY KEY,
-        user_id BIGINT NOT NULL REFERENCES users(id),
-        course_id BIGINT NOT NULL REFERENCES courses(id),
-        provider TEXT NOT NULL DEFAULT 'manual',
-        order_id TEXT NOT NULL UNIQUE,
-        payment_key TEXT UNIQUE,
-        provider_order_id TEXT NOT NULL DEFAULT '',
-        amount INTEGER NOT NULL DEFAULT 0,
-        currency TEXT NOT NULL DEFAULT 'KRW',
-        status TEXT NOT NULL DEFAULT 'ready',
-        failure_reason TEXT NOT NULL DEFAULT '',
-        metadata_json TEXT NOT NULL DEFAULT '{}',
-        requested_at TEXT NOT NULL,
-        ready_at TEXT,
-        paid_at TEXT,
-        failed_at TEXT,
-        cancelled_at TEXT,
-        reviewed_by BIGINT REFERENCES users(id)
-      )
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS exam_entitlements (
-        id TEXT PRIMARY KEY,
-        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        exam_course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-        source TEXT NOT NULL DEFAULT 'admin',
-        source_payment_id BIGINT REFERENCES payments(id) ON DELETE SET NULL,
-        required_course_id BIGINT REFERENCES courses(id) ON DELETE SET NULL,
-        status TEXT NOT NULL DEFAULT 'active',
-        granted_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
-        granted_at TEXT NOT NULL,
-        expires_at TEXT,
-        revoked_at TEXT,
-        revoke_reason TEXT NOT NULL DEFAULT '',
-        metadata_json TEXT NOT NULL DEFAULT '{}'
-      )
-    `);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_exam_entitlements_user_exam_status ON exam_entitlements(user_id, exam_course_id, status)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_exam_entitlements_payment ON exam_entitlements(source_payment_id)`);
-    const legacyExamAccessRows = (await client.query(`
-      SELECT uca.user_id, uca.course_id, uca.granted_via, uca.created_at, uca.expires_at,
-        (SELECT p.id FROM payments p WHERE p.user_id=uca.user_id AND p.course_id=uca.course_id AND p.status='paid' ORDER BY p.paid_at DESC NULLS LAST, p.id DESC LIMIT 1) AS source_payment_id
-      FROM user_course_access uca
-      WHERE uca.granted_via IN ('payment','free_self_enrollment','purchase_request','admin_manual','signup_code','invite_code','redeem_code','promotion_claim','exam_promotion','exam_free')
-        AND NOT EXISTS (
-          SELECT 1 FROM exam_entitlements ee
-          WHERE ee.user_id=uca.user_id AND ee.exam_course_id=uca.course_id AND ee.status='active'
-        )
-    `)).rows;
-    for (const row of legacyExamAccessRows) {
-      const grantedVia = String(row.granted_via || "").toLowerCase();
-      if (grantedVia === "payment" && !row.source_payment_id) continue;
-      const source = grantedVia === "payment"
-        ? "payment"
-        : ["signup_code", "invite_code", "redeem_code", "promotion_claim", "exam_promotion"].includes(grantedVia)
-          ? "promotion"
-          : ["free_self_enrollment", "exam_free"].includes(grantedVia)
-            ? "free"
-            : "admin";
-      await client.query(
-        `INSERT INTO exam_entitlements (id,user_id,exam_course_id,source,source_payment_id,status,granted_at,expires_at,metadata_json)
-         VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8)`,
-        [randomUUID(), row.user_id, row.course_id, source, row.source_payment_id || null, row.created_at || new Date().toISOString(), row.expires_at || null, JSON.stringify({ migratedFrom: "user_course_access", grantedVia })],
-      );
-    }
+
+
+
+
+
+
 
 await client.query(`
       CREATE TABLE IF NOT EXISTS discount_coupons (
         id BIGINT PRIMARY KEY,
         code TEXT NOT NULL UNIQUE,
         user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-        course_id BIGINT REFERENCES courses(id) ON DELETE CASCADE,
+        course_id BIGINT ,
         source TEXT NOT NULL DEFAULT 'manual',
         discount_type TEXT NOT NULL DEFAULT 'percent',
         discount_value INTEGER NOT NULL DEFAULT 0,
@@ -1092,114 +889,13 @@ await client.query(`
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_public_quote_inquiries_status_created ON public_quote_inquiries(status, created_at DESC)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_public_quote_inquiries_email_created ON public_quote_inquiries(contact_email, created_at DESC)`);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS arena_seasons (
-        id BIGINT PRIMARY KEY,
-        code TEXT NOT NULL UNIQUE,
-        title TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'scheduled',
-        reset_policy TEXT NOT NULL DEFAULT 'quarterly',
-        started_at TEXT,
-        ends_at TEXT,
-        created_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS arena_scenarios (
-        id BIGINT PRIMARY KEY,
-        code TEXT NOT NULL UNIQUE,
-        title TEXT NOT NULL,
-        summary TEXT NOT NULL DEFAULT '',
-        backend_type TEXT NOT NULL DEFAULT 'container',
-        console_type TEXT NOT NULL DEFAULT 'xterm',
-        tier TEXT NOT NULL DEFAULT 'normal',
-        difficulty INTEGER NOT NULL DEFAULT 1,
-        ttl_seconds INTEGER NOT NULL DEFAULT 1200,
-        validator_key TEXT NOT NULL DEFAULT '',
-        image_name TEXT NOT NULL DEFAULT '',
-        flavor_name TEXT NOT NULL DEFAULT '',
-        network_name TEXT NOT NULL DEFAULT '',
-        metadata_json TEXT NOT NULL DEFAULT '{}',
-        created_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS arena_nodes (
-        id BIGINT PRIMARY KEY,
-        season_id BIGINT NOT NULL REFERENCES arena_seasons(id) ON DELETE CASCADE,
-        scenario_id BIGINT NOT NULL REFERENCES arena_scenarios(id),
-        node_code TEXT NOT NULL,
-        label TEXT NOT NULL,
-        map_x DOUBLE PRECISION NOT NULL DEFAULT 0,
-        map_y DOUBLE PRECISION NOT NULL DEFAULT 0,
-        current_owner_user_id BIGINT REFERENCES users(id),
-        current_owner_handle TEXT NOT NULL DEFAULT '',
-        first_capture_at TEXT,
-        status TEXT NOT NULL DEFAULT 'open',
-        created_at TEXT NOT NULL,
-        UNIQUE(season_id, node_code)
-      )
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS arena_sessions (
-        id BIGINT PRIMARY KEY,
-        season_id BIGINT NOT NULL REFERENCES arena_seasons(id),
-        node_id BIGINT NOT NULL REFERENCES arena_nodes(id),
-        scenario_id BIGINT NOT NULL REFERENCES arena_scenarios(id),
-        user_id BIGINT NOT NULL REFERENCES users(id),
-        state TEXT NOT NULL DEFAULT 'provisioning',
-        backend_type TEXT NOT NULL DEFAULT 'container',
-        console_type TEXT NOT NULL DEFAULT 'xterm',
-        resource_id TEXT NOT NULL DEFAULT '',
-        resource_name TEXT NOT NULL DEFAULT '',
-        console_url TEXT NOT NULL DEFAULT '',
-        validator_state TEXT NOT NULL DEFAULT 'pending',
-        started_at TEXT NOT NULL,
-        expires_at TEXT NOT NULL,
-        ended_at TEXT,
-        terminated_reason TEXT NOT NULL DEFAULT '',
-        metadata_json TEXT NOT NULL DEFAULT '{}'
-      )
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS arena_attempts (
-        id BIGINT PRIMARY KEY,
-        session_id BIGINT NOT NULL UNIQUE REFERENCES arena_sessions(id) ON DELETE CASCADE,
-        season_id BIGINT NOT NULL REFERENCES arena_seasons(id),
-        node_id BIGINT NOT NULL REFERENCES arena_nodes(id),
-        user_id BIGINT NOT NULL REFERENCES users(id),
-        result TEXT NOT NULL DEFAULT 'failed',
-        score INTEGER NOT NULL DEFAULT 0,
-        mmr_delta INTEGER NOT NULL DEFAULT 0,
-        rank_delta INTEGER NOT NULL DEFAULT 0,
-        duration_seconds INTEGER NOT NULL DEFAULT 0,
-        first_try_bonus INTEGER NOT NULL DEFAULT 0,
-        remaining_seconds INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS arena_captures (
-        id BIGINT PRIMARY KEY,
-        season_id BIGINT NOT NULL REFERENCES arena_seasons(id),
-        node_id BIGINT NOT NULL REFERENCES arena_nodes(id),
-        user_id BIGINT NOT NULL REFERENCES users(id),
-        capture_type TEXT NOT NULL DEFAULT 'first_blood',
-        created_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS arena_events (
-        id BIGINT PRIMARY KEY,
-        season_id BIGINT NOT NULL REFERENCES arena_seasons(id),
-        node_id BIGINT REFERENCES arena_nodes(id),
-        user_id BIGINT REFERENCES users(id),
-        event_type TEXT NOT NULL DEFAULT 'system',
-        message TEXT NOT NULL DEFAULT '',
-        payload_json TEXT NOT NULL DEFAULT '{}',
-        created_at TEXT NOT NULL
-      )
-    `);
+
+
+
+
+
+
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS lucky_draw_events (
         id BIGINT PRIMARY KEY,
@@ -1230,7 +926,7 @@ await client.query(`
         event_id BIGINT NOT NULL REFERENCES lucky_draw_events(id) ON DELETE CASCADE,
         reward_type TEXT NOT NULL DEFAULT 'message',
         label TEXT NOT NULL,
-        course_id BIGINT REFERENCES courses(id),
+        course_id BIGINT ,
         coupon_discount_type TEXT NOT NULL DEFAULT 'percent',
         coupon_discount_value INTEGER NOT NULL DEFAULT 0,
         coupon_expires_in_days INTEGER NOT NULL DEFAULT 7,
@@ -1339,9 +1035,9 @@ await client.query(`
         deleted_at TEXT
       )
     `);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_arena_nodes_season_id ON arena_nodes(season_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_arena_sessions_user_state ON arena_sessions(user_id, state)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_arena_events_season_created ON arena_events(season_id, created_at DESC)`);
+
+
+
     await client.query(`CREATE INDEX IF NOT EXISTS idx_lucky_draw_rewards_event_id ON lucky_draw_rewards(event_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_lucky_draw_attempts_event_user_date ON lucky_draw_attempts(event_id, user_id, attempt_date)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_lucky_draw_grants_user_created_at ON lucky_draw_grants(user_id, created_at DESC)`);
@@ -1385,65 +1081,52 @@ await client.query(`
       created_at TEXT NOT NULL,reviewed_at TEXT,executed_at TEXT
     )`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_cloud_console_actions_user_created ON cloud_console_actions(user_id, created_at DESC)`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS price INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_access_days INTEGER NOT NULL DEFAULT 30`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_enabled INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_price INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_starts_at TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_ends_at TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS commands_markdown TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_type TEXT NOT NULL DEFAULT 'standard'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS package_items_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS program_type TEXT NOT NULL DEFAULT '일반'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS online_meeting_url TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS online_board_url TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS online_course_notice TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS online_session_note TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS external_ssh_approval_mode TEXT NOT NULL DEFAULT 'manual'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS external_rdp_approval_mode TEXT NOT NULL DEFAULT 'manual'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS public_tcp_approval_mode TEXT NOT NULL DEFAULT 'manual'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS external_ssh_route_mode TEXT NOT NULL DEFAULT 'both'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_retention_mode TEXT NOT NULL DEFAULT 'ephemeral'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_retention_preset TEXT NOT NULL DEFAULT '1'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_retention_days INTEGER NOT NULL DEFAULT 1`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS allow_resume_existing_lab INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_resize_policy TEXT NOT NULL DEFAULT 'requestable'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_resize_allowed_flavors TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS terminal_replay_mode TEXT NOT NULL DEFAULT 'inherit'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_backend_type TEXT NOT NULL DEFAULT 'vm'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS container_image_name TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS container_command_text TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS container_exposed_port INTEGER`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS container_access_mode TEXT NOT NULL DEFAULT 'console'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS container_console_mode TEXT NOT NULL DEFAULT 'zun'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_monitoring_enabled INTEGER NOT NULL DEFAULT 1`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_daily_limit_gb DOUBLE PRECISION NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_total_limit_gb DOUBLE PRECISION NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_exceeded_action TEXT NOT NULL DEFAULT 'warn'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS survey_config_json TEXT NOT NULL DEFAULT '{}'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS external_learning_tools_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS public_domain_approval_mode TEXT NOT NULL DEFAULT 'manual'`);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS course_package_grants (
-        id TEXT PRIMARY KEY,
-        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        package_course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-        item_course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-        source_payment_id BIGINT REFERENCES payments(id) ON DELETE SET NULL,
-        access_created INTEGER NOT NULL DEFAULT 0,
-        status TEXT NOT NULL DEFAULT 'active',
-        granted_at TEXT NOT NULL,
-        revoked_at TEXT,
-        UNIQUE(user_id, package_course_id, item_course_id, source_payment_id)
-      )
-    `);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_course_package_grants_payment ON course_package_grants(source_payment_id, status)`);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     await client.query(`ALTER TABLE notices ADD COLUMN IF NOT EXISTS is_pinned INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE course_access_requests ADD COLUMN IF NOT EXISTS review_note TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE course_access_requests ADD COLUMN IF NOT EXISTS request_type TEXT NOT NULL DEFAULT 'access'`);
-    await client.query(`ALTER TABLE course_access_requests ADD COLUMN IF NOT EXISTS request_note TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE user_course_access ADD COLUMN IF NOT EXISTS expires_at TEXT`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_user_course_access_expires ON user_course_access(expires_at)`);
+
+
+
+
+
     await client.query(`ALTER TABLE custom_lab_requests ADD COLUMN IF NOT EXISTS heat_template_name TEXT NOT NULL DEFAULT ''`);
     await client.query(`ALTER TABLE custom_lab_requests ADD COLUMN IF NOT EXISTS cloud_init_template_name TEXT NOT NULL DEFAULT ''`);
 await client.query(`ALTER TABLE custom_lab_requests ADD COLUMN IF NOT EXISTS advanced_config_json TEXT NOT NULL DEFAULT '{}'`);
@@ -1474,85 +1157,58 @@ await client.query(`ALTER TABLE custom_lab_requests ADD COLUMN IF NOT EXISTS pay
     await client.query(`ALTER TABLE custom_lab_requests ADD COLUMN IF NOT EXISTS public_review_note TEXT NOT NULL DEFAULT ''`);
     await client.query(`ALTER TABLE custom_lab_requests ADD COLUMN IF NOT EXISTS started_at TEXT`);
     await client.query(`ALTER TABLE custom_lab_requests ADD COLUMN IF NOT EXISTS terminated_at TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS terminal_ssh_user TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS terminal_ssh_password TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS lab_backend_type TEXT NOT NULL DEFAULT 'vm'`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS container_uuid TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS container_name TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS container_image_name TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS container_command_text TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS container_access_mode TEXT NOT NULL DEFAULT 'console'`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS container_console_mode TEXT NOT NULL DEFAULT 'zun'`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS instance_uuid TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS current_flavor TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_resource_id TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_incoming_metric_id TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_outgoing_metric_id TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_rx_bytes BIGINT NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_tx_bytes BIGINT NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_total_bytes BIGINT NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_daily_bytes BIGINT NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_checked_at TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_exceeded INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_exceeded_at TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS cpu_usage_percent DOUBLE PRECISION NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS memory_usage_percent DOUBLE PRECISION NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS disk_read_bytes BIGINT NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS disk_write_bytes BIGINT NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS vm_metrics_checked_at TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS requested_public_tcp_routes_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_routes_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_enabled INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_request_pending INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_reviewed_by TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_reviewed_at TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_review_note TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_enabled INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_port INTEGER`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_request_pending INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_reviewed_by TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_reviewed_at TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_review_note TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS requested_resize_flavor TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS resize_request_pending INTEGER NOT NULL DEFAULT 0`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS resize_reviewed_by TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS resize_reviewed_at TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS resize_review_note TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS archived_at TEXT`);
-    await client.query(`ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS archived_reason TEXT NOT NULL DEFAULT ''`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_archived_status_created ON lab_requests(archived_at, status, created_at DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_archived_user_created ON lab_requests(archived_at, user_id, created_at DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_archived_course_created ON lab_requests(archived_at, course_id, created_at DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_stack_name ON lab_requests(stack_name)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_lab_requests_instance_ip ON lab_requests(instance_ip)`);
-    await client.query(`
-      WITH missing_access AS (
-        SELECT lr.user_id AS "userId", lr.course_id AS "courseId", MIN(lr.created_at) AS "createdAt"
-        FROM lab_requests lr
-        LEFT JOIN user_course_access uca ON uca.user_id=lr.user_id AND uca.course_id=lr.course_id
-        WHERE uca.id IS NULL
-          AND COALESCE(lr.archived_at, '')=''
-          AND LOWER(COALESCE(lr.purpose, 'learning'))<>'exam'
-          AND LOWER(COALESCE(lr.status, '')) IN ('pending','approved','provisioning','running','paused')
-        GROUP BY lr.user_id, lr.course_id
-      ), numbered_access AS (
-        SELECT ma.*, ROW_NUMBER() OVER (ORDER BY ma."userId", ma."courseId") AS ordinal
-        FROM missing_access ma
-      ), access_id_base AS (
-        SELECT COALESCE(MAX(id), 0) AS "maxId" FROM user_course_access
-      )
-      INSERT INTO user_course_access (id,user_id,course_id,granted_via,expires_at,created_at)
-      SELECT base."maxId" + item.ordinal,
-             item."userId",
-             item."courseId",
-             'lab_request',
-             (CURRENT_TIMESTAMP + (GREATEST(1, LEAST(3650, COALESCE(c.course_access_days, 30))) * INTERVAL '1 day'))::text,
-             COALESCE(NULLIF(item."createdAt", ''), CURRENT_TIMESTAMP::text)
-      FROM numbered_access item
-      CROSS JOIN access_id_base base
-      JOIN courses c ON c.id=item."courseId"
-      ON CONFLICT (user_id,course_id) DO NOTHING
-    `);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     await client.query(`ALTER TABLE self_service_vms ADD COLUMN IF NOT EXISTS cloud_init_template_name TEXT NOT NULL DEFAULT ''`);
     await client.query(`ALTER TABLE self_service_vms ADD COLUMN IF NOT EXISTS cloud_init_custom_content TEXT NOT NULL DEFAULT ''`);
     await client.query(`ALTER TABLE self_service_vms ADD COLUMN IF NOT EXISTS cloud_init_custom_file_name TEXT NOT NULL DEFAULT ''`);
@@ -1690,10 +1346,7 @@ function normalizeAdminPermissions(value) {
   }
   return result.includes("admin:all") ? ["admin:all"] : result;
 }
-function normalizeCourseFeatureApprovalMode(value) {
-  const normalized = String(value || "manual").trim().toLowerCase();
-  return ["manual", "instant", "disabled"].includes(normalized) ? normalized : "manual";
-}
+
 function normalizeUserRow(row) {
   const termsAgreements = safeJsonParse(row?.termsAgreementsJson || row?.terms_agreements_json || "[]", []);
   const marketingConsent = safeJsonParse(row?.marketingConsentJson || row?.marketing_consent_json || "{}", {});
@@ -1715,7 +1368,7 @@ function normalizeUserRow(row) {
     supportMessageEnabled: normalizeFlag(row.supportMessageEnabled ?? row.support_message_enabled),
     selfServiceVmEnabled: normalizeFlag(row.selfServiceVmEnabled ?? row.self_service_vm_enabled),
     pocFreeAccessEnabled: normalizeFlag(row.pocFreeAccessEnabled ?? row.poc_free_access_enabled),
-    instructorShareEnabled: normalizeFlag(row.instructorShareEnabled ?? row.instructor_share_enabled),
+
     adminPermissions: normalizeAdminPermissions(row.adminPermissions ?? row.admin_permissions ?? row.adminPermissionsJson ?? row.admin_permissions_json),
     marketingEmailConsent: normalizeFlag(marketingConsent.emailConsent ?? marketingConsent.email_consent),
     marketingEmailConsentDecided: normalizeFlag(marketingConsent.hasDecision ?? marketingConsent.has_decision),
@@ -1911,13 +1564,9 @@ const CICD_PROJECT_SELECT = `
          p.build_server_url AS "buildServerUrl",
          p.status, p.variables_json AS "variablesJson", p.stages_json AS "stagesJson",
          p.created_at AS "createdAt", p.updated_at AS "updatedAt",
-         u.name AS "userName", u.username,
-         c.title AS "courseTitle", c.slug AS "courseSlug",
-         lr.status AS "labStatus", lr.stack_name AS "labStackName"
+         u.name AS "userName", u.username
   FROM cicd_projects p
   JOIN users u ON u.id = p.user_id
-  LEFT JOIN courses c ON c.id = p.course_id
-  LEFT JOIN lab_requests lr ON lr.id = p.lab_request_id
 `;
 
 const CICD_RUN_SELECT = `
@@ -2249,167 +1898,22 @@ function normalizeInviteCodeRow(row) {
     createdByName: row.createdByName || "", createdByUsername: row.createdByUsername || "", createdAt: row.created_at || row.createdAt,
   } : null;
 }
-function normalizeAiQuickPrompts(value) {
-  const items = Array.isArray(value)
-    ? value
-    : typeof value === "string"
-      ? safeJsonParse(value || "[]", [])
-      : [];
-  return (Array.isArray(items) ? items : [])
-    .map((item) => String(item || "").trim())
-    .filter(Boolean)
-    .slice(0, 12);
-}
 
-function normalizeExternalToolLinks(value) {
-  const items = Array.isArray(value)
-    ? value
-    : typeof value === "string"
-      ? safeJsonParse(value || "[]", [])
-      : [];
-  return (Array.isArray(items) ? items : [])
-    .map((item) => ({
-      label: String(item?.label || "").trim(),
-      url: String(item?.url || item?.href || "").trim(),
-      description: String(item?.description || "").trim(),
-      required: Boolean(item?.required),
-    }))
-    .filter((item) => item.label && /^https?:\/\//i.test(item.url))
-    .slice(0, 12);
-}
 
-function normalizeLabStartChecklist(value) {
-  const items = Array.isArray(value)
-    ? value
-    : typeof value === "string"
-      ? safeJsonParse(value || "[]", [])
-      : [];
-  return (Array.isArray(items) ? items : [])
-    .map((item) => String(typeof item === "string" ? item : item?.label || item?.text || "").trim())
-    .filter(Boolean)
-    .slice(0, 20);
-}
 
-function normalizeCourseRecordings(value) {
-  const items = Array.isArray(value)
-    ? value
-    : typeof value === "string"
-      ? safeJsonParse(value || "[]", [])
-      : [];
-  return (Array.isArray(items) ? items : [])
-    .map((item) => ({
-      date: String(item?.date || item?.recordedAt || "").trim().slice(0, 10),
-      title: String(item?.title || "").trim(),
-      url: String(item?.url || item?.href || "").trim(),
-      description: String(item?.description || "").trim(),
-      visibility: ["students", "private", "admin"].includes(String(item?.visibility || "").trim())
-        ? String(item.visibility).trim()
-        : "students",
-    }))
-    .filter((item) => item.title && /^https?:\/\//i.test(item.url))
-    .slice(0, 80);
-}
 
-function parseCoursePromoTime(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return null;
-  const time = Date.parse(raw);
-  return Number.isFinite(time) ? time : null;
-}
 
-function isCoursePromotionActive(row, nowMs = Date.now()) {
-  if (!row || !Boolean(row.promoEnabled ?? row.promo_enabled)) return false;
-  const startsAt = parseCoursePromoTime(row.promoStartsAt ?? row.promo_starts_at);
-  const endsAt = parseCoursePromoTime(row.promoEndsAt ?? row.promo_ends_at);
-  if (startsAt == null || endsAt == null) return false;
-  return startsAt <= nowMs && nowMs < endsAt;
-}
 
-function normalizeCoursePromotionFields(row) {
-  const price = Math.max(0, Number(row.price || 0));
-  const promoEnabled = Boolean(row.promoEnabled ?? row.promo_enabled);
-  const promoPrice = Math.max(0, Number(row.promoPrice ?? row.promo_price ?? 0) || 0);
-  const promoStartsAt = String(row.promoStartsAt ?? row.promo_starts_at ?? "").trim();
-  const promoEndsAt = String(row.promoEndsAt ?? row.promo_ends_at ?? "").trim();
-  const promotionActive = isCoursePromotionActive({ promoEnabled, promoStartsAt, promoEndsAt });
-  const effectivePrice = promotionActive ? Math.min(price, promoPrice) : price;
-  return {
-    promoEnabled,
-    promoPrice,
-    promoStartsAt,
-    promoEndsAt,
-    promotionActive,
-    effectivePrice,
-  };
-}
 
-function normalizeCourseRow(row) {
-  return row ? {
-    id: Number(row.id), slug: row.slug, category: row.category, courseType: row.courseType || "standard", packageItems: safeJsonParse(row.packageItemsJson || "[]", []).map(Number).filter((id) => Number.isInteger(id) && id > 0), programType: normalizeCourseProgramTypeValue(row.programType), title: row.title, summary: row.summary, price: Math.max(0, Number(row.price || 0)), duration: row.duration, level: row.level, body: row.body,
-    ...normalizeCoursePromotionFields(row),
-    youtubeUrl: row.youtubeUrl || "", onlineMeetingUrl: row.onlineMeetingUrl || "", onlineBoardUrl: row.onlineBoardUrl || "", onlineCourseNotice: row.onlineCourseNotice || "", onlineSessionNote: row.onlineSessionNote || "", labGuideMarkdown: row.labGuideMarkdown || "", commandsMarkdown: row.commandsMarkdown || "", aiSystemPrompt: row.aiSystemPrompt || "", aiQuickPrompts: normalizeAiQuickPrompts(row.aiQuickPromptsJson),
-      objectives: safeJsonParse(row.objectivesJson || "[]", []), materials: safeJsonParse(row.materialsJson || "[]", []), textbooks: safeJsonParse(row.textbooksJson || "[]", []), courseCurriculum: safeJsonParse(row.courseCurriculumJson || "[]", []), courseVideos: safeJsonParse(row.courseVideosJson || "[]", []), courseRecordings: normalizeCourseRecordings(row.courseRecordingsJson), exampleFiles: safeJsonParse(row.exampleFilesJson || "[]", []), gitRepositories: safeJsonParse(row.gitRepositoriesJson || "[]", []), externalToolLinks: normalizeExternalToolLinks(row.externalToolLinksJson), externalLearningTools: normalizeExternalToolLinks(row.externalLearningToolsJson), labStartChecklist: normalizeLabStartChecklist(row.labStartChecklistJson), surveyConfig: safeJsonParse(row.surveyConfigJson || "{}", {}),
-      labEnabled: Boolean(row.labEnabled), labApprovalMode: row.labApprovalMode || "manual",
-      publicDomainApprovalMode: normalizeCourseFeatureApprovalMode(row.publicDomainApprovalMode),
-      publicTcpApprovalMode: normalizeCourseFeatureApprovalMode(row.publicTcpApprovalMode),
-      externalSshApprovalMode: normalizeCourseFeatureApprovalMode(row.externalSshApprovalMode),
-      externalRdpApprovalMode: normalizeCourseFeatureApprovalMode(row.externalRdpApprovalMode),
-      externalSshRouteMode: String(row.externalSshRouteMode || "").trim().toLowerCase() === "domain"
-        ? "domain"
-        : "both",
-      labBackendType: normalizeLabBackendType(row.labBackendType),
-      containerImageName: String(row.containerImageName || "").trim(),
-      containerCommandText: String(row.containerCommandText || "").trim(),
-      containerExposedPort: row.containerExposedPort != null ? Math.max(1, Number(row.containerExposedPort || 22) || 22) : null,
-      containerAccessMode: ["ssh", "console", "ssh_console"].includes(String(row.containerAccessMode || "").trim()) ? String(row.containerAccessMode || "").trim() : "console",
-      containerConsoleMode: ["zun", "ssh"].includes(String(row.containerConsoleMode || "").trim()) ? String(row.containerConsoleMode || "").trim() : "zun",
-      labRetentionMode: row.labRetentionMode || "ephemeral",
-      labRetentionPreset: row.labRetentionPreset || "1",
-      labRetentionDays: Math.max(1, Number(row.labRetentionDays || 1) || 1),
-      allowResumeExistingLab: Boolean(row.allowResumeExistingLab),
-      labResizePolicy: String(row.labResizePolicy || "requestable").trim() || "requestable",
-      labResizeAllowedFlavors: String(row.labResizeAllowedFlavors || "").split(",").map((item) => String(item || "").trim()).filter(Boolean),
-      terminalReplayMode: ["inherit", "enabled", "disabled"].includes(String(row.terminalReplayMode || "").trim()) ? String(row.terminalReplayMode || "").trim() : "inherit",
-      trafficMonitoringEnabled: Boolean(row.trafficMonitoringEnabled),
-      trafficDailyLimitGb: Math.max(0, Number(row.trafficDailyLimitGb || 0)),
-      trafficTotalLimitGb: Math.max(0, Number(row.trafficTotalLimitGb || 0)),
-      trafficExceededAction: row.trafficExceededAction || "warn",
-      heatApiUrl: row.heatApiUrl || "", heatTemplateName: row.heatTemplateName || "", heatStackPrefix: row.heatStackPrefix || "",
-    labProvisioningTimeoutMinutes: Math.max(1, Math.min(120, Number(
-      safeJsonParse(row.heatParametersJson || "{}", {}).labProvisioningTimeoutMinutes || 10,
-    ) || 10)),
-    heatParameters: safeJsonParse(row.heatParametersJson || "{}", {}), terminalSshUser: row.terminalSshUser || "",
-    terminalSshPort: Number(row.terminalSshPort || 22), terminalJumpHost: row.terminalJumpHost || "", terminalJumpUser: row.terminalJumpUser || "",
-    isPublished: Boolean(row.isPublished),
-    isLandingPreview: Boolean(row.isLandingPreview),
-    courseStatus: ["published", "coming_soon", "archived"].includes(String(row.courseStatus || "").trim()) ? String(row.courseStatus || "").trim() : "published",
-    releaseLabel: String(row.releaseLabel || "").trim(),
-    accessScope: row.accessScope || "public", accessCode: row.accessCode || "",
-    hasAccess: row.hasAccess == null ? true : Boolean(row.hasAccess),
-    hasEnrollmentRecord: row.hasEnrollmentRecord == null ? true : Boolean(row.hasEnrollmentRecord),
-    enrollmentGrantedVia: String(row.enrollmentGrantedVia || "").trim(),
-    ...normalizeCourseEnrollmentFields(row),
-    accessRequestStatus: row.accessRequestStatus || "", accessRequestReviewNote: row.accessRequestReviewNote || "",
-    revokeRequestStatus: row.revokeRequestStatus || "", revokeRequestReviewNote: row.revokeRequestReviewNote || "",
-    createdAt: row.createdAt, updatedAt: row.updatedAt,
-  } : null;
-}
-function normalizeTextbookRow(row) {
-  if (!row) return null;
-  return {
-    id: Number(row.id),
-    slug: String(row.slug || "").trim(),
-    title: String(row.title || "").trim(),
-    summary: String(row.summary || "").trim(),
-    contentMarkdown: String(row.contentMarkdown ?? row.content_markdown ?? ""),
-    status: ["draft", "published", "archived"].includes(String(row.status || "").trim()) ? String(row.status || "").trim() : "draft",
-    version: String(row.version || "1.0").trim() || "1.0",
-    createdBy: row.createdBy ?? row.created_by ? Number(row.createdBy ?? row.created_by) : null,
-    createdAt: row.createdAt ?? row.created_at ?? "",
-    updatedAt: row.updatedAt ?? row.updated_at ?? "",
-    courseCount: Number(row.courseCount ?? row.course_count ?? 0),
-  };
-}
+
+
+
+
+
+
+
+
+
 
 function normalizeDomainEntry(entry) {
   if (!entry) return null;
@@ -2442,24 +1946,7 @@ function normalizeDomainEntry(entry) {
     ...(targetHost ? { targetHost } : {}),
   };
 }
-function normalizePublicTcpEntry(entry) {
-  if (!entry) return null;
-  const targetPort = Number(entry.targetPort);
-  const externalPort = entry.externalPort == null ? null : Number(entry.externalPort);
-  if (!Number.isInteger(targetPort) || targetPort <= 0) return null;
-  if (externalPort != null && (!Number.isInteger(externalPort) || externalPort <= 0)) return null;
-  const nodeId = String(entry.nodeId || "").trim();
-  const nodeName = String(entry.nodeName || "").trim();
-  const targetHost = String(entry.targetHost || "").trim();
-  return {
-    protocol: "tcp",
-    targetPort,
-    externalPort,
-    ...(nodeId ? { nodeId } : {}),
-    ...(nodeName ? { nodeName } : {}),
-    ...(targetHost ? { targetHost } : {}),
-  };
-}
+
 function normalizeDomainList(jsonValue, legacyEnabled, legacySubdomain, legacyFqdn, legacyProtocol, legacyPort) {
   let parsed = [];
   try {
@@ -2480,135 +1967,13 @@ function normalizeDomainList(jsonValue, legacyEnabled, legacySubdomain, legacyFq
   }
   return [];
 }
-function normalizePublicTcpList(jsonValue) {
-  let parsed = [];
-  try {
-    parsed = JSON.parse(jsonValue || "[]");
-  } catch {
-    parsed = [];
-  }
-  return Array.isArray(parsed) ? parsed.map(normalizePublicTcpEntry).filter(Boolean) : [];
-}
+
 function coerceDomainPatchList(patchValue, currentValue) {
   if (patchValue === undefined) return currentValue;
   return Array.isArray(patchValue) ? patchValue.map(normalizeDomainEntry).filter(Boolean) : [];
 }
-function coercePublicTcpPatchList(patchValue, currentValue) {
-  if (patchValue === undefined) return currentValue;
-  return Array.isArray(patchValue) ? patchValue.map(normalizePublicTcpEntry).filter(Boolean) : [];
-}
-function normalizeLabRow(row) {
-  if (!row) return null;
-  const publicDomains = normalizeDomainList(
-    row.public_domains_json ?? row.publicDomainsJson,
-    row.public_enabled ?? row.publicEnabled,
-    row.public_subdomain ?? row.publicSubdomain,
-    row.public_fqdn ?? row.publicFqdn,
-    row.public_protocol ?? row.publicProtocol,
-    row.public_port ?? row.publicPort,
-  );
-  const requestedPublicDomains = normalizeDomainList(
-    row.requested_public_domains_json ?? row.requestedPublicDomainsJson,
-    row.public_request_pending ?? row.publicRequestPending,
-    row.requested_public_subdomain ?? row.requestedPublicSubdomain,
-    row.requested_public_fqdn ?? row.requestedPublicFqdn,
-    row.requested_public_protocol ?? row.requestedPublicProtocol,
-    row.requested_public_port ?? row.requestedPublicPort,
-  );
-  const publicTcpRoutes = normalizePublicTcpList(row.public_tcp_routes_json ?? row.publicTcpRoutesJson);
-  const requestedPublicTcpRoutes = normalizePublicTcpList(row.requested_public_tcp_routes_json ?? row.requestedPublicTcpRoutesJson);
-  const vmNodes = normalizeVmNodesWithSshHost(row, safeJsonParse(row.vm_nodes_json ?? row.vmNodesJson ?? "[]", []));
-  const firstPublicDomain = publicDomains[0] || null;
-  const firstRequestedDomain = requestedPublicDomains[0] || null;
-  const publicEnabled = Boolean(row.public_enabled ?? row.publicEnabled);
-  return {
-    id: Number(row.id), userId: Number(row.user_id ?? row.userId), courseId: Number(row.course_id ?? row.courseId),
-    status: row.status, approvalMode: row.approval_mode ?? row.approvalMode, stackName: row.stack_name ?? row.stackName, stackId: row.stack_id ?? row.stackId,
-    purpose: String(row.purpose ?? "learning").trim() || "learning",
-    examSessionId: String(row.exam_session_id ?? row.examSessionId ?? "").trim(),
-    instanceUuid: String(row.instance_uuid ?? row.instanceUuid ?? "").trim(),
-    currentFlavor: String(row.current_flavor ?? row.currentFlavor ?? "").trim(),
-    instanceIp: row.instance_ip ?? row.instanceIp, instanceIps: safeJsonParse(row.instance_ips_json ?? row.instanceIpsJson ?? "[]", []),
-    vmNodes,
-    terminalSshUser: String(row.terminal_ssh_user ?? row.terminalSshUser ?? "").trim(),
-    terminalSshPassword: String(row.terminal_ssh_password ?? row.terminalSshPassword ?? ""),
-    labBackendType: normalizeLabBackendType(row.lab_backend_type ?? row.labBackendType),
-    containerUuid: String(row.container_uuid ?? row.containerUuid ?? "").trim(),
-    containerName: String(row.container_name ?? row.containerName ?? "").trim(),
-    containerImageName: String(row.container_image_name ?? row.containerImageName ?? "").trim(),
-    containerCommandText: String(row.container_command_text ?? row.containerCommandText ?? "").trim(),
-    containerAccessMode: ["ssh", "console", "ssh_console"].includes(String(row.container_access_mode ?? row.containerAccessMode ?? "").trim())
-      ? String(row.container_access_mode ?? row.containerAccessMode ?? "").trim()
-      : "console",
-    containerConsoleMode: ["zun", "ssh"].includes(String(row.container_console_mode ?? row.containerConsoleMode ?? "").trim())
-      ? String(row.container_console_mode ?? row.containerConsoleMode ?? "").trim()
-      : "zun",
-    trafficResourceId: String(row.traffic_resource_id ?? row.trafficResourceId ?? "").trim(),
-    trafficIncomingMetricId: String(row.traffic_incoming_metric_id ?? row.trafficIncomingMetricId ?? "").trim(),
-    trafficOutgoingMetricId: String(row.traffic_outgoing_metric_id ?? row.trafficOutgoingMetricId ?? "").trim(),
-    trafficRxBytes: Math.max(0, Number(row.traffic_rx_bytes ?? row.trafficRxBytes ?? 0)),
-    trafficTxBytes: Math.max(0, Number(row.traffic_tx_bytes ?? row.trafficTxBytes ?? 0)),
-    trafficTotalBytes: Math.max(0, Number(row.traffic_total_bytes ?? row.trafficTotalBytes ?? 0)),
-    trafficDailyBytes: Math.max(0, Number(row.traffic_daily_bytes ?? row.trafficDailyBytes ?? 0)),
-    trafficCheckedAt: row.traffic_checked_at ?? row.trafficCheckedAt ?? null,
-    trafficExceeded: Boolean(row.traffic_exceeded ?? row.trafficExceeded),
-    trafficExceededAt: row.traffic_exceeded_at ?? row.trafficExceededAt ?? null,
-    cpuUsagePercent: Math.max(0, Number(row.cpu_usage_percent ?? row.cpuUsagePercent ?? 0)),
-    memoryUsagePercent: Math.max(0, Number(row.memory_usage_percent ?? row.memoryUsagePercent ?? 0)),
-    diskReadBytes: Math.max(0, Number(row.disk_read_bytes ?? row.diskReadBytes ?? 0)),
-    diskWriteBytes: Math.max(0, Number(row.disk_write_bytes ?? row.diskWriteBytes ?? 0)),
-    vmMetricsCheckedAt: row.vm_metrics_checked_at ?? row.vmMetricsCheckedAt ?? null,
-    requestedPublicDomains,
-    publicDomains,
-    requestedPublicTcpRoutes,
-    publicTcpRoutes,
-    requestedPublicSubdomain: firstRequestedDomain?.subdomain ?? row.requested_public_subdomain ?? row.requestedPublicSubdomain ?? "",
-    requestedPublicFqdn: firstRequestedDomain?.fqdn ?? row.requested_public_fqdn ?? row.requestedPublicFqdn ?? "",
-    requestedPublicProtocol: firstRequestedDomain?.protocol ?? row.requested_public_protocol ?? row.requestedPublicProtocol ?? "http",
-    requestedPublicPort: firstRequestedDomain?.port != null ? Number(firstRequestedDomain.port) : row.requested_public_port != null ? Number(row.requested_public_port) : row.requestedPublicPort != null ? Number(row.requestedPublicPort) : null,
-    publicSubdomain: firstPublicDomain?.subdomain ?? row.public_subdomain ?? row.publicSubdomain ?? "",
-    publicFqdn: firstPublicDomain?.fqdn ?? row.public_fqdn ?? row.publicFqdn ?? "",
-    publicProtocol: firstPublicDomain?.protocol ?? row.public_protocol ?? row.publicProtocol ?? "http",
-    publicPort: firstPublicDomain?.port != null ? Number(firstPublicDomain.port) : row.public_port != null ? Number(row.public_port) : row.publicPort != null ? Number(row.publicPort) : null,
-    publicEnabled,
-    publicRequestPending: Boolean(row.public_request_pending ?? row.publicRequestPending),
-    publicReviewedBy: row.public_reviewed_by ?? row.publicReviewedBy ?? "", publicReviewedAt: row.public_reviewed_at ?? row.publicReviewedAt ?? null,
-    publicReviewNote: row.public_review_note ?? row.publicReviewNote ?? "",
-    publicTcpEnabled: Boolean(row.public_tcp_enabled ?? row.publicTcpEnabled),
-    publicTcpRequestPending: Boolean(row.public_tcp_request_pending ?? row.publicTcpRequestPending),
-    publicTcpReviewedBy: row.public_tcp_reviewed_by ?? row.publicTcpReviewedBy ?? "",
-    publicTcpReviewedAt: row.public_tcp_reviewed_at ?? row.publicTcpReviewedAt ?? null,
-    publicTcpReviewNote: row.public_tcp_review_note ?? row.publicTcpReviewNote ?? "",
-    externalSshEnabled: Boolean(row.external_ssh_enabled ?? row.externalSshEnabled),
-    externalSshPort: isValidExternalPort(row.external_ssh_port ?? row.externalSshPort) ? Number(row.external_ssh_port ?? row.externalSshPort) : null,
-    externalSshRequestPending: Boolean(row.external_ssh_request_pending ?? row.externalSshRequestPending),
-    externalSshReviewedBy: row.external_ssh_reviewed_by ?? row.externalSshReviewedBy ?? "",
-    externalSshReviewedAt: row.external_ssh_reviewed_at ?? row.externalSshReviewedAt ?? null,
-    externalSshReviewNote: row.external_ssh_review_note ?? row.externalSshReviewNote ?? "",
-    externalRdpEnabled: Boolean(row.external_rdp_enabled ?? row.externalRdpEnabled),
-    externalRdpPort: isValidExternalPort(row.external_rdp_port ?? row.externalRdpPort) ? Number(row.external_rdp_port ?? row.externalRdpPort) : null,
-    externalRdpRequestPending: Boolean(row.external_rdp_request_pending ?? row.externalRdpRequestPending),
-    externalRdpReviewedBy: row.external_rdp_reviewed_by ?? row.externalRdpReviewedBy ?? "",
-    externalRdpReviewedAt: row.external_rdp_reviewed_at ?? row.externalRdpReviewedAt ?? null,
-    externalRdpReviewNote: row.external_rdp_review_note ?? row.externalRdpReviewNote ?? "",
-    requestedResizeFlavor: String(row.requested_resize_flavor ?? row.requestedResizeFlavor ?? "").trim(),
-    resizeRequestPending: Boolean(row.resize_request_pending ?? row.resizeRequestPending),
-    resizeReviewedBy: row.resize_reviewed_by ?? row.resizeReviewedBy ?? "",
-    resizeReviewedAt: row.resize_reviewed_at ?? row.resizeReviewedAt ?? null,
-    resizeReviewNote: row.resize_review_note ?? row.resizeReviewNote ?? "",
-    metallbVipCidr: String(row.metallb_vip_cidr ?? row.metallbVipCidr ?? "").trim(),
-    publicUrl: firstPublicDomain?.url ?? "",
-    requestedPublicUrl: firstRequestedDomain?.url ?? "",
-    lastAccessedAt: row.last_accessed_at ?? row.lastAccessedAt ?? null, expiresAt: row.expires_at ?? row.expiresAt ?? null,
-    errorMessage: row.error_message ?? row.errorMessage ?? null, createdAt: row.created_at ?? row.createdAt,
-    approvedAt: row.approved_at ?? row.approvedAt ?? null, startedAt: row.started_at ?? row.startedAt ?? null, terminatedAt: row.terminated_at ?? row.terminatedAt ?? null,
-    archivedAt: row.archived_at ?? row.archivedAt ?? null,
-    archivedReason: String(row.archived_reason ?? row.archivedReason ?? "").trim(),
-    labBaseDomain: LAB_BASE_DOMAIN,
-    userName: row.userName || "", username: row.username || "", courseTitle: row.courseTitle || "", courseSlug: row.courseSlug || "",
-    courseSummary: row.courseSummary || "", courseCategory: row.courseCategory || "", courseHeatTemplateName: row.courseHeatTemplateName || "",
-  };
-}
+
+
 function normalizeCustomLabRequestRow(row) {
   if (!row) return null;
   let advancedConfig = {};
@@ -3037,25 +2402,7 @@ function normalizeTermsVersionRow(row) {
   } : null;
 }
 
-function normalizeArenaScenarioRow(row) {
-  return row ? {
-    id: Number(row.id),
-    code: String(row.code || "").trim(),
-    title: String(row.title || "").trim(),
-    summary: String(row.summary || "").trim(),
-    backendType: String(row.backendType ?? row.backend_type ?? "container").trim(),
-    consoleType: String(row.consoleType ?? row.console_type ?? "xterm").trim(),
-    tier: String(row.tier || "normal").trim(),
-    difficulty: Math.max(1, Number(row.difficulty || 1)),
-    ttlSeconds: Math.max(60, Number(row.ttlSeconds ?? row.ttl_seconds ?? 1200)),
-    validatorKey: String(row.validatorKey ?? row.validator_key ?? "").trim(),
-    imageName: String(row.imageName ?? row.image_name ?? "").trim(),
-    flavorName: String(row.flavorName ?? row.flavor_name ?? "").trim(),
-    networkName: String(row.networkName ?? row.network_name ?? "").trim(),
-    metadata: safeJsonParse(row.metadataJson ?? row.metadata_json ?? "{}", {}),
-    createdAt: row.createdAt ?? row.created_at ?? null,
-  } : null;
-}
+
 
 function normalizeLuckyDrawEventRow(row) {
   return row ? {
@@ -3307,9 +2654,9 @@ async function nextId(client, tableName) {
 }
 
 const USER_MARKETING_CONSENT_SELECT = `COALESCE((SELECT json_build_object('hasDecision', true, 'emailConsent', umc.consented, 'emailConsentAt', umc.agreed_at, 'emailRevokedAt', umc.revoked_at) FROM user_marketing_consents umc WHERE umc.user_id=u.id AND umc.channel='email' AND umc.purpose='marketing' ORDER BY umc.created_at DESC, umc.id DESC LIMIT 1),'{}'::json) AS "marketingConsentJson"`;
-async function pgFindUserByUsername(username) { return normalizeUserRow((await withClient((c) => c.query(`SELECT u.id,u.name,u.email,u.username,u.password_hash AS "passwordHash",u.signup_reason AS "signupReason",u.role,u.status,u.user_source AS "userSource",u.approval_mail_sent_at AS "approvalMailSentAt",u.qna_last_read_at AS "qnaLastReadAt",u.otp_enabled AS "otpEnabled",u.otp_secret AS "otpSecret",u.support_message_enabled AS "supportMessageEnabled",u.self_service_vm_enabled AS "selfServiceVmEnabled",u.poc_free_access_enabled AS "pocFreeAccessEnabled",u.instructor_share_enabled AS "instructorShareEnabled",u.admin_permissions_json AS "adminPermissionsJson",u.created_at AS "createdAt",${USER_MARKETING_CONSENT_SELECT},COALESCE((SELECT json_agg(json_build_object('courseId', uca.course_id, 'title', c.title, 'slug', c.slug, 'grantedVia', uca.granted_via, 'expiresAt', uca.expires_at, 'createdAt', uca.created_at) ORDER BY uca.created_at DESC, uca.id DESC) FROM user_course_access uca JOIN courses c ON c.id=uca.course_id WHERE uca.user_id=u.id),'[]'::json) AS "enrolledCoursesJson" FROM users u WHERE u.username=$1`, [username]))).rows[0] || null); }
-async function pgFindUserByEmail(email) { return normalizeUserRow((await withClient((c) => c.query(`SELECT u.id,u.name,u.email,u.username,u.password_hash AS "passwordHash",u.signup_reason AS "signupReason",u.role,u.status,u.user_source AS "userSource",u.approval_mail_sent_at AS "approvalMailSentAt",u.qna_last_read_at AS "qnaLastReadAt",u.otp_enabled AS "otpEnabled",u.otp_secret AS "otpSecret",u.support_message_enabled AS "supportMessageEnabled",u.self_service_vm_enabled AS "selfServiceVmEnabled",u.poc_free_access_enabled AS "pocFreeAccessEnabled",u.instructor_share_enabled AS "instructorShareEnabled",u.admin_permissions_json AS "adminPermissionsJson",u.created_at AS "createdAt",${USER_MARKETING_CONSENT_SELECT},COALESCE((SELECT json_agg(json_build_object('courseId', uca.course_id, 'title', c.title, 'slug', c.slug, 'grantedVia', uca.granted_via, 'expiresAt', uca.expires_at, 'createdAt', uca.created_at) ORDER BY uca.created_at DESC, uca.id DESC) FROM user_course_access uca JOIN courses c ON c.id=uca.course_id WHERE uca.user_id=u.id),'[]'::json) AS "enrolledCoursesJson" FROM users u WHERE lower(u.email)=lower($1) ORDER BY u.id ASC LIMIT 1`, [String(email || "").trim()]))).rows[0] || null); }
-async function pgFindUserById(id) { return normalizeUserRow((await withClient((c) => c.query(`SELECT u.id,u.name,u.email,u.username,u.signup_reason AS "signupReason",u.role,u.status,u.user_source AS "userSource",u.approval_mail_sent_at AS "approvalMailSentAt",u.qna_last_read_at AS "qnaLastReadAt",u.otp_enabled AS "otpEnabled",u.otp_secret AS "otpSecret",u.support_message_enabled AS "supportMessageEnabled",u.self_service_vm_enabled AS "selfServiceVmEnabled",u.poc_free_access_enabled AS "pocFreeAccessEnabled",u.instructor_share_enabled AS "instructorShareEnabled",u.admin_permissions_json AS "adminPermissionsJson",u.created_at AS "createdAt",${USER_MARKETING_CONSENT_SELECT},COALESCE((SELECT json_agg(json_build_object('courseId', uca.course_id, 'title', c.title, 'slug', c.slug, 'grantedVia', uca.granted_via, 'expiresAt', uca.expires_at, 'createdAt', uca.created_at) ORDER BY uca.created_at DESC, uca.id DESC) FROM user_course_access uca JOIN courses c ON c.id=uca.course_id WHERE uca.user_id=u.id),'[]'::json) AS "enrolledCoursesJson",COALESCE((SELECT json_agg(json_build_object('termsKey', uta.terms_key, 'title', uta.terms_title, 'version', uta.terms_version, 'contentHash', uta.content_hash, 'agreedAt', uta.agreed_at) ORDER BY uta.agreed_at DESC, uta.id DESC) FROM user_terms_agreements uta WHERE uta.user_id=u.id),'[]'::json) AS "termsAgreementsJson" FROM users u WHERE u.id=$1`, [id]))).rows[0] || null); }
+async function pgFindUserByUsername(username) { return normalizeUserRow((await withClient((c) => c.query(`SELECT u.id,u.name,u.email,u.username,u.password_hash AS "passwordHash",u.signup_reason AS "signupReason",u.role,u.status,u.user_source AS "userSource",u.approval_mail_sent_at AS "approvalMailSentAt",u.qna_last_read_at AS "qnaLastReadAt",u.otp_enabled AS "otpEnabled",u.otp_secret AS "otpSecret",u.support_message_enabled AS "supportMessageEnabled",u.self_service_vm_enabled AS "selfServiceVmEnabled",u.poc_free_access_enabled AS "pocFreeAccessEnabled",u.instructor_share_enabled AS "instructorShareEnabled",u.admin_permissions_json AS "adminPermissionsJson",u.created_at AS "createdAt",${USER_MARKETING_CONSENT_SELECT} FROM users u WHERE u.username=$1`, [username]))).rows[0] || null); }
+async function pgFindUserByEmail(email) { return normalizeUserRow((await withClient((c) => c.query(`SELECT u.id,u.name,u.email,u.username,u.password_hash AS "passwordHash",u.signup_reason AS "signupReason",u.role,u.status,u.user_source AS "userSource",u.approval_mail_sent_at AS "approvalMailSentAt",u.qna_last_read_at AS "qnaLastReadAt",u.otp_enabled AS "otpEnabled",u.otp_secret AS "otpSecret",u.support_message_enabled AS "supportMessageEnabled",u.self_service_vm_enabled AS "selfServiceVmEnabled",u.poc_free_access_enabled AS "pocFreeAccessEnabled",u.instructor_share_enabled AS "instructorShareEnabled",u.admin_permissions_json AS "adminPermissionsJson",u.created_at AS "createdAt",${USER_MARKETING_CONSENT_SELECT} FROM users u WHERE lower(u.email)=lower($1) ORDER BY u.id ASC LIMIT 1`, [String(email || "").trim()]))).rows[0] || null); }
+async function pgFindUserById(id) { return normalizeUserRow((await withClient((c) => c.query(`SELECT u.id,u.name,u.email,u.username,u.signup_reason AS "signupReason",u.role,u.status,u.user_source AS "userSource",u.approval_mail_sent_at AS "approvalMailSentAt",u.qna_last_read_at AS "qnaLastReadAt",u.otp_enabled AS "otpEnabled",u.otp_secret AS "otpSecret",u.support_message_enabled AS "supportMessageEnabled",u.self_service_vm_enabled AS "selfServiceVmEnabled",u.poc_free_access_enabled AS "pocFreeAccessEnabled",u.instructor_share_enabled AS "instructorShareEnabled",u.admin_permissions_json AS "adminPermissionsJson",u.created_at AS "createdAt",${USER_MARKETING_CONSENT_SELECT},COALESCE((SELECT json_agg(json_build_object('termsKey', uta.terms_key, 'title', uta.terms_title, 'version', uta.terms_version, 'contentHash', uta.content_hash, 'agreedAt', uta.agreed_at) ORDER BY uta.agreed_at DESC, uta.id DESC) FROM user_terms_agreements uta WHERE uta.user_id=u.id),'[]'::json) AS "termsAgreementsJson" FROM users u WHERE u.id=$1`, [id]))).rows[0] || null); }
 async function pgCreateUser(input) {
   const { name, email = "", username, passwordHash, role = "student", status = "pending", userSource = "self_signup", approvalMailSentAt = null, signupReason = "" } = input;
   return withTx(async (client) => {
@@ -3345,7 +2692,7 @@ async function pgCreateUser(input) {
         createdAt,
       ],
     );
-    return normalizeUserRow((await client.query(`SELECT u.id,u.name,u.email,u.username,u.signup_reason AS "signupReason",u.role,u.status,u.user_source AS "userSource",u.approval_mail_sent_at AS "approvalMailSentAt",u.qna_last_read_at AS "qnaLastReadAt",u.otp_enabled AS "otpEnabled",u.support_message_enabled AS "supportMessageEnabled",u.self_service_vm_enabled AS "selfServiceVmEnabled",u.poc_free_access_enabled AS "pocFreeAccessEnabled",u.instructor_share_enabled AS "instructorShareEnabled",u.admin_permissions_json AS "adminPermissionsJson",u.created_at AS "createdAt",COALESCE((SELECT json_agg(json_build_object('courseId', uca.course_id, 'title', c.title, 'slug', c.slug, 'grantedVia', uca.granted_via, 'expiresAt', uca.expires_at, 'createdAt', uca.created_at) ORDER BY uca.created_at DESC, uca.id DESC) FROM user_course_access uca JOIN courses c ON c.id=uca.course_id WHERE uca.user_id=u.id),'[]'::json) AS "enrolledCoursesJson" FROM users u WHERE u.id=$1`, [id])).rows[0] || null);
+    return normalizeUserRow((await client.query(`SELECT u.id,u.name,u.email,u.username,u.signup_reason AS "signupReason",u.role,u.status,u.user_source AS "userSource",u.approval_mail_sent_at AS "approvalMailSentAt",u.qna_last_read_at AS "qnaLastReadAt",u.otp_enabled AS "otpEnabled",u.support_message_enabled AS "supportMessageEnabled",u.self_service_vm_enabled AS "selfServiceVmEnabled",u.poc_free_access_enabled AS "pocFreeAccessEnabled",u.instructor_share_enabled AS "instructorShareEnabled",u.admin_permissions_json AS "adminPermissionsJson",u.created_at AS "createdAt" FROM users u WHERE u.id=$1`, [id])).rows[0] || null);
   });
 }
 async function pgFindOauthAccount(provider, providerUserId) {
@@ -3458,7 +2805,6 @@ async function pgListUsers() {
               AND uar.restricted_until > $5
             ORDER BY uar.restricted_until DESC, uar.id DESC
             LIMIT 1) AS "activeAccessRestrictionJson",
-           COALESCE((SELECT json_agg(json_build_object('courseId', uca.course_id, 'title', c.title, 'slug', c.slug, 'grantedVia', uca.granted_via, 'expiresAt', uca.expires_at, 'createdAt', uca.created_at) ORDER BY uca.created_at DESC, uca.id DESC) FROM user_course_access uca JOIN courses c ON c.id=uca.course_id WHERE uca.user_id=u.id),'[]'::json) AS "enrolledCoursesJson",
            COALESCE((SELECT json_agg(json_build_object('termsKey', uta.terms_key, 'title', uta.terms_title, 'version', uta.terms_version, 'contentHash', uta.content_hash, 'agreedAt', uta.agreed_at) ORDER BY uta.agreed_at DESC, uta.id DESC) FROM user_terms_agreements uta WHERE uta.user_id=u.id),'[]'::json) AS "termsAgreementsJson"
     FROM users u
     ORDER BY u.created_at DESC,u.id DESC
@@ -3525,7 +2871,6 @@ async function pgUpdateUserAccess(id, patch) {
 async function pgMarkApprovalMailSent(id, sentAt = new Date().toISOString()) { await withClient((c) => c.query(`UPDATE users SET approval_mail_sent_at=$2 WHERE id=$1`, [id, sentAt])); return pgFindUserById(id); }
 async function pgDeleteUser(id) {
   await withTx(async (c) => {
-    await removeLegacyEducationUserReferences(c,id);
     await c.query(`DELETE FROM password_reset_pins WHERE user_id=$1 OR issued_by=$1`, [id]);
     await c.query(`DELETE FROM user_access_logs WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM user_notifications WHERE user_id=$1`, [id]);
@@ -3536,12 +2881,12 @@ async function pgDeleteUser(id) {
 
 await c.query(`DELETE FROM lucky_draw_attempts WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM lucky_draw_grants WHERE user_id=$1`, [id]);
-    await c.query(`DELETE FROM arena_events WHERE user_id=$1`, [id]);
-    await c.query(`DELETE FROM arena_captures WHERE user_id=$1`, [id]);
-    await c.query(`DELETE FROM arena_attempts WHERE user_id=$1`, [id]);
-    await c.query(`DELETE FROM arena_sessions WHERE user_id=$1`, [id]);
-    await c.query(`UPDATE arena_nodes SET current_owner_user_id=NULL, current_owner_handle='' WHERE current_owner_user_id=$1`, [id]);
-    await c.query(`DELETE FROM lab_requests WHERE user_id=$1`, [id]);
+
+
+
+
+
+
     await c.query(`DELETE FROM self_service_vms WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM self_service_project_requests WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM zun_containers WHERE user_id=$1`, [id]);
@@ -3550,9 +2895,9 @@ await c.query(`DELETE FROM lucky_draw_attempts WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM consulting_requests WHERE user_id=$1 OR reviewed_by=$1`, [id]);
     await c.query(`DELETE FROM custom_lab_requests WHERE user_id=$1 OR reviewed_by=$1`, [id]);
     await c.query(`UPDATE invite_codes SET created_by=NULL WHERE created_by=$1`, [id]);
-    await c.query(`DELETE FROM course_access_requests WHERE user_id=$1 OR reviewed_by=$1`, [id]);
-    await c.query(`DELETE FROM payments WHERE user_id=$1 OR reviewed_by=$1`, [id]);
-    await c.query(`DELETE FROM user_course_access WHERE user_id=$1`, [id]);
+
+
+
     await c.query(`DELETE FROM users WHERE id=$1`, [id]);
   });
 }
@@ -5147,10 +4492,10 @@ async function pgGetPlatformStatus() {
     llmDailyQuotaAdminBypass,
     llmMaxTokens,
     llmAdminTestMaxTokens,
-    llmSurveyFeedbackMaxTokens,
-    llmSurveyFeedbackTimeoutMs,
-    llmSurveyFeedbackPrompt,
-    llmSurveyFeedbackOptionsJson,
+
+
+
+
     llmThinkingMode,
     llmThinkingEnabled: llmThinkingMode === "enabled",
     llmNoThinkDirectiveEnabled,
@@ -5214,7 +4559,7 @@ async function pgGetPlatformStatus() {
     selfServiceVmProjectRoleNames: parsedSelfServiceProjectRoleNames.length ? parsedSelfServiceProjectRoleNames : ["member", "heat_stack_owner"],
     selfServiceVmProjectExternalNetworkName: String(values.get("selfServiceVmProjectExternalNetworkName") || process.env.POC_EXTERNAL_NETWORK || "net-external").trim() || "net-external",
     selfServiceVmProjectQuota: normalizeSelfServiceProjectQuota(parsedSelfServiceProjectQuota),
-    arenaEnabled: values.get("arenaEnabled") === "true",
+
     extensionServiceVisibilityNote: String(values.get("extensionServiceVisibilityNote") || "").trim(),
     selfServiceVmServiceEnabled: values.get("selfServiceVmServiceEnabled") === "true",
     selfServiceVmVolumeBootEnabled: values.get("selfServiceVmVolumeBootEnabled") === "true",
@@ -5242,7 +4587,7 @@ async function pgGetPlatformStatus() {
       "m1.small": { vcpu: 2, ramGb: 4, diskGb: 50 },
       "m1.medium": { vcpu: 4, ramGb: 8, diskGb: 80 },
     },
-    courseProgramTypeOptions: normalizeCourseProgramTypeOptions(parsedCourseProgramTypeOptions),
+
     standardCourseOverviewDescription: String(values.get("standardCourseOverviewDescription") || "").trim() || DEFAULT_COURSE_OVERVIEWS.standard.description,
     standardCourseOverviewPoints,
     iltCourseOverviewDescription: String(values.get("iltCourseOverviewDescription") || "").trim() || DEFAULT_COURSE_OVERVIEWS.ilt.description,
@@ -5264,10 +4609,10 @@ async function pgGetPlatformStatus() {
     troveAllowedSizesGb: parsedTroveSizes.length ? parsedTroveSizes : DEFAULT_TROVE_ALLOWED_SIZES_GB,
     landingVideoEnabled: values.get("landingVideoEnabled") !== "false",
     landingGuestPreviewEnabled: values.get("landingGuestPreviewEnabled") !== "false",
-    landingScheduleEnabled: values.get("landingScheduleEnabled") !== "false",
+
     landingNoticeEnabled: values.get("landingNoticeEnabled") === "true",
     landingSurveyNoticeEnabled: values.get("landingSurveyNoticeEnabled") === "true",
-    landingCurriculumCollapsedByDefault: values.get("landingCurriculumCollapsedByDefault") !== "false",
+
     landingDemoType: String(values.get("landingDemoType") || DEFAULT_LANDING_DEMO_TYPE).trim().toLowerCase() === "upload" ? "upload" : DEFAULT_LANDING_DEMO_TYPE,
     landingYoutubeUrl: String(values.get("landingYoutubeUrl") || "").trim() || DEFAULT_LANDING_YOUTUBE_URL,
     landingHeroEyebrow: String(values.get("landingHeroEyebrow") || "").trim() || DEFAULT_LANDING_EYEBROW,
@@ -5295,7 +4640,7 @@ async function pgGetPlatformStatus() {
     externalSshRoutesEnabled: values.get("externalSshRoutesEnabled") !== "false",
     externalRdpRoutesEnabled: values.get("externalRdpRoutesEnabled") !== "false",
     publicTcpRoutesEnabled: values.get("publicTcpRoutesEnabled") === "true",
-    courseQuoteAccessMode: normalizeCourseQuoteAccessMode(values.get("courseQuoteAccessMode")),
+
     rdpExternalPortStart: Math.max(1, Number(values.get("rdpExternalPortStart") || 43000) || 43000),
     rdpExternalPortEnd: Math.max(1, Number(values.get("rdpExternalPortEnd") || 43099) || 43099),
     tcpExternalPortStart: Math.max(1, Number(values.get("tcpExternalPortStart") || 45000) || 45000),
@@ -5347,8 +4692,8 @@ async function pgGetPlatformStatus() {
     otpAdminRequired: values.get("otpAdminRequired") === "true",
     otpUserEnabled: values.get("otpUserEnabled") === "true",
     otpIssuerName: String(values.get("otpIssuerName") || DEFAULT_OTP_ISSUER_NAME).trim() || DEFAULT_OTP_ISSUER_NAME,
-    courseLevelOptions: parsedCourseLevelOptions.length ? parsedCourseLevelOptions : ["입문", "초급", "중급", "고급"],
-    courseCategoryOptions: parsedCourseCategoryOptions.length ? parsedCourseCategoryOptions : ["linux", "k8s", "openstack", "ai"],
+
+
     customRouteSlots,
     customDomainGuidanceIntro: String(values.get("customDomainGuidanceIntro") || "").trim() || DEFAULT_CUSTOM_DOMAIN_GUIDANCE.intro,
     customDomainGuidanceCnameLabel: String(values.get("customDomainGuidanceCnameLabel") || "").trim() || DEFAULT_CUSTOM_DOMAIN_GUIDANCE.cnameLabel,
@@ -5446,10 +4791,10 @@ async function pgUpdatePlatformStatus(patch) {
     ["llmDailyQuotaAdminBypass", patch.llmDailyQuotaAdminBypass === false ? "false" : "true"],
     ["llmMaxTokens", String(Math.max(1, Number(patch.llmMaxTokens || DEFAULT_LLM_MAX_TOKENS) || DEFAULT_LLM_MAX_TOKENS))],
     ["llmAdminTestMaxTokens", String(Math.max(1, Number(patch.llmAdminTestMaxTokens || DEFAULT_LLM_ADMIN_TEST_MAX_TOKENS) || DEFAULT_LLM_ADMIN_TEST_MAX_TOKENS))],
-    ["llmSurveyFeedbackMaxTokens", String(Math.max(64, Number(patch.llmSurveyFeedbackMaxTokens || DEFAULT_LLM_SURVEY_FEEDBACK_MAX_TOKENS) || DEFAULT_LLM_SURVEY_FEEDBACK_MAX_TOKENS))],
-    ["llmSurveyFeedbackTimeoutMs", String(Math.max(30000, Number(patch.llmSurveyFeedbackTimeoutMs || DEFAULT_LLM_SURVEY_FEEDBACK_TIMEOUT_MS) || DEFAULT_LLM_SURVEY_FEEDBACK_TIMEOUT_MS))],
-    ["llmSurveyFeedbackPrompt", String(patch.llmSurveyFeedbackPrompt || DEFAULT_LLM_SURVEY_FEEDBACK_PROMPT).trim() || DEFAULT_LLM_SURVEY_FEEDBACK_PROMPT],
-    ["llmSurveyFeedbackOptionsJson", String(patch.llmSurveyFeedbackOptionsJson || DEFAULT_LLM_SURVEY_FEEDBACK_OPTIONS_JSON || "").trim()],
+
+
+
+
     ["llmThinkingMode", normalizeStoredLlmThinkingMode(patch.llmThinkingMode || DEFAULT_LLM_THINKING_MODE)],
     ["llmNoThinkDirectiveEnabled", patch.llmNoThinkDirectiveEnabled === false ? "false" : "true"],
     ["llmWebSearchEnabled", patch.llmWebSearchEnabled === false ? "false" : "true"],
@@ -5510,7 +4855,7 @@ async function pgUpdatePlatformStatus(patch) {
     ["selfServiceVmProjectRoleNames", (normalizedSelfServiceProjectRoleNames.length ? normalizedSelfServiceProjectRoleNames : ["member", "heat_stack_owner"]).join(",")],
     ["selfServiceVmProjectExternalNetworkName", String(patch.selfServiceVmProjectExternalNetworkName || process.env.POC_EXTERNAL_NETWORK || "net-external").trim() || "net-external"],
     ["selfServiceVmProjectQuotaJson", JSON.stringify(normalizeSelfServiceProjectQuota(normalizedSelfServiceProjectQuota))],
-    ["arenaEnabled", patch.arenaEnabled ? "true" : "false"],
+
     ["extensionServiceVisibilityNote", String(patch.extensionServiceVisibilityNote || "").trim()],
     ["selfServiceVmServiceEnabled", patch.selfServiceVmServiceEnabled ? "true" : "false"],
     ["selfServiceVmVolumeBootEnabled", patch.selfServiceVmVolumeBootEnabled ? "true" : "false"],
@@ -5542,10 +4887,10 @@ async function pgUpdatePlatformStatus(patch) {
     ["troveAllowedSizesGb", (normalizedTroveSizes.length ? normalizedTroveSizes : DEFAULT_TROVE_ALLOWED_SIZES_GB).join(",")],
     ["landingVideoEnabled", patch.landingVideoEnabled === false ? "false" : "true"],
     ["landingGuestPreviewEnabled", patch.landingGuestPreviewEnabled === false ? "false" : "true"],
-    ["landingScheduleEnabled", patch.landingScheduleEnabled === false ? "false" : "true"],
+
     ["landingNoticeEnabled", patch.landingNoticeEnabled === true ? "true" : "false"],
     ["landingSurveyNoticeEnabled", patch.landingSurveyNoticeEnabled === true ? "true" : "false"],
-    ["landingCurriculumCollapsedByDefault", patch.landingCurriculumCollapsedByDefault === false ? "false" : "true"],
+
     ["landingDemoType", String(patch.landingDemoType || DEFAULT_LANDING_DEMO_TYPE).trim().toLowerCase() === "upload" ? "upload" : DEFAULT_LANDING_DEMO_TYPE],
     ["landingYoutubeUrl", String(patch.landingYoutubeUrl || DEFAULT_LANDING_YOUTUBE_URL).trim() || DEFAULT_LANDING_YOUTUBE_URL],
     ["landingHeroEyebrow", String(patch.landingHeroEyebrow || DEFAULT_LANDING_EYEBROW).trim() || DEFAULT_LANDING_EYEBROW],
@@ -5573,7 +4918,7 @@ async function pgUpdatePlatformStatus(patch) {
     ["externalSshRoutesEnabled", patch.externalSshRoutesEnabled === false ? "false" : "true"],
     ["externalRdpRoutesEnabled", patch.externalRdpRoutesEnabled === false ? "false" : "true"],
     ["publicTcpRoutesEnabled", patch.publicTcpRoutesEnabled ? "true" : "false"],
-    ["courseQuoteAccessMode", normalizeCourseQuoteAccessMode(patch.courseQuoteAccessMode)],
+
     ["rdpExternalPortStart", String(Math.max(1, Number(patch.rdpExternalPortStart || 43000) || 43000))],
     ["rdpExternalPortEnd", String(Math.max(1, Number(patch.rdpExternalPortEnd || 43099) || 43099))],
     ["tcpExternalPortStart", String(Math.max(1, Number(patch.tcpExternalPortStart || 45000) || 45000))],
@@ -5621,9 +4966,9 @@ async function pgUpdatePlatformStatus(patch) {
     ["otpAdminRequired", patch.otpAdminRequired ? "true" : "false"],
     ["otpUserEnabled", patch.otpUserEnabled ? "true" : "false"],
     ["otpIssuerName", String(patch.otpIssuerName || DEFAULT_OTP_ISSUER_NAME).trim() || DEFAULT_OTP_ISSUER_NAME],
-    ["courseLevelOptions", (normalizedCourseLevels.length ? normalizedCourseLevels : ["입문", "초급", "중급", "고급"]).join(",")],
-    ["courseCategoryOptions", (normalizedCourseCategories.length ? normalizedCourseCategories : ["linux", "k8s", "openstack", "ai"]).join(",")],
-    ["courseProgramTypeOptions", normalizeCourseProgramTypeOptions(normalizedCourseProgramTypes).join(",")],
+
+
+
     ["standardCourseOverviewDescription", String(patch.standardCourseOverviewDescription || DEFAULT_COURSE_OVERVIEWS.standard.description).trim() || DEFAULT_COURSE_OVERVIEWS.standard.description],
     ["standardCourseOverviewPoints", normalizedStandardCourseOverviewPoints.join(",")],
     ["iltCourseOverviewDescription", String(patch.iltCourseOverviewDescription || DEFAULT_COURSE_OVERVIEWS.ilt.description).trim() || DEFAULT_COURSE_OVERVIEWS.ilt.description],
@@ -5662,9 +5007,8 @@ async function pgCreateInviteCode({ code, label = "", maxUses = 1, expiresAt = n
       [id, String(code || "").trim(), String(label || "").trim(), Math.max(1, Number(maxUses || 1)), courseId || null, expiresAt || null, createdBy || null],
     );
     return normalizeInviteCodeRow((await c.query(
-      `SELECT ic.*, c.title AS "courseTitle", u.name AS "createdByName", u.username AS "createdByUsername"
+      `SELECT ic.*, u.name AS "createdByName", u.username AS "createdByUsername"
        FROM invite_codes ic
-       LEFT JOIN courses c ON c.id = ic.course_id
        LEFT JOIN users u ON u.id = ic.created_by
        WHERE ic.id=$1`, [id]
     )).rows[0] || null);
@@ -5672,18 +5016,16 @@ async function pgCreateInviteCode({ code, label = "", maxUses = 1, expiresAt = n
 }
 async function pgFindInviteCodeById(id) {
   return normalizeInviteCodeRow((await withClient((c) => c.query(
-    `SELECT ic.*, c.title AS "courseTitle", u.name AS "createdByName", u.username AS "createdByUsername"
+    `SELECT ic.*, u.name AS "createdByName", u.username AS "createdByUsername"
      FROM invite_codes ic
-     LEFT JOIN courses c ON c.id = ic.course_id
      LEFT JOIN users u ON u.id = ic.created_by
      WHERE ic.id=$1`, [id]
   ))).rows[0] || null);
 }
 async function pgListInviteCodes() {
   return (await withClient((c) => c.query(
-    `SELECT ic.*, c.title AS "courseTitle", u.name AS "createdByName", u.username AS "createdByUsername"
+    `SELECT ic.*, u.name AS "createdByName", u.username AS "createdByUsername"
      FROM invite_codes ic
-     LEFT JOIN courses c ON c.id = ic.course_id
      LEFT JOIN users u ON u.id = ic.created_by
      ORDER BY ic.created_at DESC, ic.id DESC`
   ))).rows.map(normalizeInviteCodeRow);
@@ -5710,230 +5052,33 @@ async function pgDeleteInviteCode(id) {
   await withClient((c) => c.query(`DELETE FROM invite_codes WHERE id=$1`, [id]));
 }
 
-async function attachTextbooksToCourses(courses, { publicOnly = false } = {}) {
-  const list = (Array.isArray(courses) ? courses : [courses]).filter(Boolean);
-  if (!list.length) return Array.isArray(courses) ? [] : null;
-  const ids = list.map((course) => Number(course.id)).filter(Boolean);
-  const params = [ids];
-  const where = [`ct.course_id = ANY($1)`];
-  if (publicOnly) where.push(`ct.visible=1`, `t.status='published'`);
-  const rows = (await withClient((c) => c.query(
-    `SELECT ct.course_id AS "courseId", ct.sort_order AS "sortOrder", ct.required, ct.visible,
-            t.id, t.slug, t.title, t.summary, t.content_markdown AS "contentMarkdown", t.status, t.version,
-            t.created_by AS "createdBy", t.created_at AS "createdAt", t.updated_at AS "updatedAt"
-     FROM course_textbooks ct
-     JOIN textbooks t ON t.id = ct.textbook_id
-     WHERE ${where.join(" AND ")}
-     ORDER BY ct.course_id ASC, ct.sort_order ASC, ct.id ASC`,
-    params,
-  ))).rows;
-  const byCourseId = new Map();
-  for (const row of rows) {
-    const textbook = normalizeTextbookRow(row);
-    const courseId = Number(row.courseId);
-    const items = byCourseId.get(courseId) || [];
-    items.push({
-      ...textbook,
-      textbookId: textbook.id,
-      sortOrder: Number(row.sortOrder || 0),
-      required: Boolean(Number(row.required ?? 0)),
-      visible: Boolean(Number(row.visible ?? 0)),
-    });
-    byCourseId.set(courseId, items);
-  }
-  const enriched = list.map((course) => ({ ...course, textbooks: byCourseId.get(Number(course.id)) || [] }));
-  return Array.isArray(courses) ? enriched : enriched[0];
-}
-async function pgListCourses() {
-  const courses = (await withClient((c) => c.query(
-    `${COURSE_SELECT}
-     FROM courses c
-     WHERE COALESCE(NULLIF(c.course_status, ''), 'published') <> 'deleted'
-     ORDER BY c.id ASC`,
-  ))).rows.map(normalizeCourseRow);
-  return attachTextbooksToCourses(courses);
-}
 
-async function pgFindCourseById(id) { return attachTextbooksToCourses(normalizeCourseRow((await withClient((c) => c.query(`${COURSE_SELECT} FROM courses c WHERE c.id=$1`, [id]))).rows[0] || null)); }
-async function pgFindCourseByAccessCode(accessCode) {
-  const code = String(accessCode || "").trim();
-  if (!code) return null;
-  return attachTextbooksToCourses(normalizeCourseRow((await withClient((c) => c.query(`${COURSE_SELECT} FROM courses c WHERE LOWER(c.access_code)=LOWER($1) LIMIT 1`, [code]))).rows[0] || null), { publicOnly: true });
-}
+
+
+
+
 async function pgFindAvailableInviteCode(code) {
   const normalizedCode = String(code || "").trim();
   if (!normalizedCode) return null;
-  return normalizeInviteCodeRow((await withClient((c) => c.query(`SELECT ic.*, c.title AS "courseTitle" FROM invite_codes ic LEFT JOIN courses c ON c.id=ic.course_id WHERE ic.code=$1 AND ic.enabled=1 AND (ic.expires_at IS NULL OR ic.expires_at > CURRENT_TIMESTAMP::text) AND ic.used_count < ic.max_uses LIMIT 1`, [normalizedCode]))).rows[0] || null);
+  return normalizeInviteCodeRow((await withClient((c) => c.query(`SELECT ic.* FROM invite_codes ic WHERE ic.code=$1 AND ic.enabled=1 AND (ic.expires_at IS NULL OR ic.expires_at > CURRENT_TIMESTAMP::text) AND ic.used_count < ic.max_uses LIMIT 1`, [normalizedCode]))).rows[0] || null);
 }
 async function pgConsumeInviteCode(id) {
   await withClient((c) => c.query(`UPDATE invite_codes SET used_count=used_count+1 WHERE id=$1 AND enabled=1 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP::text) AND used_count < max_uses`, [id]));
-  return normalizeInviteCodeRow((await withClient((c) => c.query(`SELECT ic.*, c.title AS "courseTitle", u.name AS "createdByName", u.username AS "createdByUsername" FROM invite_codes ic LEFT JOIN courses c ON c.id=ic.course_id LEFT JOIN users u ON u.id=ic.created_by WHERE ic.id=$1`, [id]))).rows[0] || null);
-}
-async function grantUserCourseAccessWithClient(c, userId, courseId, grantedVia = "code", options = {}) {
-  const existing = (await c.query(
-    `SELECT c.course_access_days AS "courseAccessDays", uca.id AS "accessId", uca.expires_at AS "expiresAt"
-     FROM courses c
-     LEFT JOIN user_course_access uca ON uca.course_id=c.id AND uca.user_id=$1
-     WHERE c.id=$2
-     LIMIT 1`,
-    [userId, courseId],
-  )).rows[0] || null;
-  if (!existing) throw new Error("과정을 찾을 수 없습니다.");
-  const extendExisting = options.extendExisting !== false;
-  const existingExpiresAt = String(existing.expiresAt || "").trim();
-  const existingExpiresMs = existingExpiresAt ? Date.parse(existingExpiresAt) : null;
-  const existingAccessActive = Boolean(
-    existing.accessId
-    && (!existingExpiresAt || (Number.isFinite(existingExpiresMs) && existingExpiresMs > Date.now())),
-  );
-  if (!extendExisting && existingAccessActive) return;
-  const accessDays = resolveCourseAccessDays(options.courseAccessDays ?? options.days ?? existing?.courseAccessDays);
-  const expiryBase = extendExisting ? existing?.expiresAt || Date.now() : Date.now();
-  const expiresAt = String(options.expiresAt || "").trim() || resolveCourseAccessExpiryIso(expiryBase, accessDays);
-  const id = await nextId(c, "user_course_access");
-  await c.query(
-    `INSERT INTO user_course_access (id,user_id,course_id,granted_via,expires_at,created_at)
-     VALUES ($1,$2,$3,$4,$5,CURRENT_TIMESTAMP::text)
-     ON CONFLICT (user_id,course_id) DO UPDATE
-     SET granted_via=EXCLUDED.granted_via, expires_at=EXCLUDED.expires_at`,
-    [id, userId, courseId, grantedVia, expiresAt],
-  );
-}
-async function pgGrantUserCourseAccess(userId, courseId, grantedVia = "code", options = {}) {
-  await withTx(async (c) => {
-    await grantUserCourseAccessWithClient(c, userId, courseId, grantedVia, options);
-  });
+  return normalizeInviteCodeRow((await withClient((c) => c.query(`SELECT ic.*, u.name AS "createdByName", u.username AS "createdByUsername" FROM invite_codes ic LEFT JOIN users u ON u.id=ic.created_by WHERE ic.id=$1`, [id]))).rows[0] || null);
 }
 
-async function pgGrantCoursePackageItems({ userId, packageCourseId, sourcePaymentId = null } = {}) {
-  const normalizedUserId = Number(userId || 0);
-  const normalizedPackageId = Number(packageCourseId || 0);
-  const normalizedPaymentId = Number(sourcePaymentId || 0) || null;
-  if (!normalizedUserId || !normalizedPackageId) throw new Error("패키지 지급 대상을 확인해 주세요.");
-  return withTx(async (c) => {
-    const packageRow = (await c.query(
-      `SELECT id, course_type AS "courseType", package_items_json AS "packageItemsJson" FROM courses WHERE id=$1 LIMIT 1`,
-      [normalizedPackageId],
-    )).rows[0] || null;
-    if (!packageRow || packageRow.courseType !== "package") throw new Error("패키지 과정을 찾을 수 없습니다.");
-    const itemIds = Array.from(new Set(safeJsonParse(packageRow.packageItemsJson || "[]", []).map(Number).filter((id) => Number.isInteger(id) && id > 0 && id !== normalizedPackageId)));
-    if (!itemIds.length) throw new Error("패키지에 포함된 과정 또는 시험이 없습니다.");
-    const items = (await c.query(
-      `SELECT id, title, course_type AS "courseType", course_access_days AS "courseAccessDays"
-       FROM courses WHERE id=ANY($1::bigint[]) AND course_type <> 'package' AND COALESCE(NULLIF(course_status, ''), 'published') <> 'deleted'`,
-      [itemIds],
-    )).rows;
-    if (items.length !== itemIds.length) throw new Error("패키지에 삭제되었거나 중첩된 항목이 포함되어 있습니다.");
-    const marker = `package:${normalizedPackageId}:${normalizedPaymentId || "grant"}`;
-    const granted = [];
-    for (const item of items) {
-      const existing = (await c.query(
-        `SELECT id, granted_via AS "grantedVia", expires_at AS "expiresAt" FROM user_course_access WHERE user_id=$1 AND course_id=$2 LIMIT 1`,
-        [normalizedUserId, item.id],
-      )).rows[0] || null;
-      const expiresMs = existing?.expiresAt ? Date.parse(existing.expiresAt) : null;
-      const active = Boolean(existing && (!existing.expiresAt || (Number.isFinite(expiresMs) && expiresMs > Date.now())));
-      if (!active) await grantUserCourseAccessWithClient(c, normalizedUserId, Number(item.id), marker, { extendExisting: false });
-      const previousGrant = (await c.query(
-        `SELECT id FROM course_package_grants
-         WHERE user_id=$1 AND package_course_id=$2 AND item_course_id=$3
-           AND source_payment_id IS NOT DISTINCT FROM $4 AND status='active' LIMIT 1`,
-        [normalizedUserId, normalizedPackageId, item.id, normalizedPaymentId],
-      )).rows[0] || null;
-      if (!previousGrant) {
-        await c.query(
-          `INSERT INTO course_package_grants (id,user_id,package_course_id,item_course_id,source_payment_id,access_created,status,granted_at)
-           VALUES ($1,$2,$3,$4,$5,$6,'active',CURRENT_TIMESTAMP::text)`,
-          [randomUUID(), normalizedUserId, normalizedPackageId, item.id, normalizedPaymentId, Number(!active)],
-        );
-      }
-      granted.push({ id: Number(item.id), title: item.title, courseType: item.courseType, accessCreated: !active });
-    }
-    return granted;
-  });
-}
 
-async function pgUserHasCourseAccess(userId, courseId) {
-  const result = await withClient((c) => c.query(
-    `SELECT 1 FROM user_course_access
-     WHERE user_id=$1 AND course_id=$2
-       AND (
-         NULLIF(expires_at, '') IS NULL
-         OR (expires_at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' AND NULLIF(expires_at, '')::timestamptz > NOW())
-       )
-     LIMIT 1`,
-    [userId, courseId],
-  ));
-  return Boolean(result.rows[0]);
-}
 
-function normalizeExamEntitlementRow(row) {
-  if (!row) return null;
-  const sourcePaymentId = row.sourcePaymentId ?? row.source_payment_id ?? null;
-  const requiredCourseId = row.requiredCourseId ?? row.required_course_id ?? null;
-  const grantedBy = row.grantedBy ?? row.granted_by ?? null;
-  return {
-    ...row,
-    userId: Number(row.userId ?? row.user_id),
-    examCourseId: Number(row.examCourseId ?? row.exam_course_id),
-    sourcePaymentId: sourcePaymentId == null ? null : Number(sourcePaymentId),
-    requiredCourseId: requiredCourseId == null ? null : Number(requiredCourseId),
-    grantedBy: grantedBy == null ? null : Number(grantedBy),
-    metadata: safeJsonParse(row.metadataJson ?? row.metadata_json, {}),
-  };
-}
-const EXAM_ENTITLEMENT_SELECT = `
-  SELECT ee.id, ee.user_id AS "userId", ee.exam_course_id AS "examCourseId", ee.source,
-         ee.source_payment_id AS "sourcePaymentId", ee.required_course_id AS "requiredCourseId",
-         ee.status, ee.granted_by AS "grantedBy", ee.granted_at AS "grantedAt",
-         ee.expires_at AS "expiresAt", ee.revoked_at AS "revokedAt", ee.revoke_reason AS "revokeReason",
-         ee.metadata_json AS "metadataJson", u.name AS "userName", u.username,
-         ec.title AS "examCourseTitle", rc.title AS "requiredCourseTitle"
-  FROM exam_entitlements ee
-  JOIN users u ON u.id=ee.user_id
-  JOIN courses ec ON ec.id=ee.exam_course_id
-  LEFT JOIN courses rc ON rc.id=ee.required_course_id
-`;
-async function pgGrantExamEntitlement(input = {}) {
-  const userId = Number(input.userId || 0);
-  const examCourseId = Number(input.examCourseId || 0);
-  if (!userId || !examCourseId) throw new Error("응시권 사용자와 시험 과정을 확인해 주세요.");
-  const source = String(input.source || "admin").trim().toLowerCase() || "admin";
-  const sourcePaymentId = Number(input.sourcePaymentId || 0) || null;
-  const requiredCourseId = Number(input.requiredCourseId || 0) || null;
-  return withTx(async (c) => {
-    const existing = (await c.query(
-      `SELECT id FROM exam_entitlements
-       WHERE user_id=$1 AND exam_course_id=$2 AND status='active'
-         AND (($3::bigint IS NOT NULL AND source_payment_id=$3) OR ($3::bigint IS NULL AND source=$4 AND COALESCE(required_course_id,0)=COALESCE($5,0)))
-       ORDER BY granted_at DESC LIMIT 1`,
-      [userId, examCourseId, sourcePaymentId, source, requiredCourseId],
-    )).rows[0];
-    if (existing?.id) {
-      await c.query(
-        `UPDATE exam_entitlements SET expires_at=$2, metadata_json=$3 WHERE id=$1`,
-        [existing.id, input.expiresAt || null, JSON.stringify(input.metadata || {})],
-      );
-      return normalizeExamEntitlementRow((await c.query(`${EXAM_ENTITLEMENT_SELECT} WHERE ee.id=$1`, [existing.id])).rows[0]);
-    }
-    const id = randomUUID();
-    await c.query(
-      `INSERT INTO exam_entitlements (
-        id,user_id,exam_course_id,source,source_payment_id,required_course_id,status,granted_by,granted_at,expires_at,metadata_json
-      ) VALUES ($1,$2,$3,$4,$5,$6,'active',$7,CURRENT_TIMESTAMP::text,$8,$9)`,
-      [id, userId, examCourseId, source, sourcePaymentId, requiredCourseId, Number(input.grantedBy || 0) || null, input.expiresAt || null, JSON.stringify(input.metadata || {})],
-    );
-    return normalizeExamEntitlementRow((await c.query(`${EXAM_ENTITLEMENT_SELECT} WHERE ee.id=$1`, [id])).rows[0]);
-  });
-}
 
-async function pgFindLabRequestById(id) { return normalizeLabRow((await withClient((c) => c.query(`${LAB_SELECT} WHERE lr.id=$1`, [id]))).rows[0] || null); }
-async function pgListLabRequests(options = {}) {
-  const includeArchived = Boolean(options?.includeArchived);
-  const archivedOnly = Boolean(options?.archivedOnly);
-  const whereClause = archivedOnly ? `WHERE NOT (${LAB_ACTIVE_RECORD_CLAUSE})` : includeArchived ? "" : `WHERE ${LAB_ACTIVE_RECORD_CLAUSE}`;
-  return (await withClient((c) => c.query(`${LAB_SELECT} ${whereClause} ORDER BY lr.created_at DESC,lr.id DESC`))).rows.map(normalizeLabRow);
-}
+
+
+
+
+
+
+
+
+
 
 function normalizeTerminalReplaySessionRow(row) {
   if (!row) return null;
@@ -6050,10 +5195,9 @@ async function pgAppendTerminalReplayEvent(input) {
 }
 async function pgFindTerminalReplaySessionById(id) {
   return normalizeTerminalReplaySessionRow((await withClient((c) => c.query(
-    `SELECT r.*, u.name AS "userName", u.username, c.title AS "courseTitle"
+    `SELECT r.*, u.name AS "userName", u.username
      FROM terminal_replay_sessions r
      LEFT JOIN users u ON u.id = r.user_id
-     LEFT JOIN courses c ON c.id = r.course_id
      WHERE r.id=$1`,
     [String(id || "")],
   ))).rows[0] || null);
@@ -6146,18 +5290,9 @@ async function pgDeleteExpiredTerminalSessionRegistry(nowIso = new Date().toISOS
   ));
   return Number(result?.rowCount || 0);
 }
-async function pgFindLabRequestByPublicSubdomain(subdomain) {
-  if (!subdomain) return null;
-  const rows = (await withClient((c) => c.query(`${LAB_SELECT} WHERE ${LAB_ACTIVE_RECORD_CLAUSE} ORDER BY lr.created_at DESC,lr.id DESC`))).rows.map(normalizeLabRow);
-  return rows.find((lab) => [...(lab.publicDomains || []), ...(lab.requestedPublicDomains || [])].some((entry) => entry.subdomain === subdomain)) || null;
-}
+
 async function pgListPublishedLabRoutes() {
-  const labs = (await withClient((c) => c.query(
-    `${LAB_SELECT}
-     WHERE ${LAB_ACTIVE_RECORD_CLAUSE}
-       AND (lr.public_enabled=1 OR lr.public_tcp_enabled=1 OR lr.external_ssh_enabled=1 OR lr.external_rdp_enabled=1)
-     ORDER BY lr.id DESC`,
-  ))).rows.map(normalizeLabRow);
+
   const customLabs = (await pgListCustomLabRequests())
     .filter((request) => request.publicEnabled && Array.isArray(request.publicDomains) && request.publicDomains.length)
     .map((request) => ({
@@ -6217,99 +5352,19 @@ async function pgListPublishedLabRoutes() {
         vmNodes: fixedIp ? [{ id: container.containerUuid || `zun-${container.id}`, name: container.name, fixedIp, status: "running" }] : [],
       };
     });
-  return [...labs, ...customLabs, ...selfServiceVms, ...cloudConsoleInstances, ...zunContainers];
+  return [ ...customLabs, ...selfServiceVms, ...cloudConsoleInstances, ...zunContainers];
 }
 
-function normalizeLabRequestArchiveRetentionDays(value) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 30;
-  return Math.max(1, Math.min(3650, Math.round(parsed)));
-}
-async function pgArchiveOldLabRequests(options = {}) {
-  const retentionDays = normalizeLabRequestArchiveRetentionDays(options.retentionDays);
-  const limit = Math.max(1, Math.min(10000, Number(options.limit || 2000) || 2000));
-  const now = new Date();
-  const cutoff = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
-  const reason = String(options.reason || "old-lab-request-cleanup").trim() || "old-lab-request-cleanup";
-  const result = await withClient((c) => c.query(
-    `WITH candidates AS (
-       SELECT id
-       FROM lab_requests
-       WHERE COALESCE(archived_at, '') = ''
-         AND lower(COALESCE(status, '')) = ANY($1::text[])
-         AND COALESCE(NULLIF(terminated_at, ''), NULLIF(started_at, ''), NULLIF(approved_at, ''), created_at)::timestamptz < $2::timestamptz
-       ORDER BY COALESCE(NULLIF(terminated_at, ''), NULLIF(started_at, ''), NULLIF(approved_at, ''), created_at)::timestamptz ASC, id ASC
-       LIMIT $3
-     )
-     UPDATE lab_requests lr
-     SET archived_at=$4,
-         archived_reason=$5
-     FROM candidates c
-     WHERE lr.id=c.id
-     RETURNING lr.id, lr.status`,
-    [OLD_LAB_REQUEST_ARCHIVE_STATUSES, cutoff, limit, now.toISOString(), reason],
-  ));
-  return {
-    archivedCount: Number(result.rowCount || 0),
-    archivedIds: result.rows.map((row) => Number(row.id)).filter(Boolean),
-    cutoff,
-    retentionDays,
-    limit,
-  };
-}
+
+
 async function pgDeleteCustomLabRequest(id) {
   const requestId = Number(id);
   if (!requestId) return 0;
   return Number((await withClient((c) => c.query(`DELETE FROM custom_lab_requests WHERE id=$1`, [requestId]))).rowCount || 0);
 }
 
-async function pgTouchLabRequest(id, { lastAccessedAt = "", expiresAt = "" } = {}) {
-  const labId = Number(id || 0);
-  if (!labId) return 0;
-  const now = String(lastAccessedAt || new Date().toISOString());
-  const nextExpiresAt = String(expiresAt || "");
-  const result = await withClient((c) => c.query(
-    `UPDATE lab_requests lr
-     SET last_accessed_at=$2,
-         expires_at=CASE
-           WHEN COALESCE(c.lab_enabled, 0) <> 0 AND COALESCE(c.lab_retention_mode, 'ephemeral') = 'persistent'
-             THEN lr.expires_at
-           ELSE $3
-         END
-     FROM courses c
-     WHERE lr.id=$1 AND lr.course_id=c.id AND lr.status='running'`,
-    [labId, now, nextExpiresAt],
-  ));
-  return Number(result.rowCount || 0);
-}
-async function pgUpdateLabRequest(id, patch) {
-  return withTx(async (c) => {
-    const current = normalizeLabRow((await c.query(`${LAB_SELECT} WHERE lr.id=$1`, [id])).rows[0] || null);
-    if (!current) return null;
-    const hasPatch = (key) => Object.prototype.hasOwnProperty.call(patch || {}, key);
-    const nextPublicDomains = coerceDomainPatchList(patch.publicDomains, current.publicDomains || []);
-    const nextRequestedDomains = coerceDomainPatchList(patch.requestedPublicDomains, current.requestedPublicDomains || []);
-    const nextPublicTcpRoutes = coercePublicTcpPatchList(patch.publicTcpRoutes, current.publicTcpRoutes || []);
-    const nextRequestedPublicTcpRoutes = coercePublicTcpPatchList(patch.requestedPublicTcpRoutes, current.requestedPublicTcpRoutes || []);
-    const firstPublicDomain = nextPublicDomains[0] || null;
-    const firstRequestedDomain = nextRequestedDomains[0] || null;
-    await c.query(`UPDATE lab_requests SET status=$2,approval_mode=$3,stack_name=$4,stack_id=$5,instance_uuid=$6,instance_ip=$7,current_flavor=$8,instance_ips_json=$9,vm_nodes_json=$10,terminal_ssh_user=$11,terminal_ssh_password=$12,lab_backend_type=$13,container_uuid=$14,container_name=$15,container_image_name=$16,container_command_text=$17,container_access_mode=$18,container_console_mode=$19,traffic_resource_id=$20,traffic_incoming_metric_id=$21,traffic_outgoing_metric_id=$22,traffic_rx_bytes=$23,traffic_tx_bytes=$24,traffic_total_bytes=$25,traffic_daily_bytes=$26,traffic_checked_at=$27,traffic_exceeded=$28,traffic_exceeded_at=$29,cpu_usage_percent=$30,memory_usage_percent=$31,disk_read_bytes=$32,disk_write_bytes=$33,vm_metrics_checked_at=$34,requested_public_domains_json=$35,requested_public_subdomain=$36,requested_public_fqdn=$37,requested_public_protocol=$38,requested_public_port=$39,public_domains_json=$40,public_subdomain=$41,public_fqdn=$42,public_protocol=$43,public_port=$44,public_enabled=$45,public_request_pending=$46,public_reviewed_by=$47,public_reviewed_at=$48,public_review_note=$49,requested_public_tcp_routes_json=$50,public_tcp_routes_json=$51,public_tcp_enabled=$52,public_tcp_request_pending=$53,public_tcp_reviewed_by=$54,public_tcp_reviewed_at=$55,public_tcp_review_note=$56,external_ssh_enabled=$57,external_ssh_port=$58,external_ssh_request_pending=$59,external_ssh_reviewed_by=$60,external_ssh_reviewed_at=$61,external_ssh_review_note=$62,external_rdp_enabled=$63,external_rdp_port=$64,external_rdp_request_pending=$65,external_rdp_reviewed_by=$66,external_rdp_reviewed_at=$67,external_rdp_review_note=$68,requested_resize_flavor=$69,resize_request_pending=$70,resize_reviewed_by=$71,resize_reviewed_at=$72,resize_review_note=$73,metallb_vip_cidr=$74,last_accessed_at=$75,expires_at=$76,error_message=$77,approved_at=$78,started_at=$79,terminated_at=$80 WHERE id=$1`, [
-      id, patch.status ?? current.status, patch.approvalMode ?? current.approvalMode, patch.stackName ?? current.stackName, patch.stackId ?? current.stackId, patch.instanceUuid ?? current.instanceUuid ?? "", patch.instanceIp ?? current.instanceIp, String(patch.currentFlavor ?? current.currentFlavor ?? "").trim(),
-      JSON.stringify(patch.instanceIps ?? current.instanceIps ?? []), JSON.stringify(patch.vmNodes ?? current.vmNodes ?? []), String(patch.terminalSshUser ?? current.terminalSshUser ?? "").trim(), String(patch.terminalSshPassword ?? current.terminalSshPassword ?? ""), normalizeLabBackendType(patch.labBackendType ?? current.labBackendType), String(patch.containerUuid ?? current.containerUuid ?? "").trim(), String(patch.containerName ?? current.containerName ?? "").trim(), String(patch.containerImageName ?? current.containerImageName ?? "").trim(), String(patch.containerCommandText ?? current.containerCommandText ?? "").trim(), ["ssh", "console", "ssh_console"].includes(String(patch.containerAccessMode ?? current.containerAccessMode ?? "").trim()) ? String(patch.containerAccessMode ?? current.containerAccessMode ?? "").trim() : "console", ["zun", "ssh"].includes(String(patch.containerConsoleMode ?? current.containerConsoleMode ?? "").trim()) ? String(patch.containerConsoleMode ?? current.containerConsoleMode ?? "").trim() : "zun",
-      String(patch.trafficResourceId ?? current.trafficResourceId ?? "").trim(), String(patch.trafficIncomingMetricId ?? current.trafficIncomingMetricId ?? "").trim(), String(patch.trafficOutgoingMetricId ?? current.trafficOutgoingMetricId ?? "").trim(), Math.max(0, Number(patch.trafficRxBytes ?? current.trafficRxBytes ?? 0)), Math.max(0, Number(patch.trafficTxBytes ?? current.trafficTxBytes ?? 0)), Math.max(0, Number(patch.trafficTotalBytes ?? current.trafficTotalBytes ?? 0)), Math.max(0, Number(patch.trafficDailyBytes ?? current.trafficDailyBytes ?? 0)), patch.trafficCheckedAt ?? current.trafficCheckedAt, Number(patch.trafficExceeded ?? current.trafficExceeded ?? false), patch.trafficExceededAt ?? current.trafficExceededAt, Math.max(0, Number(patch.cpuUsagePercent ?? current.cpuUsagePercent ?? 0)), Math.max(0, Number(patch.memoryUsagePercent ?? current.memoryUsagePercent ?? 0)), Math.max(0, Number(patch.diskReadBytes ?? current.diskReadBytes ?? 0)), Math.max(0, Number(patch.diskWriteBytes ?? current.diskWriteBytes ?? 0)), patch.vmMetricsCheckedAt ?? current.vmMetricsCheckedAt,
-      JSON.stringify(nextRequestedDomains), firstRequestedDomain?.subdomain || "", firstRequestedDomain?.fqdn || "", firstRequestedDomain?.protocol || "http", firstRequestedDomain?.port ?? null,
-      JSON.stringify(nextPublicDomains), firstPublicDomain?.subdomain || "", firstPublicDomain?.fqdn || "", firstPublicDomain?.protocol || "http", firstPublicDomain?.port ?? null,
-      Number(patch.publicEnabled ?? (nextPublicDomains.length > 0)), Number(patch.publicRequestPending ?? (nextRequestedDomains.length > 0)), patch.publicReviewedBy ?? current.publicReviewedBy ?? "", patch.publicReviewedAt ?? current.publicReviewedAt, patch.publicReviewNote ?? current.publicReviewNote ?? "",
-      JSON.stringify(nextRequestedPublicTcpRoutes), JSON.stringify(nextPublicTcpRoutes), Number(patch.publicTcpEnabled ?? (nextPublicTcpRoutes.length > 0)), Number(patch.publicTcpRequestPending ?? (nextRequestedPublicTcpRoutes.length > 0)), patch.publicTcpReviewedBy ?? current.publicTcpReviewedBy ?? "", patch.publicTcpReviewedAt ?? current.publicTcpReviewedAt, patch.publicTcpReviewNote ?? current.publicTcpReviewNote ?? "",
-      Number(patch.externalSshEnabled ?? current.externalSshEnabled ?? false), hasPatch("externalSshPort") ? patch.externalSshPort : current.externalSshPort ?? null, Number(patch.externalSshRequestPending ?? current.externalSshRequestPending ?? false), patch.externalSshReviewedBy ?? current.externalSshReviewedBy ?? "", hasPatch("externalSshReviewedAt") ? patch.externalSshReviewedAt : current.externalSshReviewedAt, patch.externalSshReviewNote ?? current.externalSshReviewNote ?? "",
-      Number(patch.externalRdpEnabled ?? current.externalRdpEnabled ?? false), hasPatch("externalRdpPort") ? patch.externalRdpPort : current.externalRdpPort ?? null, Number(patch.externalRdpRequestPending ?? current.externalRdpRequestPending ?? false), patch.externalRdpReviewedBy ?? current.externalRdpReviewedBy ?? "", hasPatch("externalRdpReviewedAt") ? patch.externalRdpReviewedAt : current.externalRdpReviewedAt, patch.externalRdpReviewNote ?? current.externalRdpReviewNote ?? "",
-      String(patch.requestedResizeFlavor ?? current.requestedResizeFlavor ?? "").trim(), Number(patch.resizeRequestPending ?? current.resizeRequestPending ?? false), patch.resizeReviewedBy ?? current.resizeReviewedBy ?? "", patch.resizeReviewedAt ?? current.resizeReviewedAt, patch.resizeReviewNote ?? current.resizeReviewNote ?? "",
-      String(patch.metallbVipCidr ?? current.metallbVipCidr ?? "").trim(),
-      patch.lastAccessedAt ?? current.lastAccessedAt, patch.expiresAt ?? current.expiresAt, patch.errorMessage ?? current.errorMessage, patch.approvedAt ?? current.approvedAt, patch.startedAt ?? current.startedAt, patch.terminatedAt ?? current.terminatedAt,
-    ]);
-    return normalizeLabRow((await c.query(`${LAB_SELECT} WHERE lr.id=$1`, [id])).rows[0] || null);
-  });
-}
+
+
 
 async function pgCreateConsultingRequest(input) {
   return withTx(async (c) => {
@@ -7305,43 +6360,11 @@ async function pgReplaceInternalImageCache({ registryUrl = "", namespace = "", i
   });
 }
 
-function normalizeLabExamSessionRow(row) {
-  return row ? {
-    id: String(row.id || ""),
-    courseId: Number(row.courseId ?? row.course_id ?? 0),
-    examTitle: String(row.examTitle ?? row.exam_title ?? "").trim(),
-    userId: Number(row.userId ?? row.user_id ?? 0),
-    userName: String(row.userName ?? row.user_name ?? "").trim(),
-    username: String(row.username || "").trim(),
-    labRequestId: row.labRequestId != null ? Number(row.labRequestId) : row.lab_request_id != null ? Number(row.lab_request_id) : null,
-    attemptId: String(row.attemptId ?? row.attempt_id ?? "").trim(),
-    status: String(row.status || "preparing").trim() || "preparing",
-    startedAt: row.startedAt ?? row.started_at ?? null,
-    expiresAt: row.expiresAt ?? row.expires_at ?? null,
-    endedAt: row.endedAt ?? row.ended_at ?? null,
-    gradingStartedAt: row.gradingStartedAt ?? row.grading_started_at ?? null,
-    gradingFinishedAt: row.gradingFinishedAt ?? row.grading_finished_at ?? null,
-    endReason: String(row.endReason ?? row.end_reason ?? "").trim(),
-    errorMessage: String(row.errorMessage ?? row.error_message ?? "").trim(),
-    metadata: safeJsonParse(row.metadataJson ?? row.metadata_json ?? "{}", {}),
-    createdAt: row.createdAt ?? row.created_at ?? null,
-    updatedAt: row.updatedAt ?? row.updated_at ?? null,
-    courseTitle: String(row.courseTitle ?? row.course_title ?? "").trim(),
-    labStatus: String(row.labStatus ?? row.lab_status ?? "").trim(),
-  } : null;
-}
 
-const LAB_EXAM_SESSION_SELECT = `
-  SELECT s.*, u.name AS "userName", u.username, c.title AS "courseTitle", lr.status AS "labStatus"
-  FROM lab_exam_sessions s
-  JOIN users u ON u.id = s.user_id
-  LEFT JOIN courses c ON c.id = s.course_id
-  LEFT JOIN lab_requests lr ON lr.id = s.lab_request_id
-`;
 
-async function pgFindLabExamSessionById(id) {
-  return normalizeLabExamSessionRow((await withClient((c) => c.query(`${LAB_EXAM_SESSION_SELECT} WHERE s.id=$1`, [String(id || "")]))).rows[0] || null);
-}
+
+
+
 
 async function pgCreateNotice({ title, body, isPinned = false, createdBy }) {
   return withTx(async (c) => {
@@ -7394,16 +6417,13 @@ async function pgListQnaComments(postId) {
 }
 async function pgFindQnaPostById(id) {
   const row = (await withClient((c) => c.query(
-    `SELECT q.id,q.user_id AS "userId",q.course_id AS "courseId",course.title AS "courseTitle",
-            q.lab_request_id AS "labRequestId",lab.status AS "labStatus",lab.instance_ip AS "labInstanceIp",lab.stack_name AS "labStackName",
-            q.post_type AS "postType",q.status,q.title,q.body,q.answer_text AS "answerText",
+    `SELECT q.id,q.user_id AS "userId",q.course_id AS "courseId",
+            q.lab_request_id AS "labRequestId",q.post_type AS "postType",q.status,q.title,q.body,q.answer_text AS "answerText",
             q.answered_by AS "answeredBy",q.accepted_comment_id AS "acceptedCommentId",q.lab_context_json AS "labContextJson",
             COALESCE((SELECT COUNT(*)::int FROM qna_helpful_votes hv WHERE hv.post_id=q.id),0) AS "helpfulCount",
             q.created_at AS "createdAt",q.answered_at AS "answeredAt",
             u.name AS "userName",u.username
      FROM qna_posts q JOIN users u ON u.id=q.user_id
-     LEFT JOIN courses course ON course.id=q.course_id
-     LEFT JOIN lab_requests lab ON lab.id=q.lab_request_id
      WHERE q.id=$1`, [id]
   ))).rows[0] || null;
   if (!row) return null;
@@ -7411,16 +6431,13 @@ async function pgFindQnaPostById(id) {
 }
 async function pgListQnaPosts() {
   const rows = (await withClient((c) => c.query(
-    `SELECT q.id,q.user_id AS "userId",q.course_id AS "courseId",course.title AS "courseTitle",
-            q.lab_request_id AS "labRequestId",lab.status AS "labStatus",lab.instance_ip AS "labInstanceIp",lab.stack_name AS "labStackName",
-            q.post_type AS "postType",q.status,q.title,q.body,q.answer_text AS "answerText",
+    `SELECT q.id,q.user_id AS "userId",q.course_id AS "courseId",
+            q.lab_request_id AS "labRequestId",q.post_type AS "postType",q.status,q.title,q.body,q.answer_text AS "answerText",
             q.answered_by AS "answeredBy",q.accepted_comment_id AS "acceptedCommentId",q.lab_context_json AS "labContextJson",
             COALESCE((SELECT COUNT(*)::int FROM qna_helpful_votes hv WHERE hv.post_id=q.id),0) AS "helpfulCount",
             q.created_at AS "createdAt",q.answered_at AS "answeredAt",
             u.name AS "userName",u.username
      FROM qna_posts q JOIN users u ON u.id=q.user_id
-     LEFT JOIN courses course ON course.id=q.course_id
-     LEFT JOIN lab_requests lab ON lab.id=q.lab_request_id
      ORDER BY COALESCE((SELECT MAX(c.created_at) FROM qna_comments c WHERE c.post_id=q.id), q.created_at) DESC, q.id DESC`
   ))).rows;
   return Promise.all(rows.map(async (row) => normalizeQnaRow({ ...row, comments: await pgListQnaComments(row.id) })));
@@ -7434,16 +6451,13 @@ async function pgCreateQnaPost({ userId, courseId = null, labRequestId = null, p
       [id, userId, courseId != null ? Number(courseId) : null, labRequestId != null ? Number(labRequestId) : null, postType, title, body, JSON.stringify(labContext || {})],
     );
     const row = (await c.query(
-      `SELECT q.id,q.user_id AS "userId",q.course_id AS "courseId",course.title AS "courseTitle",
-              q.lab_request_id AS "labRequestId",lab.status AS "labStatus",lab.instance_ip AS "labInstanceIp",lab.stack_name AS "labStackName",
-              q.post_type AS "postType",q.status,q.title,q.body,q.answer_text AS "answerText",
+      `SELECT q.id,q.user_id AS "userId",q.course_id AS "courseId",
+              q.lab_request_id AS "labRequestId",q.post_type AS "postType",q.status,q.title,q.body,q.answer_text AS "answerText",
               q.answered_by AS "answeredBy",q.accepted_comment_id AS "acceptedCommentId",q.lab_context_json AS "labContextJson",
               COALESCE((SELECT COUNT(*)::int FROM qna_helpful_votes hv WHERE hv.post_id=q.id),0) AS "helpfulCount",
               q.created_at AS "createdAt",q.answered_at AS "answeredAt",
               u.name AS "userName",u.username
        FROM qna_posts q JOIN users u ON u.id=q.user_id
-       LEFT JOIN courses course ON course.id=q.course_id
-       LEFT JOIN lab_requests lab ON lab.id=q.lab_request_id
        WHERE q.id=$1`, [id]
     )).rows[0] || null;
     return normalizeQnaRow(row ? { ...row, comments: [] } : null);
@@ -7554,10 +6568,8 @@ async function pgCreateDiscountCoupon(input) {
       SELECT dc.id, dc.code, dc.user_id AS "userId", dc.course_id AS "courseId", dc.source,
              dc.discount_type AS "discountType", dc.discount_value AS "discountValue",
              dc.max_uses AS "maxUses", dc.used_count AS "usedCount", dc.status, dc.expires_at AS "expiresAt",
-             dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt",
-             c.title AS "courseTitle"
+             dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt"
       FROM discount_coupons dc
-      LEFT JOIN courses c ON c.id = dc.course_id
       WHERE dc.id = $1
     `, [id])).rows[0] || null);
   });
@@ -7567,10 +6579,8 @@ async function pgFindDiscountCouponByCode(code) {
     SELECT dc.id, dc.code, dc.user_id AS "userId", dc.course_id AS "courseId", dc.source,
            dc.discount_type AS "discountType", dc.discount_value AS "discountValue",
            dc.max_uses AS "maxUses", dc.used_count AS "usedCount", dc.status, dc.expires_at AS "expiresAt",
-           dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt",
-           c.title AS "courseTitle"
+           dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt"
     FROM discount_coupons dc
-    LEFT JOIN courses c ON c.id = dc.course_id
     WHERE dc.code = $1
   `, [String(code || "").trim()]))).rows[0] || null);
 }
@@ -7579,11 +6589,9 @@ async function pgListDiscountCouponsByUser(userId) {
     SELECT dc.id, dc.code, dc.user_id AS "userId", u.name AS "userName", u.username, dc.course_id AS "courseId", dc.source,
            dc.discount_type AS "discountType", dc.discount_value AS "discountValue",
            dc.max_uses AS "maxUses", dc.used_count AS "usedCount", dc.status, dc.expires_at AS "expiresAt",
-           dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt",
-           c.title AS "courseTitle"
+           dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt"
     FROM discount_coupons dc
     LEFT JOIN users u ON u.id = dc.user_id
-    LEFT JOIN courses c ON c.id = dc.course_id
     WHERE dc.user_id = $1
     ORDER BY dc.created_at DESC, dc.id DESC
   `, [Number(userId)]))).rows.map(normalizeDiscountCouponRow);
@@ -7593,11 +6601,9 @@ async function pgListDiscountCoupons() {
     SELECT dc.id, dc.code, dc.user_id AS "userId", u.name AS "userName", u.username, dc.course_id AS "courseId", dc.source,
            dc.discount_type AS "discountType", dc.discount_value AS "discountValue",
            dc.max_uses AS "maxUses", dc.used_count AS "usedCount", dc.status, dc.expires_at AS "expiresAt",
-           dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt",
-           c.title AS "courseTitle"
+           dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt"
     FROM discount_coupons dc
     LEFT JOIN users u ON u.id = dc.user_id
-    LEFT JOIN courses c ON c.id = dc.course_id
     ORDER BY dc.created_at DESC, dc.id DESC
   `))).rows.map(normalizeDiscountCouponRow);
 }
@@ -7790,17 +6796,13 @@ async function pgFindDiscountCouponById(id) {
     SELECT dc.id, dc.code, dc.user_id AS "userId", dc.course_id AS "courseId", dc.source,
            dc.discount_type AS "discountType", dc.discount_value AS "discountValue",
            dc.max_uses AS "maxUses", dc.used_count AS "usedCount", dc.status, dc.expires_at AS "expiresAt",
-           dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt",
-           c.title AS "courseTitle"
+           dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt"
     FROM discount_coupons dc
-    LEFT JOIN courses c ON c.id = dc.course_id
     WHERE dc.id = $1
   `, [Number(id)]))).rows[0] || null);
 }
 
-async function pgListArenaScenarios() {
-  return (await withClient((c) => c.query(`${ARENA_SCENARIO_SELECT} ORDER BY s.id ASC`))).rows.map(normalizeArenaScenarioRow);
-}
+
 
 async function pgCreateCicdCredential(input) {
   return withTx(async (c) => {
@@ -8295,7 +7297,7 @@ export async function runtimeCreateOauthAccount(input) { return pgCreateOauthAcc
 export async function runtimeListUsers() { return pgListUsers(); }
 export async function runtimeRecordUserMarketingConsent(input) { return pgRecordUserMarketingConsent(input); }
 
-export async function runtimeListArenaScenarios() { return pgListArenaScenarios(); }
+
 
 export async function runtimeCreateCicdCredential(input) { return pgCreateCicdCredential(input); }
 export async function runtimeFindCicdCredentialById(id) { return pgFindCicdCredentialById(id); }
@@ -8388,10 +7390,10 @@ export async function runtimeEnsureSchema() {
   await withClient((c) => c.query(`ALTER TABLE user_terms_agreements ADD COLUMN IF NOT EXISTS terms_summary TEXT NOT NULL DEFAULT ''`));
   await withClient((c) => c.query(`ALTER TABLE user_terms_agreements ADD COLUMN IF NOT EXISTS terms_body TEXT NOT NULL DEFAULT ''`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_user_terms_agreements_user ON user_terms_agreements(user_id, agreed_at DESC)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS textbooks (id BIGINT PRIMARY KEY,slug TEXT NOT NULL UNIQUE,title TEXT NOT NULL,summary TEXT NOT NULL DEFAULT '',content_markdown TEXT NOT NULL DEFAULT '',status TEXT NOT NULL DEFAULT 'draft',version TEXT NOT NULL DEFAULT '1.0',created_by BIGINT REFERENCES users(id),created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS course_textbooks (id BIGINT PRIMARY KEY,course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,textbook_id BIGINT NOT NULL REFERENCES textbooks(id) ON DELETE CASCADE,sort_order INTEGER NOT NULL DEFAULT 0,required INTEGER NOT NULL DEFAULT 0,visible INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,UNIQUE(course_id,textbook_id))`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_course_textbooks_course_order ON course_textbooks(course_id,sort_order,id)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_course_textbooks_textbook ON course_textbooks(textbook_id)`));
+
+
+
+
   await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS user_marketing_consents (id BIGINT PRIMARY KEY,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,channel TEXT NOT NULL DEFAULT 'email',purpose TEXT NOT NULL DEFAULT 'marketing',consented INTEGER NOT NULL DEFAULT 0,source TEXT NOT NULL DEFAULT '',ip_address TEXT NOT NULL DEFAULT '',user_agent TEXT NOT NULL DEFAULT '',agreed_at TEXT,revoked_at TEXT,created_at TEXT NOT NULL)`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_user_marketing_consents_user_created ON user_marketing_consents(user_id, created_at DESC)`));
   await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS public_quote_inquiries (id BIGINT PRIMARY KEY,status TEXT NOT NULL DEFAULT 'requested',company_name TEXT NOT NULL DEFAULT '',contact_name TEXT NOT NULL DEFAULT '',contact_email TEXT NOT NULL DEFAULT '',contact_phone TEXT NOT NULL DEFAULT '',interest_type TEXT NOT NULL DEFAULT '',course_titles TEXT NOT NULL DEFAULT '',participant_count INTEGER NOT NULL DEFAULT 1,desired_timeline TEXT NOT NULL DEFAULT '',requirements TEXT NOT NULL DEFAULT '',privacy_agreed INTEGER NOT NULL DEFAULT 0,ip_address TEXT NOT NULL DEFAULT '',user_agent TEXT NOT NULL DEFAULT '',admin_note TEXT NOT NULL DEFAULT '',reviewed_by BIGINT REFERENCES users(id),created_at TEXT NOT NULL,reviewed_at TEXT)`));
@@ -8417,7 +7419,7 @@ await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS user_messages (id BI
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_mail_campaign_deliveries_campaign_status ON mail_campaign_deliveries(campaign_id,status,created_at,id)`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_mail_campaign_deliveries_message ON mail_campaign_deliveries(message_id)`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_mail_campaign_deliveries_email ON mail_campaign_deliveries(email,created_at DESC)`));
-  await withClient((c) => c.query(`ALTER TABLE qna_posts ADD COLUMN IF NOT EXISTS course_id BIGINT REFERENCES courses(id)`));
+  await withClient((c) => c.query(`ALTER TABLE qna_posts ADD COLUMN IF NOT EXISTS course_id BIGINT `));
   await withClient((c) => c.query(`ALTER TABLE qna_posts ADD COLUMN IF NOT EXISTS lab_request_id BIGINT`));
   await withClient((c) => c.query(`ALTER TABLE qna_posts ADD COLUMN IF NOT EXISTS post_type TEXT NOT NULL DEFAULT 'question'`));
   await withClient((c) => c.query(`ALTER TABLE qna_posts ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'open'`));
@@ -8429,16 +7431,16 @@ await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS user_messages (id BI
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_qna_helpful_votes_post ON qna_helpful_votes(post_id)`));
 
 await withClient((c) => c.query(`ALTER TABLE qna_comments ADD COLUMN IF NOT EXISTS parent_comment_id BIGINT REFERENCES qna_comments(id)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_seasons (id BIGINT PRIMARY KEY,code TEXT NOT NULL UNIQUE,title TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'scheduled',reset_policy TEXT NOT NULL DEFAULT 'quarterly',started_at TEXT,ends_at TEXT,created_at TEXT NOT NULL)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_scenarios (id BIGINT PRIMARY KEY,code TEXT NOT NULL UNIQUE,title TEXT NOT NULL,summary TEXT NOT NULL DEFAULT '',backend_type TEXT NOT NULL DEFAULT 'container',console_type TEXT NOT NULL DEFAULT 'xterm',tier TEXT NOT NULL DEFAULT 'normal',difficulty INTEGER NOT NULL DEFAULT 1,ttl_seconds INTEGER NOT NULL DEFAULT 1200,validator_key TEXT NOT NULL DEFAULT '',image_name TEXT NOT NULL DEFAULT '',flavor_name TEXT NOT NULL DEFAULT '',network_name TEXT NOT NULL DEFAULT '',metadata_json TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_nodes (id BIGINT PRIMARY KEY,season_id BIGINT NOT NULL REFERENCES arena_seasons(id) ON DELETE CASCADE,scenario_id BIGINT NOT NULL REFERENCES arena_scenarios(id),node_code TEXT NOT NULL,label TEXT NOT NULL,map_x DOUBLE PRECISION NOT NULL DEFAULT 0,map_y DOUBLE PRECISION NOT NULL DEFAULT 0,current_owner_user_id BIGINT REFERENCES users(id),current_owner_handle TEXT NOT NULL DEFAULT '',first_capture_at TEXT,status TEXT NOT NULL DEFAULT 'open',created_at TEXT NOT NULL,UNIQUE(season_id,node_code))`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_sessions (id BIGINT PRIMARY KEY,season_id BIGINT NOT NULL REFERENCES arena_seasons(id),node_id BIGINT NOT NULL REFERENCES arena_nodes(id),scenario_id BIGINT NOT NULL REFERENCES arena_scenarios(id),user_id BIGINT NOT NULL REFERENCES users(id),state TEXT NOT NULL DEFAULT 'provisioning',backend_type TEXT NOT NULL DEFAULT 'container',console_type TEXT NOT NULL DEFAULT 'xterm',resource_id TEXT NOT NULL DEFAULT '',resource_name TEXT NOT NULL DEFAULT '',console_url TEXT NOT NULL DEFAULT '',validator_state TEXT NOT NULL DEFAULT 'pending',started_at TEXT NOT NULL,expires_at TEXT NOT NULL,ended_at TEXT,terminated_reason TEXT NOT NULL DEFAULT '',metadata_json TEXT NOT NULL DEFAULT '{}')`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_attempts (id BIGINT PRIMARY KEY,session_id BIGINT NOT NULL UNIQUE REFERENCES arena_sessions(id) ON DELETE CASCADE,season_id BIGINT NOT NULL REFERENCES arena_seasons(id),node_id BIGINT NOT NULL REFERENCES arena_nodes(id),user_id BIGINT NOT NULL REFERENCES users(id),result TEXT NOT NULL DEFAULT 'failed',score INTEGER NOT NULL DEFAULT 0,mmr_delta INTEGER NOT NULL DEFAULT 0,rank_delta INTEGER NOT NULL DEFAULT 0,duration_seconds INTEGER NOT NULL DEFAULT 0,first_try_bonus INTEGER NOT NULL DEFAULT 0,remaining_seconds INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_captures (id BIGINT PRIMARY KEY,season_id BIGINT NOT NULL REFERENCES arena_seasons(id),node_id BIGINT NOT NULL REFERENCES arena_nodes(id),user_id BIGINT NOT NULL REFERENCES users(id),capture_type TEXT NOT NULL DEFAULT 'first_blood',created_at TEXT NOT NULL)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_events (id BIGINT PRIMARY KEY,season_id BIGINT NOT NULL REFERENCES arena_seasons(id),node_id BIGINT REFERENCES arena_nodes(id),user_id BIGINT REFERENCES users(id),event_type TEXT NOT NULL DEFAULT 'system',message TEXT NOT NULL DEFAULT '',payload_json TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_arena_nodes_season_id ON arena_nodes(season_id)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_arena_sessions_user_state ON arena_sessions(user_id, state)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_arena_events_season_created ON arena_events(season_id, created_at DESC)`));
+
+
+
+
+
+
+
+
+
+
 
 await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS marketing_surveys (id BIGINT PRIMARY KEY,title TEXT NOT NULL,description TEXT NOT NULL DEFAULT '',question TEXT NOT NULL DEFAULT '',status TEXT NOT NULL DEFAULT 'draft',multi_choice INTEGER NOT NULL DEFAULT 0,show_results INTEGER NOT NULL DEFAULT 1,start_at TEXT NOT NULL,end_at TEXT NOT NULL,created_by BIGINT REFERENCES users(id),created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`));
   await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS marketing_survey_options (id BIGINT PRIMARY KEY,survey_id BIGINT NOT NULL REFERENCES marketing_surveys(id) ON DELETE CASCADE,label TEXT NOT NULL,sort_order INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL)`));
@@ -8801,11 +7803,9 @@ async function pgListLuckyDrawRewardsByEvent(eventId) {
            r.probability_weight AS "probabilityWeight",
            r.total_stock AS "totalStock", r.daily_stock AS "dailyStock",
            r.per_user_limit AS "perUserLimit", r.message_text AS "messageText",
-           r.is_active AS "isActive", r.created_at AS "createdAt", r.updated_at AS "updatedAt",
-           c.title AS "courseTitle"
+           r.is_active AS "isActive", r.created_at AS "createdAt", r.updated_at AS "updatedAt"
     FROM lucky_draw_rewards r
-    LEFT JOIN courses c ON c.id = r.course_id
-    WHERE r.event_id = $1
+    WHERE r.event_id = $1 AND r.reward_type IN ('message','discount_coupon')
     ORDER BY r.id ASC
   `, [Number(eventId)]))).rows.map(normalizeLuckyDrawRewardRow);
 }
@@ -8843,10 +7843,8 @@ async function pgCreateLuckyDrawReward(input) {
              r.probability_weight AS "probabilityWeight",
              r.total_stock AS "totalStock", r.daily_stock AS "dailyStock",
              r.per_user_limit AS "perUserLimit", r.message_text AS "messageText",
-             r.is_active AS "isActive", r.created_at AS "createdAt", r.updated_at AS "updatedAt",
-             c.title AS "courseTitle"
+             r.is_active AS "isActive", r.created_at AS "createdAt", r.updated_at AS "updatedAt"
       FROM lucky_draw_rewards r
-      LEFT JOIN courses c ON c.id = r.course_id
       WHERE r.id = $1
     `, [id])).rows[0] || null);
   });
@@ -8891,10 +7889,8 @@ async function pgUpdateLuckyDrawReward(id, patch) {
            r.probability_weight AS "probabilityWeight",
            r.total_stock AS "totalStock", r.daily_stock AS "dailyStock",
            r.per_user_limit AS "perUserLimit", r.message_text AS "messageText",
-           r.is_active AS "isActive", r.created_at AS "createdAt", r.updated_at AS "updatedAt",
-           c.title AS "courseTitle"
+           r.is_active AS "isActive", r.created_at AS "createdAt", r.updated_at AS "updatedAt"
     FROM lucky_draw_rewards r
-    LEFT JOIN courses c ON c.id = r.course_id
     WHERE r.id = $1
   `, [Number(id)]))).rows[0] || null);
 }
@@ -9145,10 +8141,8 @@ async function pgAttemptLuckyDraw({ userId, ipAddress = "", userAgent = "" }) {
              r.probability_weight AS "probabilityWeight",
              r.total_stock AS "totalStock", r.daily_stock AS "dailyStock",
              r.per_user_limit AS "perUserLimit", r.message_text AS "messageText",
-             r.is_active AS "isActive", r.created_at AS "createdAt", r.updated_at AS "updatedAt",
-             c.title AS "courseTitle"
+             r.is_active AS "isActive", r.created_at AS "createdAt", r.updated_at AS "updatedAt"
       FROM lucky_draw_rewards r
-      LEFT JOIN courses c ON c.id = r.course_id
       WHERE r.event_id = $1
         AND r.is_active = 1
       ORDER BY r.id ASC
@@ -9192,22 +8186,8 @@ async function pgAttemptLuckyDraw({ userId, ipAddress = "", userAgent = "" }) {
     const grantId = await nextId(c, "lucky_draw_grants");
     const payload = {};
     let grantType = reward.rewardType;
-    if (reward.rewardType === "free_course") {
-      if (!reward.courseId) throw new Error("무료 과정 보상에 연결된 과정이 없습니다.");
-      const accessId = await nextId(c, "user_course_access");
-      const courseAccessDays = (await c.query(`SELECT course_access_days AS "courseAccessDays" FROM courses WHERE id=$1`, [reward.courseId])).rows[0]?.courseAccessDays;
-      const accessExpiresAt = resolveCourseAccessExpiryIso(Date.now(), resolveCourseAccessDays(courseAccessDays));
-      await c.query(`
-        INSERT INTO user_course_access (id, user_id, course_id, granted_via, expires_at, created_at)
-        VALUES ($1,$2,$3,$4,$5,CURRENT_TIMESTAMP::text)
-        ON CONFLICT (user_id, course_id) DO NOTHING
-      `, [accessId, Number(userId), reward.courseId, "lucky_draw", accessExpiresAt]);
-      payload.courseId = reward.courseId;
-      payload.courseTitle = reward.courseTitle;
-      payload.expiresAt = accessExpiresAt;
-      grantType = "course_entitlement";
-    } else if (reward.rewardType === "discount_coupon") {
-      if (!reward.courseId) throw new Error("할인 쿠폰 보상에 연결된 과정이 없습니다.");
+    if (reward.rewardType === "discount_coupon") {
+
       const couponId = await nextId(c, "discount_coupons");
       const couponCode = generateDiscountCouponCode("LUCKY");
       const couponExpiresAt = new Date(Date.now() + (Math.max(1, Number(reward.couponExpiresInDays || 7) || 7) * 24 * 60 * 60 * 1000)).toISOString();
@@ -9237,10 +8217,8 @@ async function pgAttemptLuckyDraw({ userId, ipAddress = "", userAgent = "" }) {
         SELECT dc.id, dc.code, dc.user_id AS "userId", dc.course_id AS "courseId", dc.source,
                dc.discount_type AS "discountType", dc.discount_value AS "discountValue",
                dc.max_uses AS "maxUses", dc.used_count AS "usedCount", dc.status, dc.expires_at AS "expiresAt",
-               dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt",
-               c.title AS "courseTitle"
+               dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt"
         FROM discount_coupons dc
-        LEFT JOIN courses c ON c.id = dc.course_id
         WHERE dc.id = $1
       `, [couponId])).rows[0] || null);
       payload.couponId = coupon.id;
@@ -9404,8 +8382,8 @@ function normalizePlatformStatusOutput(status) {
       key,
       Math.max(0, Number(status?.pocAdvancedDailyPrices?.[key] ?? fallback) || 0),
     ])),
-    courseLevelOptions: courseLevels.length ? courseLevels : ["입문", "초급", "중급", "고급"],
-    courseProgramTypeOptions: normalizeCourseProgramTypeOptions(courseProgramTypes),
+
+
     standardCourseOverviewDescription: String(status.standardCourseOverviewDescription || "").trim() || DEFAULT_COURSE_OVERVIEWS.standard.description,
     standardCourseOverviewPoints: normalizeCourseOverviewPoints(status.standardCourseOverviewPoints, DEFAULT_COURSE_OVERVIEWS.standard.points),
     iltCourseOverviewDescription: String(status.iltCourseOverviewDescription || "").trim() || DEFAULT_COURSE_OVERVIEWS.ilt.description,
@@ -9414,7 +8392,7 @@ function normalizePlatformStatusOutput(status) {
     onlineCourseOverviewPoints: normalizeCourseOverviewPoints(status.onlineCourseOverviewPoints, DEFAULT_COURSE_OVERVIEWS.online.points),
     governmentCourseOverviewDescription: String(status.governmentCourseOverviewDescription || "").trim() || DEFAULT_COURSE_OVERVIEWS.government.description,
     governmentCourseOverviewPoints: normalizeCourseOverviewPoints(status.governmentCourseOverviewPoints, DEFAULT_COURSE_OVERVIEWS.government.points),
-    courseQuoteAccessMode: normalizeCourseQuoteAccessMode(status.courseQuoteAccessMode),
+
   };
 }
 export async function runtimeGetPlatformStatus() {
@@ -9486,19 +8464,9 @@ export async function runtimeUpdatePlatformStatus(patch) {
     consultingReplyTemplates: Object.prototype.hasOwnProperty.call(patch || {}, "consultingReplyTemplates")
       ? patch.consultingReplyTemplates
       : current.consultingReplyTemplates,
-    courseQuoteAccessMode: normalizeCourseQuoteAccessMode(patch?.courseQuoteAccessMode ?? current.courseQuoteAccessMode),
-    courseLevelOptions: Array.isArray(patch?.courseLevelOptions)
-      ? patch.courseLevelOptions
-          .map((item) => String(item || "").trim())
-          .filter(Boolean)
-          .map((item) => (item.includes("?") ? "" : item))
-          .filter(Boolean)
-      : patch?.courseLevelOptions,
-    courseProgramTypeOptions: Array.isArray(patch?.courseProgramTypeOptions)
-      ? patch.courseProgramTypeOptions
-          .map((item) => String(item || "").trim())
-          .filter(Boolean)
-      : patch?.courseProgramTypeOptions,
+
+
+
   };
   const result = await pgUpdatePlatformStatus(normalizedPatch);
   return normalizePlatformStatusOutput(result);
@@ -9508,17 +8476,17 @@ export async function runtimeFindInviteCodeById(id) { return pgFindInviteCodeByI
 export async function runtimeListInviteCodes() { return pgListInviteCodes(); }
 export async function runtimeUpdateInviteCode(id, patch) { return pgUpdateInviteCode(id, patch); }
 export async function runtimeDeleteInviteCode(id) { return pgDeleteInviteCode(id); }
-export async function runtimeListCourses() { return pgListCourses(); }
 
-export async function runtimeFindCourseById(id) { return pgFindCourseById(id); }
-export async function runtimeFindCourseByAccessCode(accessCode) { return pgFindCourseByAccessCode(accessCode); }
+
+
+
 export async function runtimeFindAvailableInviteCode(code) { return pgFindAvailableInviteCode(code); }
 export async function runtimeConsumeInviteCode(id) { return pgConsumeInviteCode(id); }
-export async function runtimeGrantUserCourseAccess(userId, courseId, grantedVia, options = {}) { return pgGrantUserCourseAccess(userId, courseId, grantedVia, options); }
 
-export async function runtimeGrantCoursePackageItems(input) { return pgGrantCoursePackageItems(input); }
 
-export async function runtimeUserHasCourseAccess(userId, courseId) { return pgUserHasCourseAccess(userId, courseId); }
+
+
+
 
 export async function runtimeCreateDiscountCoupon(input) { return pgCreateDiscountCoupon(input); }
 export async function runtimeFindDiscountCouponByCode(code) { return pgFindDiscountCouponByCode(code); }
@@ -9534,10 +8502,10 @@ export async function runtimeCreateTermsVersion(input) { return pgCreateTermsVer
 export async function runtimeUpdateTermsVersion(id, patch) { return pgUpdateTermsVersion(id, patch); }
 export async function runtimeCreateUserTermsAgreements(input) { return pgCreateUserTermsAgreements(input); }
 
-export async function runtimeGrantExamEntitlement(input) { return pgGrantExamEntitlement(input); }
 
-export async function runtimeFindLabRequestById(id) { return pgFindLabRequestById(id); }
-export async function runtimeListLabRequests(options) { return pgListLabRequests(options); }
+
+
+
 
 export async function runtimeCreateTerminalReplaySession(input) { return pgCreateTerminalReplaySession(input); }
 export async function runtimeFinishTerminalReplaySession(id, patch) { return pgFinishTerminalReplaySession(id, patch); }
@@ -9549,12 +8517,12 @@ export async function runtimeDeleteTerminalSessionRegistry(id) { return pgDelete
 export async function runtimeDeleteExpiredTerminalSessionRegistry(nowIso) { return pgDeleteExpiredTerminalSessionRegistry(nowIso); }
 
 export async function runtimeListTerminalReplayEvents(replaySessionId) { return pgListTerminalReplayEvents(replaySessionId); }
-export async function runtimeFindLabRequestByPublicSubdomain(subdomain) { return pgFindLabRequestByPublicSubdomain(subdomain); }
-export async function runtimeListPublishedLabRoutes() { return pgListPublishedLabRoutes(); }
-export async function runtimeArchiveOldLabRequests(options) { return pgArchiveOldLabRequests(options); }
 
-export async function runtimeTouchLabRequest(id, patch) { return pgTouchLabRequest(id, patch); }
-export async function runtimeUpdateLabRequest(id, patch) { return pgUpdateLabRequest(id, patch); }
+export async function runtimeListPublishedLabRoutes() { return pgListPublishedLabRoutes(); }
+
+
+
+
 
 export async function runtimeCreateConsultingRequest(input) { return pgCreateConsultingRequest(input); }
 export async function runtimeFindConsultingRequestById(id) { return pgFindConsultingRequestById(id); }
@@ -9619,41 +8587,10 @@ export async function runtimeGetInternalImageCacheStatus(options) { return pgGet
 export async function runtimeListInternalImageCache(options) { return pgListInternalImageCache(options); }
 export async function runtimeReplaceInternalImageCache(options) { return pgReplaceInternalImageCache(options); }
 
-export async function runtimeLoadLabExamConfig(courseId) {
-  const result = await withClient((c) => c.query(`
-    SELECT c.lab_exam_config_json, e.config_json,
-      (SELECT value FROM platform_settings WHERE key=$2) AS settings_config_json
-    FROM courses c
-    LEFT JOIN lab_exam_configs e ON e.course_id=c.id
-    WHERE c.id=$1
-  `, [courseId, `lab_exam_config:${Number(courseId)}`]));
-  const row = result.rows[0];
-  if (!row) return null;
-  const settingsConfig = safeJsonParse(row.settings_config_json, null);
-  if (settingsConfig && Object.keys(settingsConfig).length) return settingsConfig;
-  const courseConfig = safeJsonParse(row.lab_exam_config_json, null);
-  if (courseConfig && Object.keys(courseConfig).length) return courseConfig;
-  return safeJsonParse(row.config_json, null);
-}
-export async function runtimeSaveLabExamConfig(courseId, config) {
-  const payload = JSON.stringify(config || {});
-  return withTx(async (c) => {
-    await c.query(`
-      INSERT INTO platform_settings (key, value, updated_at)
-      VALUES ($1, $2, CURRENT_TIMESTAMP::text)
-      ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=EXCLUDED.updated_at
-    `, [`lab_exam_config:${Number(courseId)}`, payload]);
-    await c.query(`
-      INSERT INTO lab_exam_configs (course_id, config_json, updated_at)
-      VALUES ($1, $2, CURRENT_TIMESTAMP::text)
-      ON CONFLICT (course_id) DO UPDATE SET config_json=EXCLUDED.config_json, updated_at=EXCLUDED.updated_at
-    `, [courseId, payload]);
-    const result = await c.query(`UPDATE courses SET lab_exam_config_json=$2 WHERE id=$1 RETURNING lab_exam_config_json`, [courseId, payload]);
-    return safeJsonParse(result.rows[0]?.lab_exam_config_json, null);
-  });
-}
 
-export async function runtimeFindLabExamSessionById(id) { return pgFindLabExamSessionById(id); }
+
+
+
 
 export async function runtimeCreateNotice(input) { return pgCreateNotice(input); }
 export async function runtimeUpdateNotice(id, input) { return pgUpdateNotice(id, input); }
@@ -9733,7 +8670,7 @@ export async function runtimeExportBackupData() {
           continue;
         }
       }
-      if (!exportLimit && rowCount > BACKUP_MAX_TABLE_ROWS) {
+      if (!exportLimit && rowCount > (tableName==='community_legacy_records'?BACKUP_MAX_TOTAL_ROWS:BACKUP_MAX_TABLE_ROWS)) {
         throw new Error(`백업 테이블 ${tableName} 행 수가 너무 많습니다. 테이블당 최대 ${BACKUP_MAX_TABLE_ROWS}행까지 지원합니다.`);
       }
       const estimatedExportRows = exportLimit ? Math.min(rowCount, exportLimit) : rowCount;
@@ -9979,8 +8916,7 @@ async function pgImportBackupTableDump(client, tableName, snapshot) {
 }
 
 export async function runtimeImportBackupData(bundle) {
-  const tables = omitEmptyEducationSnapshots(bundle?.database?.tables);
-  const dumps = omitEmptyEducationSnapshots(bundle?.database?.dumps || {});
+  const {tables,dumps} = separateLegacyBackup(bundle?.database);
   if (!isBackupObject(tables)) {
     throw new Error("백업 파일의 데이터베이스 테이블 형식이 올바르지 않습니다.");
   }
@@ -10012,7 +8948,7 @@ export async function runtimeImportBackupData(bundle) {
     let totalRows = 0;
     for (const [tableName, snapshot] of Object.entries(tables)) {
       const rows = Array.isArray(snapshot?.rows) ? snapshot.rows : [];
-      if (rows.length > BACKUP_MAX_TABLE_ROWS) {
+      if (rows.length > (tableName==='community_legacy_records'?BACKUP_MAX_TOTAL_ROWS:BACKUP_MAX_TABLE_ROWS)) {
         throw new Error(`백업 테이블 ${tableName} 행 수가 너무 많습니다. 테이블당 최대 ${BACKUP_MAX_TABLE_ROWS}행까지 지원합니다.`);
       }
       totalRows += rows.length;

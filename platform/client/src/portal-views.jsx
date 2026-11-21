@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { DEFAULT_COURSE_SURVEY_CONFIG } from "./portal-state.js";
+
 import { AdminField } from "./admin-field.jsx";
 
 
@@ -59,9 +59,7 @@ export function useImeBufferedInput(value, onCommit) {
   };
 }
 
-export function generateRandomPublicSubdomainCandidate() {
-  return `ai-${Math.random().toString(36).slice(2, 8)}`;
-}
+
 
 
 
@@ -146,29 +144,15 @@ export function isGovernmentProgramType(programType) {
     || lower.includes("kdigital");
 }
 
-export function isGovernmentCourse(course, platformStatus) {
-  return isGovernmentProgramType(getCourseProgramType(course, platformStatus));
-}
 
 
 
 
 
-export function getCourseDisplayIcon(courseOrType, platformStatus = null) {
-  const course = typeof courseOrType === "object" && courseOrType !== null ? courseOrType : { courseType: courseOrType };
-  if (String(course.courseType || "standard") === "package") return "📦";
-  if (String(course.courseType || "standard") === "online") return "🌐";
-  if (isGovernmentCourse(course, platformStatus)) return "🏢";
-  return "🎓";
-}
 
-export function getCourseTypeDisplayLabel(course, platformStatus = null) {
-  const icon = getCourseDisplayIcon(course, platformStatus);
-  if (String(course?.courseType || "standard") === "package") return `${icon} 과정·시험 패키지`;
-  if (String(course?.courseType || "standard") === "online") return `${icon} 온라인 과정`;
-  if (isGovernmentCourse(course, platformStatus)) return `${icon} 정부 과정`;
-  return `${icon} 일반 교육 과정`;
-}
+
+
+
 
 export function getQnaStatus(post) {
   const status = String(post?.status || "").trim().toLowerCase();
@@ -196,98 +180,9 @@ export function formatDateTime(value) {
   }).format(date);
 }
 
-export function getCourseAccessExpiryStatus(course = {}) {
-  const rawExpiresAt = String(course?.enrollmentExpiresAt ?? course?.expiresAt ?? "").trim();
-  const defaultDays = Math.max(1, Number(course?.courseAccessDays || course?.courseAccessDefaultDays || 30) || 30);
-  const warningDays = Math.max(1, Number(course?.courseAccessExpiringSoonDays || 7) || 7);
-  if (!rawExpiresAt) {
-    return {
-      hasExpiry: false,
-      expiresAt: null,
-      daysRemaining: null,
-      expired: false,
-      expiringSoon: false,
-      needsExtension: false,
-      tone: "is-muted",
-      label: "만료일 없음",
-      summary: "만료일 없음",
-      helper: `기존 수강권입니다. 새 수강권은 이 과정 설정 기준 ${defaultDays}일로 발급됩니다.`,
-    };
-  }
-  const expiresAtMs = new Date(rawExpiresAt).getTime();
-  if (!Number.isFinite(expiresAtMs)) {
-    return {
-      hasExpiry: true,
-      expiresAt: rawExpiresAt,
-      daysRemaining: null,
-      expired: false,
-      expiringSoon: true,
-      needsExtension: true,
-      tone: "is-warn",
-      label: "확인필요",
-      summary: "만료일 확인 필요",
-      helper: "만료일 형식을 확인해 주세요.",
-    };
-  }
-  const computedDaysRemaining = Math.ceil((expiresAtMs - Date.now()) / (24 * 60 * 60 * 1000));
-  const providedDaysRemaining = course?.enrollmentDaysRemaining;
-  const daysRemaining = providedDaysRemaining != null && providedDaysRemaining !== "" && Number.isFinite(Number(providedDaysRemaining))
-    ? Number(providedDaysRemaining)
-    : computedDaysRemaining;
-  const markedExpired = course?.enrollmentExpired === true || String(course?.enrollmentExpired || "").toLowerCase() === "true" || Number(course?.enrollmentExpired) === 1;
-  const markedExpiringSoon = course?.enrollmentExpiringSoon === true || String(course?.enrollmentExpiringSoon || "").toLowerCase() === "true" || Number(course?.enrollmentExpiringSoon) === 1;
-  const expired = markedExpired || daysRemaining <= 0;
-  const expiringSoon = !expired && (markedExpiringSoon || daysRemaining <= warningDays);
-  const dateLabel = formatDateTime(rawExpiresAt);
-  if (expired) {
-    return {
-      hasExpiry: true,
-      expiresAt: rawExpiresAt,
-      daysRemaining,
-      expired: true,
-      expiringSoon: false,
-      needsExtension: true,
-      tone: "is-error",
-      label: "연장필요",
-      summary: `만료됨 · ${dateLabel}`,
-      helper: "관리자에게 수강 기간 연장을 요청해 주세요.",
-    };
-  }
-  if (expiringSoon) {
-    return {
-      hasExpiry: true,
-      expiresAt: rawExpiresAt,
-      daysRemaining,
-      expired: false,
-      expiringSoon: true,
-      needsExtension: true,
-      tone: "is-warn",
-      label: "연장필요",
-      summary: `${Math.max(1, daysRemaining)}일 남음 · ${dateLabel} 만료`,
-      helper: `만료 ${warningDays}일 전부터 연장 요청이 가능합니다.`,
-    };
-  }
-  return {
-    hasExpiry: true,
-    expiresAt: rawExpiresAt,
-    daysRemaining,
-    expired: false,
-    expiringSoon: false,
-    needsExtension: false,
-    tone: "is-success",
-    label: `${Math.max(1, daysRemaining)}일 남음`,
-    summary: `${dateLabel} 만료`,
-    helper: `이 과정 수강권은 ${defaultDays}일 단위로 관리됩니다.`,
-  };
-}
 
-export function safeStringifyJson(value) {
-  try {
-    return JSON.stringify(value ?? [], null, 2);
-  } catch {
-    return "[]";
-  }
-}
+
+
 
 
 
@@ -355,64 +250,18 @@ export function normalizeSshCopyValue(value) {
   return String(value || "").replace(/(^|[@/:])terminal-lab\.kr(?=[:/\s]|$)/g, "$1ssh.example.com");
 }
 
-export function formatCourseDuration(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "-";
-  const compact = raw.replace(/\s+/g, "");
-  const tokenRegex = /(\d+)(일|시간|시|분|day|days|hour|hours|hr|hrs|minute|minutes|min|mins)/gi;
-  let totalMinutes = 0;
-  let matched = false;
-  for (const match of compact.matchAll(tokenRegex)) {
-    const amount = Number(match[1] || 0);
-    const unit = String(match[2] || "").toLowerCase();
-    if (!amount) continue;
-    matched = true;
-    if (unit === "일" || unit === "day" || unit === "days") totalMinutes += amount * 24 * 60;
-    else if (unit === "시간" || unit === "시" || unit === "hour" || unit === "hours" || unit === "hr" || unit === "hrs") totalMinutes += amount * 60;
-    else if (unit === "분" || unit === "minute" || unit === "minutes" || unit === "min" || unit === "mins") totalMinutes += amount;
-  }
-  if (!matched) return raw;
-  const days = Math.floor(totalMinutes / (24 * 60));
-  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
-  const minutes = totalMinutes % 60;
-  const parts = [];
-  if (days > 0) parts.push(`${days}일`);
-  if (hours > 0) parts.push(`${hours}시간`);
-  if (minutes > 0) parts.push(`${minutes}분`);
-  return parts.length ? parts.join(" ") : raw;
-}
+
 
 export function formatCoursePrice(value) {
   const amount = Math.max(0, Number(value || 0));
   return `${new Intl.NumberFormat("ko-KR").format(amount)}원`;
 }
 
-export function isCoursePromotionActive(course, nowMs = Date.now()) {
-  if (!course?.promoEnabled) return false;
-  const startsAt = Date.parse(course.promoStartsAt || "");
-  const endsAt = Date.parse(course.promoEndsAt || "");
-  if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt)) return false;
-  return startsAt <= nowMs && nowMs < endsAt;
-}
 
-export function getCourseEffectivePrice(course) {
-  const price = Math.max(0, Number(course?.price || 0));
-  const promoPrice = Math.max(0, Number(course?.promoPrice || 0) || 0);
-  return isCoursePromotionActive(course) ? Math.min(price, promoPrice) : price;
-}
 
-export function formatCoursePriceLabel(course) {
-  const price = Math.max(0, Number(course?.price || 0));
-  const effectivePrice = getCourseEffectivePrice(course);
-  const promotionActive = isCoursePromotionActive(course);
-  if (promotionActive && effectivePrice < price) {
-    return `프로모션 ${formatCoursePrice(effectivePrice)} (정가 ${formatCoursePrice(price)})`;
-  }
-  if (promotionActive) {
-    return `프로모션 ${formatCoursePrice(effectivePrice)}`;
-  }
-  return formatCoursePrice(price);
-}
+
+
+
 
 
 
@@ -445,15 +294,7 @@ export function formatTrafficBytes(value) {
   return `${size.toFixed(precision)} ${units[index]}`;
 }
 
-export function formatLabRetentionSummary(course) {
-  if (!course?.labEnabled) return "랩 비활성화";
-  const backendPrefix = String(course?.labBackendType || "vm") === "container" ? "컨테이너" : "VM";
-  if (String(course.labRetentionMode || "ephemeral") !== "persistent") {
-    return `${backendPrefix} / ${course.labApprovalMode === "instant" ? "즉시 시작" : "승인 후 시작"} / 임시 랩`;
-  }
-  const retentionDays = Math.max(1, Number(course.labRetentionDays || course.labRetentionPreset || 1) || 1);
-  return `${backendPrefix} / 유지형 / ${retentionDays}일 / ${course.allowResumeExistingLab ? "재접속 허용" : "재접속 제한"}`;
-}
+
 
 function getContainerConsoleModeLabel(courseOrLab) {
   const mode = String(courseOrLab?.containerConsoleMode || "zun").trim().toLowerCase();
@@ -490,41 +331,7 @@ export function getCourseBackendDetailLabel(courseOrLab) {
   return `컨테이너 / ${getContainerConsoleModeLabel(courseOrLab)} / ${accessLabel}`;
 }
 
-export function getCourseBackendBadges(courseOrLab) {
-  const backend = String(courseOrLab?.labBackendType || "vm").trim().toLowerCase();
-  if (isWindowsLabProfile(courseOrLab)) {
-    return [
-      { label: "VM", tone: "is-muted" },
-      { label: "Windows", tone: "is-console-ssh" },
-      { label: "RDP 외부접근", tone: "is-warn" },
-    ];
-  }
-  if (backend !== "container") {
-    return [
-      { label: "VM", tone: "is-muted" },
-      { label: "Heat", tone: "is-muted" },
-      { label: "SSH 터미널", tone: "is-muted" },
-    ];
-  }
-  const accessMode = String(courseOrLab?.containerAccessMode || "console").trim();
-  const consoleMode = String(courseOrLab?.containerConsoleMode || "zun").trim().toLowerCase();
-  const requiresPublishedSsh = accessMode === "ssh" || accessMode === "ssh_console" || consoleMode === "ssh";
-  return [
-    { label: "컨테이너", tone: "is-success" },
-    {
-      label: requiresPublishedSsh ? "SSH publish 필수" : "Zun 콘솔 전용",
-      tone: requiresPublishedSsh ? "is-warn" : "is-console-zun",
-    },
-    {
-      label: consoleMode === "ssh" ? "xterm = SSH" : "xterm = Zun attach",
-      tone: consoleMode === "ssh" ? "is-console-ssh" : "is-console-zun",
-    },
-    {
-      label: accessMode === "ssh" ? "외부 SSH 중심" : accessMode === "ssh_console" ? "외부 SSH 허용" : "외부 SSH 미사용",
-      tone: accessMode === "console" ? "is-muted" : "is-console-ssh",
-    },
-  ];
-}
+
 
 
 
@@ -648,41 +455,13 @@ const QUOTA_LABELS = {
 
 
 
-export function getCourseExamInfo(courseId, writtenExams = [], labExams = []) {
-  const hasWrittenExam = writtenExams.some((item) => Number(item.courseId) === Number(courseId));
-  const hasLabExam = labExams.some((item) => Number(item.courseId) === Number(courseId));
-  return {
-    hasWrittenExam,
-    hasLabExam,
-    hasAnyExam: hasWrittenExam || hasLabExam,
-  };
-}
 
 
 
-function getFlavorBadges(flavor) {
-  const normalized = String(flavor || "").trim().toLowerCase();
-  if (!normalized) return [];
-  const badges = [];
-  if (normalized.includes("vgpu")) badges.push({ key: "vgpu", label: "vGPU" });
-  else if (/(^|[-_.])(gpu|a100|l40|rtx|tesla|cuda)([-_.]|$)/.test(normalized)) badges.push({ key: "gpu", label: "GPU" });
-  if (normalized.includes("highperf") || normalized.includes("hpc") || /(^|[-_.])(\d*xlarge|xlarge|2xlarge|4xlarge|8xlarge)([-_.]|$)/.test(normalized) || badges.length) {
-    badges.push({ key: "highperf", label: "고성능" });
-  }
-  return badges.filter((badge, index, array) => array.findIndex((item) => item.key === badge.key) === index);
-}
 
-export function FlavorBadges({ flavor }) {
-  const badges = getFlavorBadges(flavor);
-  if (!badges.length) return null;
-  return (
-    <span className="flavor-badge-list">
-      {badges.map((badge) => (
-        <span className={`flavor-badge is-${badge.key}`} key={badge.key}>{badge.label}</span>
-      ))}
-    </span>
-  );
-}
+
+
+
 
 function renderQuotaValue(metric) {
   if (!metric) return "-";
@@ -1023,76 +802,7 @@ export function deriveVmNodes(lab) {
   return [];
 }
 
-export function VmDiagram({ activeLab, terminalTargetLabel, selectedNodeId = "", onSelectNode }) {
-  const nodes = deriveVmNodes(activeLab);
 
-  if (!activeLab) {
-    return null;
-  }
-
-  return (
-    <div className="vm-diagram">
-      <div className="vm-diagram-head">
-        <div>
-          <p className="card-label">가상머신 구성</p>
-          <h4>현재 랩 인스턴스</h4>
-        </div>
-        <span className="vm-diagram-count">{`${nodes.length || 0}대`}</span>
-      </div>
-      <div className="vm-diagram-grid">
-        {nodes.length ? nodes.map((node, index) => {
-          const isTarget = terminalTargetLabel && (terminalTargetLabel.includes(node.fixedIp) || terminalTargetLabel.includes(node.name));
-          const isSelected = String(selectedNodeId || "") === String(node.id || "");
-          return (
-            <button className={`vm-node-card ${isTarget ? "is-target" : ""} ${isSelected ? "is-selected" : ""}`} key={node.id || index} onClick={() => onSelectNode?.(node)} type="button">
-              <div className="vm-node-hero">
-                <div className="vm-node-icon" aria-hidden="true">
-                  <svg fill="none" viewBox="0 0 64 64">
-                    <rect x="10" y="10" width="44" height="30" rx="6"></rect>
-                    <path d="M22 50h20"></path>
-                    <path d="M28 40v10"></path>
-                    <path d="M36 40v10"></path>
-                    <circle cx="20" cy="25" r="2.5"></circle>
-                    <circle cx="28" cy="25" r="2.5"></circle>
-                    <circle cx="36" cy="25" r="2.5"></circle>
-                  </svg>
-                </div>
-                <div className="vm-node-headline">
-                  <span className="vm-node-index">{`VM ${index + 1}`}</span>
-                  <div className="vm-node-title-row">
-                    <strong>{node.name || `노드 ${index + 1}`}</strong>
-                    <span className="vm-node-badge">{labStatus(node.status || activeLab.status)}</span>
-                  </div>
-                  <dl className="vm-node-network-summary" aria-label={`${node.name || `노드 ${index + 1}`} 네트워크 정보`}>
-                    {node.networkInterfaces?.length ? node.networkInterfaces.map((networkInterface, interfaceIndex) => (
-                      <div key={networkInterface.portId || `${networkInterface.macAddress}-${interfaceIndex}`}>
-                        <dt>{networkInterface.portName || `NIC ${interfaceIndex + 1}`}</dt>
-                        <dd>{[networkInterface.fixedIp, networkInterface.macAddress].filter(Boolean).join(" · ") || "-"}</dd>
-                      </div>
-                    )) : (
-                      <>
-                        <div>
-                          <dt>IP</dt>
-                          <dd>{node.fixedIp || node.floatingIp || "-"}</dd>
-                        </div>
-                        <div>
-                          <dt>MAC</dt>
-                          <dd>{node.macAddress || "-"}</dd>
-                        </div>
-                      </>
-                    )}
-                  </dl>
-                </div>
-              </div>
-            </button>
-          );
-        }) : (
-          <div className="vm-node-empty">아직 인스턴스 정보가 준비되지 않았습니다.</div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 
 
@@ -1137,13 +847,7 @@ export function resolveCourseLabResizeAllowedFlavors(course, platformStatus) {
   return Array.isArray(platformStatus?.selfServiceVmAllowedFlavors) ? platformStatus.selfServiceVmAllowedFlavors : [];
 }
 
-export function describeCourseLabResizePolicy(course, platformStatus) {
-  const policy = resolveCourseLabResizePolicy(course);
-  const allowedFlavors = resolveCourseLabResizeAllowedFlavors(course, platformStatus);
-  if (policy === "disabled") return "사양 변경 불가";
-  if (policy === "admin_only") return `관리자만 변경 가능${allowedFlavors.length ? ` / ${allowedFlavors.join(", ")}` : ""}`;
-  return `사용자 요청 가능${allowedFlavors.length ? ` / ${allowedFlavors.join(", ")}` : ""}`;
-}
+
 
 
 
@@ -1420,11 +1124,6 @@ export function getYoutubeLoopEmbedUrl(input) {
 
 
 
-export function truncateMiddleText(value, maxLength = 34) {
-  const text = String(value || "").trim();
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, Math.max(10, maxLength - 3))}...`;
-}
 
 
 
@@ -1528,111 +1227,20 @@ export function truncateMiddleText(value, maxLength = 34) {
 
 
 
-export function getCustomLabStatusLabel(status) {
-  switch (status) {
-    case "requested":
-      return "구성 접수";
-    case "quoted":
-      return "결제 대기";
-    case "confirmed":
-      return "결제 완료";
-    case "provisioning":
-      return "자원 생성 중";
-    case "running":
-      return "실행 중";
-    case "terminating":
-      return "종료 중";
-    case "terminated":
-      return "종료됨";
-    case "approved":
-      return "승인";
-    case "cancelled":
-      return "사용자 취소";
-    case "failed":
-      return "생성 실패";
-    default:
-      return "반려";
-  }
-}
-
-export function getCustomLabAdvancedConfigLines(config) {
-  const advanced = config && typeof config === "object" ? config : {};
-  if (advanced.standard?.flavor) {
-    const usage = Number(advanced.standard.usageDays || 0) > 0 ? ` / ${advanced.standard.usageDays}일` : "";
-    const dailyPrice = Number(advanced.standard.dailyPrice || 0) > 0 ? ` / 1일 ${formatCurrency(advanced.standard.dailyPrice)}` : "";
-    return [
-      `표준 구성: ${advanced.standard.flavor}${usage}${dailyPrice}`,
-      ...getCustomLabAdvancedConfigLines({ ...advanced, standard: null }),
-    ];
-  }
-  const volumes = advanced.volumes && typeof advanced.volumes === "object" ? advanced.volumes : {};
-  const network = advanced.network && typeof advanced.network === "object" ? advanced.network : {};
-  const publicIp = advanced.publicIp && typeof advanced.publicIp === "object" ? advanced.publicIp : {};
-  const cloudInit = advanced.cloudInit && typeof advanced.cloudInit === "object" ? advanced.cloudInit : {};
-  const keypair = advanced.keypair && typeof advanced.keypair === "object" ? advanced.keypair : {};
-  const lines = [];
-  if (cloudInit.mode === "custom") {
-    lines.push(`cloud-init: 직접 입력${cloudInit.fileName ? ` / ${cloudInit.fileName}` : ""}`);
-  }
-  if (keypair.name) {
-    lines.push(`SSH 키페어: ${keypair.name}${keypair.fingerprint ? ` / ${keypair.fingerprint}` : ""}`);
-  }
-  if (advanced.enabled && publicIp.enabled) {
-    lines.push(`공인 IP: 사용 / 외부망 ${publicIp.externalNetworkName || network.externalNetworkName || "net-external"}`);
-  }
-  if (advanced.enabled && volumes.enabled && Number(volumes.count) > 0 && Number(volumes.sizeGb) > 0) {
-    lines.push(`고급 볼륨: ${volumes.count}개 / ${volumes.sizeGb}GB${volumes.volumeType ? ` / ${volumes.volumeType}` : ""}`);
-  }
-  if (advanced.enabled && network.enabled && network.networkName && network.subnetCidr) {
-    lines.push(`고급 네트워크: ${network.networkName} / ${network.subnetCidr}`);
-    if (network.attachRouter) {
-      lines.push(`고급 라우터 연결: 사용 / 외부망 ${network.externalNetworkName || "net-external"}`);
-    }
-  }
-  if (advanced.enabled && advanced.loadBalancer?.enabled && Number(advanced.loadBalancer.listenerPort) > 0 && Number(advanced.loadBalancer.targetPort) > 0) {
-    lines.push(`고급 로드밸런서: ${(advanced.loadBalancer.protocol || "TCP").toUpperCase()} ${advanced.loadBalancer.listenerPort} -> ${advanced.loadBalancer.targetPort}`);
-  }
-  if (advanced.enabled && advanced.database?.enabled && advanced.database.engine && advanced.database.version && advanced.database.flavorName) {
-    lines.push(`고급 데이터베이스: ${advanced.database.engine} ${advanced.database.version} / ${advanced.database.sizeGb}GB / ${advanced.database.flavorName}`);
-  }
-  return lines;
-}
-
-
-
-
-
-
-
-export function cloneSurveyConfig(config) {
-  return JSON.parse(JSON.stringify(config || DEFAULT_COURSE_SURVEY_CONFIG));
-}
-
-export function resolveCourseSurveyConfig(course) {
-  const config = course?.surveyConfig;
-  if (!config || typeof config !== "object") return cloneSurveyConfig(DEFAULT_COURSE_SURVEY_CONFIG);
-  const defaultConfig = cloneSurveyConfig(DEFAULT_COURSE_SURVEY_CONFIG);
-  return {
-    ...defaultConfig,
-    ...config,
-    reminders: {
-      ...(defaultConfig.reminders || {}),
-      ...(config.reminders || {}),
-    },
-    pre: {
-      ...defaultConfig.pre,
-      ...(config.pre || {}),
-      enabled: config.pre?.enabled ?? defaultConfig.pre.enabled,
-      questions: Array.isArray(config.pre?.questions) && config.pre.questions.length ? config.pre.questions : defaultConfig.pre.questions,
-    },
-    post: {
-      ...defaultConfig.post,
-      ...(config.post || {}),
-      enabled: config.post?.enabled ?? defaultConfig.post.enabled,
-      questions: Array.isArray(config.post?.questions) && config.post.questions.length ? config.post.questions : defaultConfig.post.questions,
-    },
-  };
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1727,7 +1335,7 @@ export function AdminLuckyDrawTab(props) {
     .sort((left, right) => right.conversionRate - left.conversionRate || right.redeemed - left.redeemed)
     .slice(0, 5);
   const courseUsageRank = Object.values(adminCoupons.reduce((accumulator, coupon) => {
-    const courseName = String(coupon.courseTitle || "").trim() || "전체 과정";
+    const courseName = String(coupon.courseTitle || "").trim() || "공통 혜택";
     const current = accumulator[courseName] || { name: courseName, issued: 0, redeemed: 0 };
     current.issued += 1;
     if (String(coupon.status || "").toLowerCase() === "used") current.redeemed += 1;
@@ -1792,7 +1400,7 @@ export function AdminLuckyDrawTab(props) {
           statusLabel,
           coupon.userName || "",
           coupon.username || "",
-          coupon.courseTitle || "전체 과정",
+          coupon.courseTitle || "공통 혜택",
           describeCouponDiscount(coupon),
           coupon.source || "",
           String(coupon.metadata?.campaignName || ""),
@@ -1844,7 +1452,7 @@ export function AdminLuckyDrawTab(props) {
             <h3>새 이벤트 만들기</h3>
           </div>
         </div>
-        <AdminField hint="사용자 화면에 노출되는 이벤트 이름입니다. 혜택 성격이 바로 보이게 짧게 적는 편이 좋습니다." label="이벤트 이름" required><input value={props.luckyDrawEventForm.title} onChange={(event) => props.setLuckyDrawEventForm((current) => ({ ...current, title: event.target.value }))} placeholder="오늘의 무료 강의 뽑기" /></AdminField>
+        <AdminField hint="사용자 화면에 노출되는 이벤트 이름입니다. 혜택 성격이 바로 보이게 짧게 적는 편이 좋습니다." label="이벤트 이름" required><input value={props.luckyDrawEventForm.title} onChange={(event) => props.setLuckyDrawEventForm((current) => ({ ...current, title: event.target.value }))} placeholder="오늘의 이벤트 추첨" /></AdminField>
         <AdminField hint="이벤트 소개 문구입니다. 참여 횟수나 혜택 방향을 한 줄로 안내할 때 좋습니다." label="안내 문구"><textarea value={props.luckyDrawEventForm.description} onChange={(event) => props.setLuckyDrawEventForm((current) => ({ ...current, description: event.target.value }))} placeholder="하루 세 번, 오늘의 무료 강의 기회에 도전하세요" /></AdminField>
         <div className="admin-grid two-col">
           <AdminField hint="이 시각부터 사용자가 참여할 수 있습니다." label="시작일시" required><input type="datetime-local" value={props.luckyDrawEventForm.startAt} onChange={(event) => props.setLuckyDrawEventForm((current) => ({ ...current, startAt: event.target.value }))} /></AdminField>
@@ -1955,7 +1563,7 @@ export function AdminLuckyDrawTab(props) {
                 }} ref={editingEventRef}>
                   <div className="portal-detail-head">
                     <div>
-                      <p className="card-label">무료 강의 뽑기 이벤트</p>
+                      <p className="card-label">이벤트 추첨 이벤트</p>
                       <h3>{`이벤트 수정: ${item.title}`}</h3>
                     </div>
                     <div className="admin-inline-actions">
@@ -1965,7 +1573,7 @@ export function AdminLuckyDrawTab(props) {
                       }} type="button">취소</button>
                     </div>
                   </div>
-                  <AdminField hint="사용자 화면에 노출되는 이벤트 이름입니다." label="이벤트 이름" required><input value={props.luckyDrawEventForm.title} onChange={(event) => props.setLuckyDrawEventForm((current) => ({ ...current, title: event.target.value }))} placeholder="오늘의 무료 강의 뽑기" /></AdminField>
+                  <AdminField hint="사용자 화면에 노출되는 이벤트 이름입니다." label="이벤트 이름" required><input value={props.luckyDrawEventForm.title} onChange={(event) => props.setLuckyDrawEventForm((current) => ({ ...current, title: event.target.value }))} placeholder="오늘의 이벤트 추첨" /></AdminField>
                   <AdminField hint="이벤트 소개 문구입니다." label="안내 문구"><textarea value={props.luckyDrawEventForm.description} onChange={(event) => props.setLuckyDrawEventForm((current) => ({ ...current, description: event.target.value }))} placeholder="하루 세 번, 오늘의 무료 강의 기회에 도전하세요" /></AdminField>
                   <div className="admin-grid two-col">
                     <AdminField hint="이 시각부터 사용자가 참여할 수 있습니다." label="시작일시" required><input type="datetime-local" value={props.luckyDrawEventForm.startAt} onChange={(event) => props.setLuckyDrawEventForm((current) => ({ ...current, startAt: event.target.value }))} /></AdminField>
@@ -2081,18 +1689,13 @@ export function AdminLuckyDrawTab(props) {
                     <AdminField hint="메시지는 안내만, 무료 과정은 즉시 과정 지급, 할인 쿠폰은 결제 시 쓸 쿠폰을 발급합니다." label="보상 종류">
                       <select value={props.luckyDrawRewardForm.rewardType} onChange={(event) => props.setLuckyDrawRewardForm((current) => ({ ...current, rewardType: event.target.value }))}>
                         <option value="message">메시지 보상</option>
-                        <option value="free_course">무료 과정</option>
+
                         <option value="discount_coupon">할인 쿠폰</option>
                       </select>
                     </AdminField>
                   </div>
                   <div className="admin-grid two-col">
-                    <AdminField hint="무료 과정 또는 특정 과정 전용 쿠폰일 때 연결할 과정을 고릅니다." label="과정">
-                      <select value={props.luckyDrawRewardForm.courseId} onChange={(event) => props.setLuckyDrawRewardForm((current) => ({ ...current, courseId: event.target.value }))}>
-                        <option value="">과정 선택</option>
-                        {(props.adminCourses || []).map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
-                      </select>
-                    </AdminField>
+
                     <AdminField hint="메시지형 보상일 때 사용자에게 보여줄 문구입니다." label="메시지">
                       <input value={props.luckyDrawRewardForm.messageText} onChange={(event) => props.setLuckyDrawRewardForm((current) => ({ ...current, messageText: event.target.value }))} placeholder="오늘의 응원 메시지" />
                     </AdminField>
@@ -2148,7 +1751,7 @@ export function AdminLuckyDrawTab(props) {
                 </div>
               ) : null}
             </article>
-          )) : <p className="hint">아직 등록된 무료 강의 뽑기 이벤트가 없습니다.</p>}
+          )) : <p className="hint">아직 등록된 이벤트 추첨 이벤트가 없습니다.</p>}
         </div>
       </section>
 
@@ -2169,14 +1772,7 @@ export function AdminLuckyDrawTab(props) {
                 ))}
               </select>
             </AdminField>
-            <AdminField hint="특정 과정에만 쓰게 하려면 선택하고, 비워두면 전체 유료 과정에 쓸 수 있습니다." label="과정">
-              <select value={props.adminCouponForm.courseId} onChange={(event) => props.setAdminCouponForm((current) => ({ ...current, courseId: event.target.value }))}>
-                <option value="">전체 과정</option>
-                {(props.adminCourses || []).map((course) => (
-                  <option key={course.id} value={course.id}>{course.title}</option>
-                ))}
-              </select>
-            </AdminField>
+
             <AdminField hint="관리자 내부 추적용 코드입니다. 기본값을 그대로 써도 되고 필요하면 캠페인 구분값을 넣어도 됩니다." label="출처 메모">
               <input value={props.adminCouponForm.source} onChange={(event) => props.setAdminCouponForm((current) => ({ ...current, source: event.target.value }))} placeholder="예: admin_manual" />
             </AdminField>
@@ -2344,7 +1940,7 @@ export function AdminLuckyDrawTab(props) {
           <AdminField label="출처 필터">
             <select value={couponSourceFilter} onChange={(event) => setCouponSourceFilter(event.target.value)}>
               <option value="all">전체</option>
-              <option value="lucky_draw">무료 강의 뽑기</option>
+              <option value="lucky_draw">이벤트 추첨</option>
               <option value="signup_welcome">회원가입 웰컴</option>
               <option value="admin_manual">관리자 수동 발급</option>
             </select>
@@ -2370,7 +1966,7 @@ export function AdminLuckyDrawTab(props) {
                 </div>
                 <div className="simple-status-list">
                   <div>{`회원: ${coupon.userName || "-"}${coupon.username ? ` (${coupon.username})` : ""}`}</div>
-                  <div>{`과정: ${coupon.courseTitle || "전체 과정"}`}</div>
+                  <div>{`과정: ${coupon.courseTitle || "공통 혜택"}`}</div>
                   <div>{`혜택: ${describeCouponDiscount(coupon)}`}</div>
                   <div>{`사용 횟수: ${coupon.usedCount || 0} / ${coupon.maxUses || 1}`}</div>
                   <div>{`출처: ${coupon.source || "-"}`}</div>

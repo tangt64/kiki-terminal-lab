@@ -163,16 +163,13 @@ function QnaThreadCard({
       </div>
       <div className="qna-tag-row">
         <span className="status-chip is-muted">{getQnaPostTypeLabel(post.postType)}</span>
-        {post.courseTitle ? <span className="status-chip is-muted">{post.courseTitle}</span> : null}
-        {post.labRequestId ? <span className="status-chip is-warn">{`랩 #${post.labRequestId}${post.labStatus ? ` · ${post.labStatus}` : ""}`}</span> : null}
+
+
         <span className="status-chip is-muted">{`댓글 ${(post.comments || []).length}`}</span>
         <span className="status-chip is-muted">{`도움돼요 ${helpfulCount}`}</span>
       </div>
-      {post.courseTitle ? <div className="qna-head"><strong>관련 과정</strong><span>{post.courseTitle}</span></div> : null}
-      {post.labRequestId ? <div className="qna-head">
-          <strong>연결 랩</strong>
-          <span>{[`#${post.labRequestId}`, post.labStackName || post.labContext?.stackName, post.labInstanceIp || post.labContext?.instanceIp].filter(Boolean).join(" · ")}</span>
-        </div> : null}
+
+
       <div className="qna-post-body">{post.body}</div>
       {post.answerText ? <div className="qna-answer">
           <strong>기존 관리자 답변</strong>
@@ -259,17 +256,7 @@ export function QnaView(props) {
           </p>
         </section> : null}
 
-      {focusedCommunityCourse ? <section className="simple-panel community-course-context">
-          <div>
-            <p className="card-label">Course Community</p>
-            <h3>{focusedCommunityCourse.title}</h3>
-            <p className="hint">이 과정에 연결된 질문, 실습 에러, 자료 공유만 먼저 보여줍니다. 필터를 전체 과정으로 바꾸면 통합 커뮤니티 전체 글을 볼 수 있습니다.</p>
-          </div>
-          <button className="ghost-btn" onClick={() => {
-        setCourseFilter("");
-        props.onOpenCommunity?.("");
-      }} type="button">전체 커뮤니티</button>
-        </section> : null}
+
 
       <section className="community-summary-grid">
         <article><span>전체 글</span><strong>{communityStats.total}</strong></article>

@@ -1,21 +1,21 @@
-import { isEducationApi, emptyEducationResponse, communitySection } from "../../shared/community-profile.js";
+import { isEducationApi, communitySection } from "../../shared/community-profile.js";
 import {hasAdminPermission, requiredAdminPermission} from '../../shared/admin-permissions.js';
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { createLatestRequestCoordinator } from "./latest-request-coordinator.js";
-import { getMarkdownBlockingWarnings } from "./markdown-mdx-safety.js";
-import { getStandaloneExamCourseIds, isLearningLabResource, isStandaloneExamCourse } from "./course-visibility.js";
+
+
 
 const DEFAULT_CONTAINER_BACKGROUND_COMMAND = "sleep infinity";
 const AUTH_SESSION_EXPIRED_EVENT = "terminal-lab:auth-session-expired";
 const ACCOUNT_SHARING_WARNING_EVENT = "terminal-lab:account-sharing-warning";
 const ACCOUNT_SHARING_WARNING_MESSAGE = "같은 계정이 다른 네트워크에서 동시에 사용 중인 것으로 감지되었습니다. 본인이 아니라면 비밀번호를 변경해 주세요.";
 const ADMIN_REVIEW_REQUIRED_MESSAGE = "관리자 검토 후 사용이 가능합니다.";
-const MATERIAL_UPLOAD_EXTENSIONS = [".pdf", ".ppt", ".pptx", ".doc", ".docx", ".mp4", ".webm"];
-const TERMINAL_READINESS_MAX_WAIT_MS = 90000;
-const LAB_TRANSITION_REFRESH_INTERVAL_MS = 3000;
+
+
+
 let lastAccountSharingWarningEventAt = 0;
-export const DEFAULT_ONLINE_COURSE_NOTICE = "이 과정은 온라인 교육 전용 페이지입니다.";
+
 const DEFAULT_COURSE_OVERVIEWS = {
   standard: {
     description: "일반 과정은 스스로 학습하는 과정입니다. 강사 비용이 제외되어 비교적 저렴하게 이용할 수 있습니다.",
@@ -35,20 +35,7 @@ const DEFAULT_COURSE_OVERVIEWS = {
   },
 };
 
-function confirmMarkdownBlockingWarnings(items) {
-  const warnings = items.flatMap((item) => getMarkdownBlockingWarnings(item.value, item.label));
-  if (!warnings.length) return true;
-  const message = [
-    "Markdown 내용 중 저장 전에 확인이 필요한 항목이 있습니다.",
-    "",
-    ...warnings.map((warning) => `- ${warning}`),
-    "",
-    "그래도 저장할까요?",
-  ].join("\n");
 
-  if (typeof window === "undefined" || typeof window.confirm !== "function") return true;
-  return window.confirm(message);
-}
 
 export function isAdminUserRole(role) {
   const normalized = String(role || "").trim().toLowerCase();
@@ -126,21 +113,9 @@ function isGovernmentProgramTypeValue(programType) {
     || lower.includes("kdigital");
 }
 
-function toDatetimeLocalInput(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return raw.slice(0, 16);
-  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
-}
 
-function fromDatetimeLocalInput(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const date = new Date(raw);
-  return Number.isNaN(date.getTime()) ? raw : date.toISOString();
-}
+
+
 
 function normalizeCourseProgramTypeOptions(options) {
   const source = Array.isArray(options) && options.length ? options : ["일반", "ILT", "정부지원금", "기업", "학교", "검증"];
@@ -156,426 +131,44 @@ function normalizeCourseOverviewPoints(value, fallback = []) {
   return normalized.length ? normalized : fallback;
 }
 
-export const DEFAULT_COURSE_SURVEY_CONFIG = {
-  intro: "사전 설문은 교육 신청 전에도 바로 참여할 수 있으며 난이도와 실습 방향 조정에 활용합니다. 사후 설문은 교육 참여 후 언제든 남길 수 있고 NPS와 운영 개선에 반영합니다.",
-  reminders: {
-    postMailSubject: "[{courseTitle}] 교육 후 사후 설문 참여 부탁드립니다",
-    postMailBody: "{courseTitle} 교육에 참여해 주셔서 감사합니다.\n\n교육 운영 개선과 다음 과정 설계를 위해 사후 설문과 NPS 응답을 부탁드립니다.\n포털 로그인 후 '사전·사후 설문' 메뉴에서 {courseTitle} 과정을 선택해 바로 작성하실 수 있습니다.\n\n짧게라도 남겨 주시면 운영 품질 개선에 큰 도움이 됩니다.\n감사합니다.",
-    postNoticeTitle: "[{courseTitle}] 교육 후 사후 설문 안내",
-    postNoticeBody: "{courseTitle} 교육에 참여하신 분들은 포털의 '사전·사후 설문' 메뉴에서 사후 설문과 NPS 응답을 남겨 주세요.\n\n운영 개선, 실습 품질 조정, 후속 과정 설계에 반영됩니다.\n짧은 의견도 충분하니 편하게 작성 부탁드립니다.",
-  },
-  pre: {
-    enabled: true,
-    title: "사전 수준 진단",
-    questions: [
-      { id: "preConfidence", type: "scale", label: "현재 본인의 기술 자신감은 어느 정도인가요?", required: true, min: 0, max: 10, lowLabel: "입문", highLabel: "운영·설계 가능" },
-      { id: "usedSkills", type: "choice", label: "사용해본 기술을 선택해주세요.", required: true, multi: true, options: ["Kubernetes", "Docker/Podman", "OpenStack", "CI/CD (Jenkins, GitOps)", "AI/ML (Kubeflow, LLM 등)", "없음"] },
-      { id: "experienceItems", type: "choice", label: "현재 이해되거나 직접 해본 항목을 선택해주세요.", required: true, multi: true, options: ["Deployment/Service 차이 설명 가능", "Helm Chart 작성 가능", "로그 기반 장애 원인 분석 가능", "YAML 오류 디버깅 경험 있음", "잘 모르겠다"] },
-      { id: "blocker", type: "text", label: "지금 가장 막히는 부분을 한 줄로 적어주세요.", required: true, multiline: false, maxLength: 120, placeholder: "예: PVC 때문에 항상 막힘" },
-      { id: "expectedFocus", type: "choice", label: "이번 교육에서 가장 기대하는 것을 1개 선택해주세요.", required: true, options: ["실습 위주", "개념 이해", "실무 적용", "자격증 대비", "최신 트렌드"] },
-      { id: "goalLevel", type: "choice", label: "교육이 끝났을 때 도달하고 싶은 목표 레벨은 무엇인가요?", required: true, options: ["입문 탈출", "실무 적용", "아키텍처 이해", "전문가"] },
-      { id: "preTestAnswer", type: "choice", label: "Pod가 Pending 상태가 되는 흔한 원인으로 가장 적절한 것은?", required: true, options: ["CPU 부족", "PVC 문제", "네트워크 오류", "이미지 없음"] },
-    ],
-  },
-  post: {
-    enabled: true,
-    title: "사후 NPS 조사",
-    questions: [
-      { id: "postConfidence", type: "scale", label: "교육 후 현재 본인의 기술 자신감은 어느 정도인가요?", required: true, min: 0, max: 10, lowLabel: "아직 익숙하지 않음", highLabel: "바로 적용 가능" },
-      { id: "npsScore", type: "scale", label: "이번 교육을 동료에게 추천할 의향은 어느 정도인가요?", required: true, min: 0, max: 10, lowLabel: "전혀 추천하지 않음", highLabel: "매우 추천함" },
-      { id: "contentSatisfaction", type: "scale", label: "교육 내용 만족도", required: true, min: 1, max: 5, lowLabel: "매우 불만족", highLabel: "매우 만족" },
-      { id: "instructorSatisfaction", type: "scale", label: "강사 만족도", required: true, min: 1, max: 5, lowLabel: "매우 불만족", highLabel: "매우 만족" },
-      { id: "operationSatisfaction", type: "scale", label: "교육 운영 만족도", required: true, min: 1, max: 5, lowLabel: "매우 불만족", highLabel: "매우 만족" },
-      { id: "vendorRequest", type: "choice", label: "강의업체에 가장 우선적으로 바라는 점", required: false, options: ["실습 환경 개선", "자료 제공 확대", "녹화/복습 자료 제공", "심화 과정 개설", "일정/운영 안내 강화", "없음"] },
-      { id: "instructorRequest", type: "choice", label: "강사에게 가장 바라는 점", required: false, options: ["설명 속도 조절", "실습 시간 확대", "예제 난이도 조정", "질의응답 시간 확대", "자료 공유 강화", "없음"] },
-      { id: "review", type: "text", label: "한 줄 리뷰 또는 추가 요청사항", required: false, multiline: true, maxLength: 300, placeholder: "짧게 한 문장으로 적어주셔도 충분합니다." },
-    ],
-  },
-};
 
-const LOCAL_PREVIEW_SAMPLE_MATERIAL_HREF = "/preview-materials/sample-pdf-workbench-guide.pdf";
-const LOCAL_PREVIEW_SAMPLE_CURRICULUM = [
-  { title: "과정 화면 확인", duration: "15분", description: "카탈로그에서 과정 상세로 이동하고 학습 작업대를 확인합니다." },
-  { title: "PDF 교안 미리보기", duration: "20분", description: "PDF 교안이 사이트 안에서 바로 열리는지 확인합니다." },
-  { title: "위키 교재 병행", duration: "20분", description: "기존 위키 교재와 첨부 교안을 같은 흐름에서 살펴봅니다." },
-];
-const LOCAL_PREVIEW_SAMPLE_COURSE = {
-  id: 2026052301,
-  slug: "sample-pdf-workbench",
-  category: "DevOps",
-  courseType: "standard",
-  packageItems: [],
-  programType: "일반",
-  title: "PDF 교안 미리보기 샘플 과정",
-  summary: "과정 상세에서 PDF 교안과 위키 교재를 함께 보는 흐름을 확인하기 위한 로컬 샘플입니다.",
-  price: 0,
-  duration: "반일",
-  courseAccessDays: 30,
-  level: "입문",
-  body: "이 과정은 로컬 미리보기에서 학습 작업대, PDF 교안 임베드, 위키 교재 표시를 한 번에 확인하기 위한 임시 샘플 과정입니다.",
-  promoEnabled: false,
-  promoPrice: 0,
-  objectives: [
-    "과정 상세의 학습 작업대 구성을 확인합니다.",
-    "PDF 교안이 사이트 내부 뷰어에서 바로 열리는지 확인합니다.",
-    "기존 위키 교재와 첨부 교안이 함께 노출되는 방식을 점검합니다.",
-  ],
-  materials: [
-    { label: "샘플 PDF 교안", href: LOCAL_PREVIEW_SAMPLE_MATERIAL_HREF },
-  ],
-  textbooks: [
-    {
-      id: "preview-sample-wiki",
-      slug: "preview-sample-wiki",
-      title: "샘플 위키 교재",
-      summary: "DOC 호환 위키 교재 영역 확인용 자료입니다.",
-      contentMarkdown: [
-        "## 샘플 위키 교재",
-        "",
-        "이 위키 교재는 기존 DOC/위키 흐름이 유지되는지 확인하기 위한 미리보기 자료입니다.",
-        "",
-        "### 확인 항목",
-        "- 과정 상세에서 위키 교재가 PDF 교안과 함께 보이는지 확인",
-        "- 랩 교안 모드에서 자료 전환이 자연스러운지 확인",
-        "- 교재 본문이 사이트 내부에서 읽기 좋게 표시되는지 확인",
-      ].join("\n"),
-      required: true,
-      visible: true,
-    },
-  ],
-  courseCurriculum: LOCAL_PREVIEW_SAMPLE_CURRICULUM,
-  curriculum: LOCAL_PREVIEW_SAMPLE_CURRICULUM,
-  courseVideos: [],
-  videos: [],
-  exampleFiles: [],
-  gitRepositories: [],
-  labGuideMarkdown: [
-    "## 실습 가이드",
-    "",
-    "1. 과정 상세 화면에서 `학습 작업대` 영역으로 이동합니다.",
-    "2. 왼쪽 자료 목록에서 `샘플 PDF 교안`을 선택합니다.",
-    "3. 위키 교재와 PDF 교안 사이를 전환하며 레이아웃을 확인합니다.",
-  ].join("\n"),
-  commandsMarkdown: [
-    "## 확인 명령어 예시",
-    "",
-    "```bash",
-    "pwd",
-    "ls -al",
-    "```",
-  ].join("\n"),
-  labEnabled: true,
-  labApprovalMode: "instant",
-  labBackendType: "vm",
-  heatTemplateName: "linux-shell-lab.yaml",
-  heatStackPrefix: "preview-pdf-lab",
-  heatParameters: {
-    flavor: "m1.small",
-    image: "lab-rocky-9-2026",
-    network: "preview-net",
-    key_name: "preview-key",
-    security_group: "example.com",
-  },
-  terminalSshUser: "ubuntu",
-  terminalSshPort: 22,
-  labRetentionMode: "persistent",
-  labRetentionPreset: "1",
-  labRetentionDays: 1,
-  allowResumeExistingLab: true,
-  publicDomainApprovalMode: "manual",
-  publicTcpApprovalMode: "manual",
-  externalSshApprovalMode: "manual",
-  externalRdpApprovalMode: "manual",
-  isPublished: true,
-  isLandingPreview: true,
-  courseStatus: "published",
-  accessScope: "public",
-  hasAccess: true,
-  hasEnrollmentRecord: true,
-  enrollmentCreatedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-  enrollmentExpiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-  enrollmentDaysRemaining: 5,
-  enrollmentExpiringSoon: true,
-  courseAccessDefaultDays: 30,
-  courseAccessExpiringSoonDays: 7,
-  createdAt: "2026-05-23T09:00:00.000Z",
-  updatedAt: "2026-05-23T09:00:00.000Z",
-};
 
-function createLocalPreviewSampleLab() {
-  const now = Date.now();
-  const previewStatus = getLocalPreviewLabStatusOverride() || "running";
-  const previewNodeReady = previewStatus === "running";
-  return {
-    id: 2026052302,
-    userId: 1,
-    username: "admin",
-    userName: "로컬 관리자",
-    courseId: LOCAL_PREVIEW_SAMPLE_COURSE.id,
-    courseTitle: LOCAL_PREVIEW_SAMPLE_COURSE.title,
-    purpose: "learning",
-    status: previewStatus,
-    labBackendType: "vm",
-    stackName: "preview-pdf-lab-admin",
-    stackId: "preview-pdf-lab-stack",
-    instanceUuid: "preview-pdf-lab-node-1",
-    instanceIp: previewNodeReady ? "192.0.2.17" : "",
-    instanceIps: previewNodeReady ? [{ type: "fixed", address: "192.0.2.17" }] : [],
-    vmNodes: [
-      {
-        id: "node-1",
-        name: "pdf-workbench",
-        role: "workstation",
-        status: previewNodeReady ? "running" : previewStatus,
-        fixedIp: previewNodeReady ? "192.0.2.17" : "",
-        floatingIp: "",
-      },
-    ],
-    currentFlavor: "m1.small",
-    terminalSshUser: "ubuntu",
-    terminalSshPassword: "",
-    terminalSshPort: 22,
-    externalSshEnabled: false,
-    externalSshRequestPending: false,
-    publicDomains: [],
-    requestedPublicDomains: [],
-    publicTcpRoutes: [],
-    requestedPublicTcpRoutes: [],
-    trafficMonitoringEnabled: true,
-    trafficDailyBytes: 18_400_000,
-    trafficTotalBytes: 128_000_000,
-    cpuUsagePercent: 18,
-    memoryUsagePercent: 32,
-    createdAt: new Date(now - 20 * 60_000).toISOString(),
-    startedAt: new Date(now - 16 * 60_000).toISOString(),
-    updatedAt: new Date(now - 2 * 60_000).toISOString(),
-    lastAccessedAt: new Date(now - 2 * 60_000).toISOString(),
-    expiresAt: new Date(now + 3 * 60 * 60_000).toISOString(),
-  };
-}
 
-function isLocalPreviewHost() {
-  if (typeof window === "undefined") return false;
-  return ["127.0.0.1", "localhost", "::1"].includes(window.location.hostname);
-}
 
-function getLocalPreviewLabStatusOverride() {
-  if (!isLocalPreviewHost()) return "";
-  const allowedStatuses = new Set(["pending", "approved", "provisioning", "running", "paused", "terminating", "failed"]);
-  const status = String(new URLSearchParams(window.location.search || "").get("previewLabStatus") || "").trim().toLowerCase();
-  return allowedStatuses.has(status) ? status : "";
-}
 
-function withLocalPreviewSampleCourses(courses) {
-  const list = Array.isArray(courses) ? courses : [];
-  if (!isLocalPreviewHost()) return list;
-  if (!list.some((course) => course?.slug === "portal-v2-demo")) return list;
-  if (list.some((course) => course?.slug === LOCAL_PREVIEW_SAMPLE_COURSE.slug)) return list;
-  return [...list, LOCAL_PREVIEW_SAMPLE_COURSE];
-}
 
-function withLocalPreviewSampleLabs(labs) {
-  const list = Array.isArray(labs) ? labs : [];
-  if (!isLocalPreviewHost()) return list;
-  if (list.some((lab) => Number(lab?.courseId) === Number(LOCAL_PREVIEW_SAMPLE_COURSE.id))) return list;
-  return [createLocalPreviewSampleLab(), ...list];
-}
 
-function cloneCourseSurveyConfig(config) {
-  return JSON.parse(JSON.stringify(config || DEFAULT_COURSE_SURVEY_CONFIG));
-}
 
-function normalizeCourseSurveyConfig(config) {
-  if (!config || typeof config !== "object") return cloneCourseSurveyConfig(DEFAULT_COURSE_SURVEY_CONFIG);
-  const defaultConfig = cloneCourseSurveyConfig(DEFAULT_COURSE_SURVEY_CONFIG);
-  return {
-    ...defaultConfig,
-    ...config,
-    reminders: {
-      ...(defaultConfig.reminders || {}),
-      ...(config.reminders || {}),
-    },
-    pre: {
-      ...defaultConfig.pre,
-      ...(config.pre || {}),
-      enabled: config.pre?.enabled ?? defaultConfig.pre.enabled,
-      questions: Array.isArray(config.pre?.questions) && config.pre.questions.length ? config.pre.questions : defaultConfig.pre.questions,
-    },
-    post: {
-      ...defaultConfig.post,
-      ...(config.post || {}),
-      enabled: config.post?.enabled ?? defaultConfig.post.enabled,
-      questions: Array.isArray(config.post?.questions) && config.post.questions.length ? config.post.questions : defaultConfig.post.questions,
-    },
-  };
-}
 
-const EMPTY_COURSE = {
-  id: null,
-  slug: "",
-  category: "",
-  courseType: "standard",
-  packageItems: [],
-  programType: "일반",
-  title: "",
-  summary: "",
-  price: "",
-  promoEnabled: false,
-  promoPrice: "0",
-  promoStartsAt: "",
-  promoEndsAt: "",
-  duration: "",
-  courseAccessDays: "30",
-  level: "입문",
-  body: "",
-  youtubeUrl: "",
-  courseCurriculumText: "",
-  courseVideosText: "",
-  courseRecordingsText: "",
-  onlineMeetingUrl: "",
-  onlineBoardUrl: "",
-  onlineCourseNotice: DEFAULT_ONLINE_COURSE_NOTICE,
-  onlineSessionNote: "",
-  labGuideMarkdown: "",
-  commandsMarkdown: "",
-  aiSystemPrompt: "",
-  aiQuickPromptsText: "",
-  externalToolLinksText: "",
-  externalLearningToolsText: "",
-  labStartChecklistText: "",
-  objectivesText: "",
-  materialsText: "",
-  exampleFiles: [],
-  gitRepositoryLabel: "",
-  gitRepositoryHref: "",
-  labEnabled: false,
-  labApprovalMode: "manual",
-  publicDomainApprovalMode: "manual",
-  publicTcpApprovalMode: "manual",
-  externalSshApprovalMode: "manual",
-  externalRdpApprovalMode: "manual",
-  externalSshRouteMode: "both",
-  labBackendType: "vm",
-  containerImageName: "",
-  containerCommandText: DEFAULT_CONTAINER_BACKGROUND_COMMAND,
-  containerExposedPort: "22",
-  containerAccessMode: "console",
-  containerConsoleMode: "zun",
-  labRetentionMode: "ephemeral",
-  labRetentionPreset: "1",
-  labRetentionDays: "1",
-  allowResumeExistingLab: false,
-  labResizePolicy: "requestable",
-  labResizeAllowedFlavorsText: "",
-  terminalReplayMode: "inherit",
-  trafficMonitoringEnabled: true,
-  trafficDailyLimitGb: "0",
-  trafficTotalLimitGb: "0",
-  trafficExceededAction: "warn",
-  heatTemplateName: "",
-  heatStackPrefix: "",
-  labProvisioningTimeoutMinutes: "10",
-  heatParametersText: JSON.stringify({
-    flavor: "m1.tiny",
-    image: "lab-rocky-9-2026",
-    network: "net-infra",
-    key_name: "lab-key",
-    security_group: "example.com",
-  }, null, 2),
-  heatApiUrl: "",
-  terminalSshUser: "",
-  terminalSshPort: "22",
-  terminalJumpHost: "",
-  terminalJumpUser: "",
-  isPublished: true,
-  isLandingPreview: false,
-  courseStatus: "published",
-  releaseLabel: "",
-  accessScope: "public",
-  accessCode: "",
-  textbookAssignments: [],
-  surveyConfigText: JSON.stringify(DEFAULT_COURSE_SURVEY_CONFIG, null, 2),
-};
 
-function parseExternalToolLinksText(value) {
-  return lines(value)
-    .map((line) => {
-      const [label = "", url = "", description = "", required = ""] = line.split("|").map((part) => part.trim());
-      return {
-        label,
-        url,
-        description,
-        required: /^(1|true|yes|y|required|필수)$/i.test(required),
-      };
-    })
-    .filter((item) => item.label && /^https?:\/\//i.test(item.url))
-    .slice(0, 12);
-}
 
-function formatExternalToolLinksText(items) {
-  return (Array.isArray(items) ? items : [])
-    .map((item) => {
-      const label = String(item?.label || "").trim();
-      const url = String(item?.url || item?.href || "").trim();
-      const description = String(item?.description || "").trim();
-      const required = item?.required ? "필수" : "";
-      return [label, url, description, required].filter((part, index) => index < 2 || part).join(" | ");
-    })
-    .filter(Boolean)
-    .join("\n");
-}
 
-const parseExternalLearningToolsText = parseExternalToolLinksText;
-const formatExternalLearningToolsText = formatExternalToolLinksText;
 
-function normalizeRecordingVisibility(value) {
-  const raw = String(value || "").trim().toLowerCase();
-  if (["admin", "관리자", "관리자만"].includes(raw)) return "admin";
-  if (["private", "비공개", "숨김"].includes(raw)) return "private";
-  return "students";
-}
 
-function parseCourseRecordingsText(value) {
-  return lines(value)
-    .map((line) => {
-      const [date = "", title = "", url = "", description = "", visibility = "students"] = line.split("|").map((part) => part.trim());
-      return {
-        date: date.slice(0, 10),
-        title,
-        url,
-        description,
-        visibility: normalizeRecordingVisibility(visibility),
-      };
-    })
-    .filter((item) => item.title && /^https?:\/\//i.test(item.url))
-    .slice(0, 80);
-}
 
-function formatCourseRecordingsText(items) {
-  return (Array.isArray(items) ? items : [])
-    .map((item) => {
-      const date = String(item?.date || "").trim().slice(0, 10);
-      const title = String(item?.title || "").trim();
-      const url = String(item?.url || item?.href || "").trim();
-      const description = String(item?.description || "").trim();
-      const visibility = normalizeRecordingVisibility(item?.visibility);
-      return [date, title, url, description, visibility].filter((part, index) => index < 3 || part).join(" | ");
-    })
-    .filter(Boolean)
-    .join("\n");
-}
 
-const EMPTY_TEXTBOOK = {
-  id: null,
-  slug: "",
-  title: "",
-  summary: "",
-  contentMarkdown: "",
-  status: "draft",
-  version: "1.0",
-};
 
-const EMPTY_QNA = { courseId: "", labRequestId: "", postType: "question", title: "", body: "" };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const EMPTY_QNA = {  labRequestId: "", postType: "question", title: "", body: "" };
 const EMPTY_MESSAGE = { recipientId: "", subject: "", body: "", replyToMessageId: null, replyToLabel: "", replyToPreview: "" };
 const EMPTY_TEMPLATE = { name: "linux-shell-lab.yaml", content: "" };
 const DEFAULT_BASIC_APPLICATION_YAML = [
@@ -618,14 +211,7 @@ const DEFAULT_LLM_SYSTEM_PROMPT = [
   "- 불필요하게 장황하지 않게 작성합니다.",
   "- 실습, 운영, 시험, 자격증 맥락에 맞는 표현을 사용합니다.",
 ].join("\n");
-const DEFAULT_LLM_SURVEY_FEEDBACK_PROMPT = [
-  "당신은 Terminal Lab의 학습 코치입니다.",
-  "사전/사후 설문의 질문 의미와 학습자 답변을 함께 보고, 학습자에게 직접 도움이 되는 해설을 작성합니다.",
-  "- 각 문항의 질문 의도를 반영해 답변에서 드러난 현재 상태, 강점, 막힌 지점을 해석합니다.",
-  "- 다음 실습에서 바로 해볼 수 있는 행동을 구체적으로 제안합니다.",
-  "- 점수나 선택지를 비난하지 않고, 격려와 현실적인 조언을 균형 있게 작성합니다.",
-  "- 관리자 평가, 개인정보 추정, 합격/불합격 판단은 하지 않습니다.",
-].join("\n");
+
 const DEFAULT_LANDING_DEMO_TYPE = "youtube";
 const DEFAULT_LANDING_YOUTUBE_URL = "";
 const DEFAULT_POC_PROJECT_NAME = "PoC-example.com";
@@ -688,7 +274,7 @@ const EMPTY_LUCKY_DRAW_REWARD_FORM = {
   eventId: "",
   label: "",
   rewardType: "message",
-  courseId: "",
+
   couponDiscountType: "percent",
   couponDiscountValue: "50",
   couponExpiresInDays: "7",
@@ -702,7 +288,7 @@ const EMPTY_LUCKY_DRAW_REWARD_FORM = {
 const EMPTY_NOTIFICATION_STATUS = { tone: "", message: "" };
 const EMPTY_PUBLIC_ROUTE = { domainType: "managed", subdomain: "", customDomain: "", routeKey: "http", protocol: "http", port: "80", nodeId: "" };
 const EMPTY_PUBLIC_TCP_ROUTE = { targetPort: "", nodeId: "" };
-const EMPTY_PROFILE = { name: "", email: "", username: "", role: "", status: "", currentPassword: "", newPassword: "", confirmPassword: "", courseCode: "", otpEnabled: false, otpSetupSecret: "", otpSetupUri: "", otpSetupCode: "", otpDisableCode: "" };
+const EMPTY_PROFILE = { name: "", email: "", username: "", role: "", status: "", currentPassword: "", newPassword: "", confirmPassword: "",  otpEnabled: false, otpSetupSecret: "", otpSetupUri: "", otpSetupCode: "", otpDisableCode: "" };
 const EMPTY_RESET_PIN_FORM = { username: "", pin: "", newPassword: "", confirmPassword: "" };
 const EMPTY_PENDING_OTP_ENROLLMENT = { active: false, userId: null, username: "", name: "", role: "", secret: "", otpauthUrl: "", issuerName: "KIKI OS TERMINAL-LAB", code: "" };
 const EMPTY_ADMIN_USER_FORM = { name: "", email: "", username: "", password: "", role: "student", status: "approved" };
@@ -721,7 +307,7 @@ const EMPTY_MAIL_CAMPAIGN_FORM = {
   replyDeadlineDays: "7",
   externalConsentConfirmed: false,
 };
-const EMPTY_ADMIN_COUPON_FORM = { userId: "", courseId: "", discountType: "percent", discountValue: "50", expiresInDays: "7", maxUses: "1", source: "admin_manual", campaignName: "", reason: "", note: "" };
+const EMPTY_ADMIN_COUPON_FORM = { userId: "",  discountType: "percent", discountValue: "50", expiresInDays: "7", maxUses: "1", source: "admin_manual", campaignName: "", reason: "", note: "" };
 const EMPTY_CUSTOM_LAB = {
   title: "",
   instanceCount: "1",
@@ -798,7 +384,7 @@ const EMPTY_ZUN_FORM = {
 };
 const EMPTY_MAGNUM_FORM = { name: "", clusterTemplateId: "", clusterTemplateName: "", kubernetesVersion: "", nodeCount: "1", masterCount: "1", controlPlaneFlavor: "", workerFlavor: "" };
 const EMPTY_WRITTEN_EXAM_FORM = {
-  courseId: "",
+
   title: "",
   description: "",
   passScore: "60",
@@ -829,7 +415,7 @@ const EMPTY_WRITTEN_EXAM_FORM = {
   ], null, 2),
 };
 const EMPTY_LAB_EXAM_FORM = {
-  courseId: "",
+
   heatTemplateName: "",
   examKind: "lab",
   title: "",
@@ -926,10 +512,10 @@ const EMPTY_PLATFORM_STATUS = {
     llmDailyQuotaAdminBypass: true,
     llmMaxTokens: 512,
     llmAdminTestMaxTokens: 80,
-    llmSurveyFeedbackMaxTokens: 384,
-    llmSurveyFeedbackTimeoutMs: 300000,
-    llmSurveyFeedbackPrompt: DEFAULT_LLM_SURVEY_FEEDBACK_PROMPT,
-    llmSurveyFeedbackOptionsJson: "",
+
+
+
+
     llmThinkingMode: "disabled",
     llmNoThinkDirectiveEnabled: true,
     llmWebSearchEnabled: true,
@@ -1012,7 +598,7 @@ const EMPTY_PLATFORM_STATUS = {
     security_group: 5,
     security_group_rule: 50,
   },
-  arenaEnabled: false,
+
   selfServiceVmServiceEnabled: false,
   selfServiceVmVolumeBootEnabled: false,
   selfServiceVmDataVolumeEnabled: false,
@@ -1045,9 +631,9 @@ const EMPTY_PLATFORM_STATUS = {
     "m1.small": { vcpu: 2, ramGb: 4, diskGb: 50 },
     "m1.medium": { vcpu: 4, ramGb: 8, diskGb: 80 },
   },
-  courseLevelOptions: ["입문", "초급", "중급", "고급", "전문가"],
-  courseCategoryOptions: ["linux", "k8s", "openstack", "ai"],
-  courseProgramTypeOptions: ["일반", "ILT", "정부지원금", "기업", "학교", "검증"],
+
+
+
   standardCourseOverviewDescription: DEFAULT_COURSE_OVERVIEWS.standard.description,
   standardCourseOverviewPoints: DEFAULT_COURSE_OVERVIEWS.standard.points,
   iltCourseOverviewDescription: DEFAULT_COURSE_OVERVIEWS.ilt.description,
@@ -1081,13 +667,13 @@ const EMPTY_PLATFORM_STATUS = {
   troveAllowedFlavors: ["m1.small", "m1.medium"],
   troveAllowedSizesGb: [5, 10, 20],
   landingVideoEnabled: true,
-  landingScheduleEnabled: true,
+
   googleCalendarSyncEnabled: false,
   googleCalendarIcsUrl: "",
   googleCalendarSyncIntervalMinutes: 60,
   landingNoticeEnabled: false,
   landingSurveyNoticeEnabled: false,
-  landingCurriculumCollapsedByDefault: true,
+
   landingDemoType: DEFAULT_LANDING_DEMO_TYPE,
   landingYoutubeUrl: DEFAULT_LANDING_YOUTUBE_URL,
   landingHeroEyebrow: "오픈소스 엔지니어링 랩",
@@ -1114,7 +700,7 @@ const EMPTY_PLATFORM_STATUS = {
   externalSshRoutesEnabled: true,
   externalRdpRoutesEnabled: true,
   publicTcpRoutesEnabled: false,
-  courseQuoteAccessMode: "enabled",
+
   sshPublicHost: "ssh.example.com",
   sshExternalPortStart: 41000,
   sshExternalPortEnd: 42999,
@@ -1270,8 +856,8 @@ const EMPTY_TRAFFIC_DEBUG_STATUS = {
   interfaceName: "",
 };
 const EMPTY_QUOTA_STATUS = { ok: false, metrics: null, message: "", projectName: "" };
-const LAB_RESOURCE_PREFLIGHT_WARN_PERCENT = 78;
-const LAB_RESOURCE_PREFLIGHT_CRITICAL_PERCENT = 92;
+
+
 const EMPTY_LLM_QUOTA_STATUS = {
   enabled: true,
   bypassed: false,
@@ -1285,101 +871,23 @@ const EMPTY_LLM_QUOTA_STATUS = {
   lastQuestionAt: "",
 };
 
-function normalizeBooleanValue(value) {
-  if (value === true || value === 1) return true;
-  const normalized = String(value || "").trim().toLowerCase();
-  return ["1", "true", "yes", "y", "on", "enabled"].includes(normalized);
-}
 
-function normalizePositiveInteger(value, fallback = 1) {
-  const number = Number.parseInt(value, 10);
-  if (!Number.isFinite(number) || number <= 0) return fallback;
-  return number;
-}
 
-function getCourseHeatParameters(course) {
-  return course?.heatParameters && typeof course.heatParameters === "object" ? course.heatParameters : {};
-}
 
-function getCourseInstanceCount(course) {
-  const heatParameters = getCourseHeatParameters(course);
-  const nodeCount = Array.isArray(heatParameters.nodes)
-    ? heatParameters.nodes.length
-    : Array.isArray(heatParameters.servers)
-      ? heatParameters.servers.length
-      : 0;
-  const candidate = heatParameters.instance_count
-    ?? heatParameters.instanceCount
-    ?? heatParameters.node_count
-    ?? heatParameters.nodeCount
-    ?? nodeCount
-    ?? 1;
-  return Math.max(1, Math.min(200, normalizePositiveInteger(candidate, 1)));
-}
 
-function getCourseBootVolumeRequirementGb(course) {
-  const heatParameters = getCourseHeatParameters(course);
-  const bootFromVolume = normalizeBooleanValue(heatParameters.boot_from_volume ?? heatParameters.bootFromVolume);
-  if (!bootFromVolume) return 0;
-  const perInstanceSizeGb = normalizePositiveInteger(heatParameters.boot_volume_size ?? heatParameters.bootVolumeSizeGb ?? heatParameters.bootVolumeSize, 20);
-  return perInstanceSizeGb * getCourseInstanceCount(course);
-}
 
-function getQuotaMetricPercent(metric) {
-  const explicit = Number(metric?.percent);
-  if (Number.isFinite(explicit)) return Math.max(0, Math.min(100, Math.round(explicit)));
-  const limit = Number(metric?.limit || 0);
-  const used = Number(metric?.used || 0);
-  if (!Number.isFinite(limit) || limit <= 0 || !Number.isFinite(used)) return 0;
-  return Math.max(0, Math.min(100, Math.round((Math.max(0, used) / limit) * 100)));
-}
 
-function getQuotaMetricRemaining(metric) {
-  const limit = Number(metric?.limit || 0);
-  if (!Number.isFinite(limit) || limit <= 0) return null;
-  const used = Math.max(0, Number(metric?.used || 0) || 0);
-  return Math.max(0, limit - used);
-}
 
-function formatLabResourceAmount(value, unit = "") {
-  const number = Math.max(0, Number(value || 0) || 0);
-  if (unit === "MB") {
-    if (number >= 1024) return `${Math.round(number / 1024)}GB`;
-    return `${Math.round(number)}MB`;
-  }
-  if (unit === "GB") return `${Math.round(number)}GB`;
-  return `${Math.round(number)}`;
-}
 
-function buildLabResourcePreflightWarning(course, quotaStatus) {
-  if (!course || String(course.labBackendType || "vm").trim().toLowerCase() !== "vm") return "";
-  const metrics = quotaStatus?.metrics || {};
-  if (!metrics || typeof metrics !== "object") return "";
-  const volumeMetric = metrics.volumeStorage;
-  const requiredVolumeGb = getCourseBootVolumeRequirementGb(course);
-  const remainingVolumeGb = getQuotaMetricRemaining(volumeMetric);
-  if (requiredVolumeGb > 0 && remainingVolumeGb != null && remainingVolumeGb < requiredVolumeGb) {
-    return [
-      "현재 실습 프로젝트의 Volume 여유가 부족할 수 있습니다.",
-      `이 과정은 Cinder OS 디스크 ${requiredVolumeGb}GB가 필요하지만 남은 Volume은 ${formatLabResourceAmount(remainingVolumeGb, "GB")}입니다.`,
-      "랩 생성이 실패할 수 있습니다. 그래도 시작할까요?",
-    ].join("\n");
-  }
-  const highUsageItems = [
-    { label: "vCPU", metric: metrics.cores },
-    { label: "RAM", metric: metrics.ram },
-    { label: "Volume", metric: volumeMetric },
-  ]
-    .map((item) => ({ ...item, percent: getQuotaMetricPercent(item.metric) }))
-    .filter((item) => item.percent >= LAB_RESOURCE_PREFLIGHT_WARN_PERCENT);
-  if (!highUsageItems.length) return "";
-  const isCritical = highUsageItems.some((item) => item.percent >= LAB_RESOURCE_PREFLIGHT_CRITICAL_PERCENT);
-  return [
-    isCritical ? "현재 실습 프로젝트 자원이 거의 소진되었습니다." : "현재 실습 프로젝트 자원 사용률이 높습니다.",
-    highUsageItems.map((item) => `${item.label} ${item.percent}% 사용`).join(", "),
-    "랩 생성이 지연되거나 실패할 수 있습니다. 계속할까요?",
-  ].join("\n");
-}
+
+
+
+
+
+
+
+
+
 
 const EMPTY_SERVICE_VALIDATION_STATUS = {
   active: false,
@@ -1469,38 +977,12 @@ const EMPTY_TROVE_FORM = {
   flavor: "m1.small",
   sizeGb: "5",
 };
-const EMPTY_ADMIN_ARENA_OVERVIEW = {
-  overview: {
-    season: null,
-    nodes: [],
-    leaderboard: [],
-    events: [],
-    activeSession: null,
-    stats: {
-      totalNodes: 0,
-      capturedNodes: 0,
-      activeUsers: 0,
-      bossOpened: false,
-    },
-  },
-  seasons: [],
-  scenarios: [],
-  nodes: [],
-  sessions: [],
-  attempts: [],
-  captures: [],
-};
-const EMPTY_CERTIFICATE_STATUS = { tone: "", message: "" };
-const EMPTY_CERTIFICATE_TIER = { key: "starter", label: "준비 중", min: 0 };
-const ACTIVE_LAB_STATUSES = ["pending", "approved", "provisioning", "running", "paused", "terminating"];
 
-function resolveRouteKeyForPort(port, customRouteSlots = []) {
-  const numericPort = Number(port || 80);
-  if (numericPort === 443) return "https";
-  if (numericPort === 80) return "http";
-  const matchedSlot = (Array.isArray(customRouteSlots) ? customRouteSlots : []).find((slot) => Number(slot?.port) === numericPort);
-  return matchedSlot?.id || "http";
-}
+
+
+
+
+
 
 function inferPublicRouteProtocolForPort(port) {
   const numericPort = Number(port || 0);
@@ -1544,7 +1026,7 @@ export function usePortalApp() {
   const [section, setSection] = useState(getInitialSection);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
-  const [courses, setCourses] = useState([]);
+
   const [notices, setNotices] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [notificationStatus, setNotificationStatus] = useState(EMPTY_NOTIFICATION_STATUS);
@@ -1565,17 +1047,17 @@ export function usePortalApp() {
   });
   const platformStatusDirtyRef = useRef(false);
   const platformStatusRef = useRef(EMPTY_PLATFORM_STATUS);
-  const [selectedCourseId, setSelectedCourseId] = useState(getInitialSelectedCourseId());
-  const terminalCourseSelectionTouchedRef = useRef(false);
-  const [openSelectedCourseDetail, setOpenSelectedCourseDetail] = useState(false);
-  const [preferredSurveyPhase, setPreferredSurveyPhase] = useState("pre");
-  const [labs, setLabs] = useState([]);
-  const applyingLabCourseIdsRef = useRef(new Set());
-  const [applyingLabCourseIds, setApplyingLabCourseIds] = useState([]);
-  const startingLabIdsRef = useRef(new Set());
-  const [startingLabIds, setStartingLabIds] = useState([]);
-  const labParameterOverridePromptRef = useRef(null);
-  const [labParameterOverridePrompt, setLabParameterOverridePrompt] = useState(null);
+
+
+
+
+
+
+
+
+
+
+
   const [qnaPosts, setQnaPosts] = useState([]);
   const [qnaForm, setQnaForm] = useState(EMPTY_QNA);
   const [qnaCommentDrafts, setQnaCommentDrafts] = useState({});
@@ -1585,28 +1067,28 @@ export function usePortalApp() {
   const [signupCheck, setSignupCheck] = useState({ tone: "", message: "" });
   const [loginForm, setLoginForm] = useState({ username: "", password: "", otpCode: "" });
   const [pendingOtpEnrollment, setPendingOtpEnrollment] = useState(EMPTY_PENDING_OTP_ENROLLMENT);
-  const [signupForm, setSignupForm] = useState({ name: "", email: "", username: "", password: "", confirmPassword: "", courseCode: "", inviteCode: "", signupReason: "", termsAgreementIds: [], marketingEmailConsent: false });
+  const [signupForm, setSignupForm] = useState({ name: "", email: "", username: "", password: "", confirmPassword: "",  inviteCode: "", signupReason: "", termsAgreementIds: [], marketingEmailConsent: false });
   const [resetPinForm, setResetPinForm] = useState(EMPTY_RESET_PIN_FORM);
   const [adminUsers, setAdminUsers] = useState([]);
   const [adminUserForm, setAdminUserForm] = useState(EMPTY_ADMIN_USER_FORM);
   const [adminBatchUserForm, setAdminBatchUserForm] = useState(EMPTY_ADMIN_BATCH_USER_FORM);
-  const [adminCourseAssignForm, setAdminCourseAssignForm] = useState({ courseId: "" });
-  const [adminCourses, setAdminCourses] = useState([]);
-  const [adminLabs, setAdminLabs] = useState([]);
-  const [adminLabPrecreateReport, setAdminLabPrecreateReport] = useState(null);
-  const [adminCourseCinderSmokeReport, setAdminCourseCinderSmokeReport] = useState(null);
-  const [labResizeFlavorDrafts, setLabResizeFlavorDrafts] = useState({});
-  const [labResizeReviewNotes, setLabResizeReviewNotes] = useState({});
-  const [adminCourseAccessRequests, setAdminCourseAccessRequests] = useState([]);
-  const [adminSurveyResponses, setAdminSurveyResponses] = useState([]);
-  const [adminSurveySummary, setAdminSurveySummary] = useState([]);
-  const [adminTextbooks, setAdminTextbooks] = useState([]);
+
+
+
+
+
+
+
+
+
+
+
   const [adminHeatTemplates, setAdminHeatTemplates] = useState([]);
   const [adminApplicationYamls, setAdminApplicationYamls] = useState([]);
   const [applicationYamlUploadState, setApplicationYamlUploadState] = useState({ uploading: false, total: 0, completed: 0 });
   const [landingMediaUploadState, setLandingMediaUploadState] = useState({ uploading: false, fileName: "" });
   const [adminCloudInitTemplates, setAdminCloudInitTemplates] = useState([]);
-  const [adminLabDomains, setAdminLabDomains] = useState([]);
+
   const [adminCustomLabRequests, setAdminCustomLabRequests] = useState([]);
   const [adminLuckyDrawEvents, setAdminLuckyDrawEvents] = useState([]);
   const [adminStatus, setAdminStatus] = useState("");
@@ -1616,10 +1098,10 @@ export function usePortalApp() {
     title: "",
     message: "",
   });
-  const [courseForm, setCourseForm] = useState(EMPTY_COURSE);
-  const [courseFormInvalidFields, setCourseFormInvalidFields] = useState([]);
-  const [courseSubmissionNotice, setCourseSubmissionNotice] = useState("");
-  const [textbookForm, setTextbookForm] = useState(EMPTY_TEXTBOOK);
+
+
+
+
   const [noticeForm, setNoticeForm] = useState(EMPTY_NOTICE);
   const [luckyDrawEventForm, setLuckyDrawEventForm] = useState(EMPTY_LUCKY_DRAW_EVENT_FORM);
   const [luckyDrawRewardForm, setLuckyDrawRewardForm] = useState(EMPTY_LUCKY_DRAW_REWARD_FORM);
@@ -1628,9 +1110,9 @@ export function usePortalApp() {
   const [cloudInitTemplateForm, setCloudInitTemplateForm] = useState(EMPTY_CLOUD_INIT_TEMPLATE);
   const [userSearch, setUserSearch] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState([]);
-  const [selectedLabIds, setSelectedLabIds] = useState([]);
-  const [courseAccessReviewNotes, setCourseAccessReviewNotes] = useState({});
-  const [labDomainReviewNotes, setLabDomainReviewNotes] = useState({});
+
+
+
   const [labTcpReviewNotes, setLabTcpReviewNotes] = useState({});
   const [terminalRequest, setTerminalRequest] = useState({ tone: "", message: "실행 중인 랩이 있으면 여기에서 바로 연결 상태를 확인할 수 있습니다." });
   const [terminalForm, setTerminalForm] = useState({ username: "", password: "" });
@@ -1647,33 +1129,33 @@ export function usePortalApp() {
   function clearClientSessionState(targetRoute = route) {
     setPendingOtpEnrollment(EMPTY_PENDING_OTP_ENROLLMENT);
     setSession(null);
-    setCourses([]);
-    setLabs([]);
-    setCourseQuotes([]);
+
+
+
     setCustomLabRequests([]);
     setQnaPosts([]);
     setMessages([]);
     setMessageRecipients([]);
     setMessageForm(EMPTY_MESSAGE);
-    setSelectedCourseId(null);
-    setOpenSelectedCourseDetail(false);
-    setPreferredSurveyPhase("pre");
+
+
+
     setAdminUsers([]);
     setAdminPasswordResetPins([]);
-    setAdminCourses([]);
-    setAdminLabs([]);
-    setAdminCourseAccessRequests([]);
-    setAdminSurveyResponses([]);
-    setAdminSurveySummary([]);
-    setAdminCourseQuotes([]);
+
+
+
+
+
+
     setAdminCustomLabRequests([]);
     setAdminAccessLogs([]);
     setAdminAccessStats(EMPTY_ACCESS_STATS);
-    setAdminArenaOverview(EMPTY_ADMIN_ARENA_OVERVIEW);
+
     setMyAccessLogs([]);
     setSelectedUserIds([]);
     setUserSearch("");
-    setCourseForm(EMPTY_COURSE);
+
     setTerminalSession(null);
     setTerminalSessionBusy(false);
     terminalSessionRequestRef.current.cancel();
@@ -1697,36 +1179,9 @@ export function usePortalApp() {
     return authenticatedUser;
   }
 
-  function getInvalidCourseFields(form) {
-    const invalidFields = ["slug", "category", "title", "summary", "duration", "level", "body"].filter((field) => !String(form?.[field] || "").trim());
-    if (String(form?.courseType || "standard") === "online") {
-      if (!String(form?.onlineMeetingUrl || "").trim()) invalidFields.push("onlineMeetingUrl");
-      if (!String(form?.onlineBoardUrl || "").trim()) invalidFields.push("onlineBoardUrl");
-      if (!String(form?.onlineSessionNote || "").trim()) invalidFields.push("onlineSessionNote");
-    }
-    if (String(form?.courseType || "standard") === "package" && !(form?.packageItems || []).length) invalidFields.push("packageItems");
-    if (form?.promoEnabled) {
-      if (!String(form?.promoStartsAt || "").trim()) invalidFields.push("promoStartsAt");
-      if (!String(form?.promoEndsAt || "").trim()) invalidFields.push("promoEndsAt");
-      const promoStartTime = Date.parse(form?.promoStartsAt || "");
-      const promoEndTime = Date.parse(form?.promoEndsAt || "");
-      if (Number.isFinite(promoStartTime) && Number.isFinite(promoEndTime) && promoEndTime <= promoStartTime) invalidFields.push("promoEndsAt");
-    }
-    if (form?.labEnabled) {
-      const backendType = String(form?.labBackendType || "vm");
-      if (backendType === "container") {
-        if (!String(form?.containerImageName || "").trim()) invalidFields.push("containerImageName");
-      } else if (backendType === "vm") {
-        if (!String(form?.heatTemplateName || "").trim()) invalidFields.push("heatTemplateName");
-        if (!String(form?.heatStackPrefix || "").trim()) invalidFields.push("heatStackPrefix");
-      }
-    }
-    return invalidFields;
-  }
 
-  useEffect(() => {
-    setCourseFormInvalidFields((current) => current.filter((field) => getInvalidCourseFields(courseForm).includes(field)));
-  }, [courseForm]);
+
+
   const [domainAvailability, setDomainAvailability] = useState({ tone: "", message: "" });
   const [profileForm, setProfileForm] = useState(EMPTY_PROFILE);
   const [materialUploadStatus, setMaterialUploadStatus] = useState({ tone: "", message: "" });
@@ -1770,41 +1225,41 @@ export function usePortalApp() {
   const [troveForm, setTroveForm] = useState(EMPTY_TROVE_FORM);
   const [troveStatus, setTroveStatus] = useState({ tone: "", message: "" });
   const [troveCredentials, setTroveCredentials] = useState({});
-  const [writtenExams, setWrittenExams] = useState([]);
-  const [writtenExamForm, setWrittenExamForm] = useState(EMPTY_WRITTEN_EXAM_FORM);
-  const [writtenExamAnswers, setWrittenExamAnswers] = useState({});
-  const [writtenExamStatus, setWrittenExamStatus] = useState({ tone: "", message: "" });
-  const [labExams, setLabExams] = useState([]);
-  const [labExamSessions, setLabExamSessions] = useState([]);
-  const [adminLabExamAttempts, setAdminLabExamAttempts] = useState([]);
-  const [adminLabExamSessions, setAdminLabExamSessions] = useState([]);
-  const [labExamForm, setLabExamForm] = useState(EMPTY_LAB_EXAM_FORM);
-  const [labExamSshPassword, setLabExamSshPassword] = useState("");
-  const [labExamStatus, setLabExamStatus] = useState({ tone: "", message: "" });
-  const [labExamTestStatus, setLabExamTestStatus] = useState({ tone: "", message: "", result: null });
-  const [payments, setPayments] = useState([]);
-  const [courseQuotes, setCourseQuotes] = useState([]);
-  const [courseQuoteStatus, setCourseQuoteStatus] = useState({ tone: "", message: "" });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   const [adminCoupons, setAdminCoupons] = useState([]);
   const [adminCouponForm, setAdminCouponForm] = useState(EMPTY_ADMIN_COUPON_FORM);
-  const [certificates, setCertificates] = useState([]);
-  const [certificateLeaderboard, setCertificateLeaderboard] = useState([]);
-  const [eligibleCertificates, setEligibleCertificates] = useState([]);
-  const [certificateStatus, setCertificateStatus] = useState(EMPTY_CERTIFICATE_STATUS);
-  const [myCertificateTier, setMyCertificateTier] = useState(EMPTY_CERTIFICATE_TIER);
-  const [adminPayments, setAdminPayments] = useState([]);
-  const [adminCourseQuotes, setAdminCourseQuotes] = useState([]);
-  const [adminCertificates, setAdminCertificates] = useState([]);
+
+
+
+
+
+
+
+
   const [adminMailLogs, setAdminMailLogs] = useState([]);
   const [adminMessages, setAdminMessages] = useState([]);
   const [adminAccessLogs, setAdminAccessLogs] = useState([]);
   const [adminAuditLogs, setAdminAuditLogs] = useState([]);
-  const [adminB2bReport, setAdminB2bReport] = useState(null);
+
   const [adminAccessStats, setAdminAccessStats] = useState(EMPTY_ACCESS_STATS);
   const [adminMailLogsStatus, setAdminMailLogsStatus] = useState({ tone: "", message: "" });
   const [adminAccessLogsStatus, setAdminAccessLogsStatus] = useState({ tone: "", message: "" });
   const [adminInvites, setAdminInvites] = useState([]);
-  const [inviteForm, setInviteForm] = useState({ code: "", label: "", recipientEmail: "", maxUses: "1", expiresAt: "", courseId: "" });
+  const [inviteForm, setInviteForm] = useState({ code: "", label: "", recipientEmail: "", maxUses: "1", expiresAt: "",  });
   const [mailTestAddress, setMailTestAddress] = useState("");
   const [adminMailForm, setAdminMailForm] = useState(EMPTY_ADMIN_MAIL_FORM);
   const [marketingMailForm, setMarketingMailForm] = useState(EMPTY_MARKETING_MAIL_FORM);
@@ -1820,7 +1275,7 @@ export function usePortalApp() {
   const [adminInstanceMonitor, setAdminInstanceMonitor] = useState({ ok: false, items: [], totals: {} });
   const [trafficDebugCapture, setTrafficDebugCapture] = useState(null);
   const [trafficDebugStatus, setTrafficDebugStatus] = useState(EMPTY_TRAFFIC_DEBUG_STATUS);
-  const [adminArenaOverview, setAdminArenaOverview] = useState(EMPTY_ADMIN_ARENA_OVERVIEW);
+
   const [myAccessLogs, setMyAccessLogs] = useState([]);
   const [quotaStatus, setQuotaStatus] = useState(EMPTY_QUOTA_STATUS);
   const [llmQuotaStatus, setLlmQuotaStatus] = useState(EMPTY_LLM_QUOTA_STATUS);
@@ -1835,7 +1290,7 @@ export function usePortalApp() {
   const adminLoadInFlightRef = useRef(null);
   const adminAutoRefreshInFlightRef = useRef(false);
   const userSnapshotRef = useRef("");
-  const lastActiveLabIdRef = useRef(null);
+
   const adminStatusTimerRef = useRef(null);
   const serviceValidationFeedbackTimerRef = useRef(null);
   const cloudConsoleWarningTimerRef = useRef(null);
@@ -1990,7 +1445,6 @@ export function usePortalApp() {
   }
 
   function buildPlatformStatusPayload(status = platformStatus) {
-    const surveyFeedbackOptions = normalizeLlmSurveyFeedbackOptionsJsonText(status.llmSurveyFeedbackOptionsJson);
     const portalUiMode = normalizePortalUiMode(
       status.portalUiMode,
       status.userPortalV2Enabled ? "switchable" : "legacy",
@@ -2021,10 +1475,10 @@ export function usePortalApp() {
         llmDailyQuotaAdminBypass: status.llmDailyQuotaAdminBypass !== false,
         llmMaxTokens: Math.max(1, Number(status.llmMaxTokens || 512) || 512),
         llmAdminTestMaxTokens: Math.max(1, Number(status.llmAdminTestMaxTokens || 80) || 80),
-        llmSurveyFeedbackMaxTokens: Math.max(64, Number(status.llmSurveyFeedbackMaxTokens || 384) || 384),
-        llmSurveyFeedbackTimeoutMs: Math.max(30000, Number(status.llmSurveyFeedbackTimeoutMs || 300000) || 300000),
-        llmSurveyFeedbackPrompt: status.llmSurveyFeedbackPrompt || DEFAULT_LLM_SURVEY_FEEDBACK_PROMPT,
-        llmSurveyFeedbackOptionsJson: surveyFeedbackOptions.value,
+
+
+
+
         llmThinkingMode: ["enabled", "default"].includes(status.llmThinkingMode) ? status.llmThinkingMode : "disabled",
         llmNoThinkDirectiveEnabled: status.llmNoThinkDirectiveEnabled !== false,
         llmWebSearchEnabled: status.llmWebSearchEnabled !== false,
@@ -2104,7 +1558,7 @@ export function usePortalApp() {
       selfServiceVmProjectRoleNames: Array.isArray(status.selfServiceVmProjectRoleNames) && status.selfServiceVmProjectRoleNames.length ? status.selfServiceVmProjectRoleNames : EMPTY_PLATFORM_STATUS.selfServiceVmProjectRoleNames,
       selfServiceVmProjectExternalNetworkName: status.selfServiceVmProjectExternalNetworkName || EMPTY_PLATFORM_STATUS.selfServiceVmProjectExternalNetworkName,
       selfServiceVmProjectQuota: status.selfServiceVmProjectQuota && typeof status.selfServiceVmProjectQuota === "object" ? status.selfServiceVmProjectQuota : EMPTY_PLATFORM_STATUS.selfServiceVmProjectQuota,
-      arenaEnabled: Boolean(status.arenaEnabled),
+
       selfServiceVmServiceEnabled: Boolean(status.selfServiceVmServiceEnabled),
       selfServiceVmVolumeBootEnabled: Boolean(status.selfServiceVmVolumeBootEnabled),
       selfServiceVmDataVolumeEnabled: Boolean(status.selfServiceVmDataVolumeEnabled),
@@ -2127,9 +1581,9 @@ export function usePortalApp() {
         ? { ...EMPTY_PLATFORM_STATUS.pocAdvancedDailyPrices, ...status.pocAdvancedDailyPrices }
         : EMPTY_PLATFORM_STATUS.pocAdvancedDailyPrices,
       pocFlavorSpecs: status.pocFlavorSpecs && typeof status.pocFlavorSpecs === "object" ? status.pocFlavorSpecs : EMPTY_PLATFORM_STATUS.pocFlavorSpecs,
-      courseLevelOptions: status.courseLevelOptions,
-      courseCategoryOptions: Array.isArray(status.courseCategoryOptions) && status.courseCategoryOptions.length ? status.courseCategoryOptions : EMPTY_PLATFORM_STATUS.courseCategoryOptions,
-      courseProgramTypeOptions: normalizeCourseProgramTypeOptions(status.courseProgramTypeOptions),
+
+
+
       standardCourseOverviewDescription: String(status.standardCourseOverviewDescription || "").trim() || EMPTY_PLATFORM_STATUS.standardCourseOverviewDescription,
       standardCourseOverviewPoints: normalizeCourseOverviewPoints(status.standardCourseOverviewPoints, EMPTY_PLATFORM_STATUS.standardCourseOverviewPoints),
       iltCourseOverviewDescription: String(status.iltCourseOverviewDescription || "").trim() || EMPTY_PLATFORM_STATUS.iltCourseOverviewDescription,
@@ -2159,13 +1613,13 @@ export function usePortalApp() {
       troveAllowedFlavors: Array.isArray(status.troveAllowedFlavors) && status.troveAllowedFlavors.length ? status.troveAllowedFlavors : EMPTY_PLATFORM_STATUS.troveAllowedFlavors,
       troveAllowedSizesGb: Array.isArray(status.troveAllowedSizesGb) && status.troveAllowedSizesGb.length ? status.troveAllowedSizesGb : EMPTY_PLATFORM_STATUS.troveAllowedSizesGb,
       landingVideoEnabled: status.landingVideoEnabled !== false,
-      landingScheduleEnabled: status.landingScheduleEnabled !== false,
+
       googleCalendarSyncEnabled: Boolean(status.googleCalendarSyncEnabled),
       googleCalendarIcsUrl: String(status.googleCalendarIcsUrl || "").trim(),
       googleCalendarSyncIntervalMinutes: Math.max(15, Number(status.googleCalendarSyncIntervalMinutes || 60) || 60),
       landingNoticeEnabled: status.landingNoticeEnabled === true,
       landingSurveyNoticeEnabled: status.landingSurveyNoticeEnabled === true,
-      landingCurriculumCollapsedByDefault: status.landingCurriculumCollapsedByDefault !== false,
+
       landingDemoType: status.landingDemoType || DEFAULT_LANDING_DEMO_TYPE,
       landingYoutubeUrl: status.landingYoutubeUrl || DEFAULT_LANDING_YOUTUBE_URL,
       landingHeroEyebrow: status.landingHeroEyebrow || EMPTY_PLATFORM_STATUS.landingHeroEyebrow,
@@ -2200,7 +1654,7 @@ export function usePortalApp() {
       externalSshRoutesEnabled: status.externalSshRoutesEnabled !== false,
       externalRdpRoutesEnabled: status.externalRdpRoutesEnabled !== false,
       publicTcpRoutesEnabled: Boolean(status.publicTcpRoutesEnabled),
-      courseQuoteAccessMode: normalizeCourseQuoteAccessMode(status.courseQuoteAccessMode),
+
       sshPublicHost: normalizeSshPublicHost(status.sshPublicHost, "ssh.example.com"),
       sshExternalPortStart: Math.max(1, Number(status.sshExternalPortStart || 41000) || 41000),
       sshExternalPortEnd: Math.max(1, Number(status.sshExternalPortEnd || 42999) || 42999),
@@ -2257,7 +1711,6 @@ export function usePortalApp() {
   function buildLlmSettingsPayload(status = platformStatus) {
     const apiKey = String(status.llmApiKey || "").trim();
     const googleSearchApiKey = String(status.googleSearchApiKey || "").trim();
-    const surveyFeedbackOptions = normalizeLlmSurveyFeedbackOptionsJsonText(status.llmSurveyFeedbackOptionsJson);
     return {
       llmProvider: status.llmProvider === "ollama-native" ? "ollama-native" : "custom",
       llmApiUrl: status.llmApiUrl || "",
@@ -2266,10 +1719,10 @@ export function usePortalApp() {
       llmApiKeyClearRequested: Boolean(status.llmApiKeyClearRequested),
       llmSystemPrompt: status.llmSystemPrompt || "",
       llmAdminTestMaxTokens: Math.max(1, Number(status.llmAdminTestMaxTokens || 80) || 80),
-      llmSurveyFeedbackMaxTokens: Math.max(64, Number(status.llmSurveyFeedbackMaxTokens || 384) || 384),
-      llmSurveyFeedbackTimeoutMs: Math.max(30000, Number(status.llmSurveyFeedbackTimeoutMs || 300000) || 300000),
-      llmSurveyFeedbackPrompt: status.llmSurveyFeedbackPrompt || DEFAULT_LLM_SURVEY_FEEDBACK_PROMPT,
-      llmSurveyFeedbackOptionsJson: surveyFeedbackOptions.value,
+
+
+
+
       llmThinkingMode: ["enabled", "default"].includes(status.llmThinkingMode) ? status.llmThinkingMode : "disabled",
       llmNoThinkDirectiveEnabled: status.llmNoThinkDirectiveEnabled !== false,
       llmWebSearchEnabled: status.llmWebSearchEnabled !== false,
@@ -2281,44 +1734,9 @@ export function usePortalApp() {
     };
   }
 
-  function validateLlmSurveyFeedbackOptionsJson(status = platformStatus) {
-    const normalized = normalizeLlmSurveyFeedbackOptionsJsonText(status.llmSurveyFeedbackOptionsJson);
-    if (!normalized.error) return "";
-    return normalized.error === "shape"
-      ? '설문 해설 추가 옵션은 {"temperature":0.2,"top_p":0.9}처럼 JSON 객체로 입력해 주세요.'
-      : '설문 해설 추가 옵션 JSON 형식이 올바르지 않습니다. 예: {"temperature":0.2,"top_p":0.9}';
-  }
 
-  function normalizeLlmSurveyFeedbackOptionsJsonText(value) {
-    let raw = String(value || "").trim();
-    if (!raw) return { value: "", error: "" };
-    raw = raw
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .replace(/[“”]/g, '"')
-      .replace(/[‘’]/g, "'");
 
-    const candidates = [
-      raw,
-      raw.replace(/'/g, '"'),
-      raw.replace(/([{,]\s*)([A-Za-z_$][\w$-]*)(\s*:)/g, '$1"$2"$3'),
-      raw
-        .replace(/'/g, '"')
-        .replace(/([{,]\s*)([A-Za-z_$][\w$-]*)(\s*:)/g, '$1"$2"$3'),
-    ];
-    for (const candidate of candidates) {
-      try {
-        const parsed = JSON.parse(candidate);
-        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-          return { value: "", error: "shape" };
-        }
-        return { value: JSON.stringify(parsed, null, 2), error: "" };
-      } catch {
-        // Try the next common paste format.
-      }
-    }
-    return { value: "", error: "syntax" };
-  }
+
 
   const isAdmin = userCanAccessAdminConsole(session);
   function canLoadSelfServiceVms(user = session) {
@@ -2404,7 +1822,7 @@ export function usePortalApp() {
     selfServiceVmForm.floatingIpRequested,
   ]);
 
-  const standaloneExamCourseIds = useMemo(() => getStandaloneExamCourseIds(courses), [courses]);
+
 
   const publicRouteOptions = useMemo(() => {
     const customSlots = Array.isArray(platformStatus?.customRouteSlots) ? platformStatus.customRouteSlots : [];
@@ -2422,91 +1840,19 @@ export function usePortalApp() {
         })),
     ];
   }, [platformStatus?.customRouteSlots]);
-  const selectedCourse = useMemo(() => (
-    courses.find((item) => Number(item.id) === Number(selectedCourseId) && !isStandaloneExamCourse(item))
-      ?? courses.find((item) => !isStandaloneExamCourse(item))
-      ?? null
-  ), [courses, selectedCourseId]);
-  const terminalCourses = useMemo(() => (
-    (courses || []).filter((course) => (
-      !isStandaloneExamCourse(course)
-      && (isAdmin || (Boolean(course.hasEnrollmentRecord) && !course.enrollmentExpired))
-    ))
-  ), [courses, isAdmin]);
-  const terminalCourseIds = useMemo(() => new Set(
-    terminalCourses
-      .map((course) => Number(course.id))
-      .filter(Boolean)
-  ), [terminalCourses]);
-  const firstAvailableLearningLab = useMemo(() => (
-    labs.find((item) => {
-      const courseId = Number(item.courseId || 0);
-      return ACTIVE_LAB_STATUSES.includes(String(item.status || "").toLowerCase())
-        && isLearningLabResource(item, standaloneExamCourseIds)
-        && (!terminalCourseIds.size || terminalCourseIds.has(courseId));
-    }) ?? null
-  ), [labs, standaloneExamCourseIds, terminalCourseIds]);
-  const selectedTerminalCourse = useMemo(() => {
-    const selected = terminalCourses.find((item) => Number(item.id) === Number(selectedCourseId)) ?? null;
-    if (selected) {
-      const selectedHasActiveLearningLab = labs.some((item) => (
-        ACTIVE_LAB_STATUSES.includes(String(item.status || "").toLowerCase())
-        && isLearningLabResource(item, standaloneExamCourseIds)
-        && Number(item.courseId) === Number(selected.id)
-      ));
-      if (terminalCourseSelectionTouchedRef.current || selectedHasActiveLearningLab || !firstAvailableLearningLab) {
-        return selected;
-      }
-    }
-    const activeCourseId = Number(firstAvailableLearningLab?.courseId || 0);
-    const activeCourse = activeCourseId
-      ? (terminalCourses.find((item) => Number(item.id) === activeCourseId)
-        ?? courses.find((item) => Number(item.id) === activeCourseId)
-        ?? null)
-      : null;
-    return activeCourse
-      ?? selected
-      ?? terminalCourses[0]
-      ?? selectedCourse
-      ?? null;
-  }, [courses, firstAvailableLearningLab, labs, selectedCourse, selectedCourseId, standaloneExamCourseIds, terminalCourses]);
-  const selectedTerminalCourseId = Number(selectedTerminalCourse?.id || 0);
-  const selectedCourseLab = useMemo(() => (
-    labs.find((item) => (
-      ACTIVE_LAB_STATUSES.includes(String(item.status || "").toLowerCase())
-      && isLearningLabResource(item, standaloneExamCourseIds)
-      && Number(item.courseId) === selectedTerminalCourseId
-    )) ?? null
-  ), [labs, selectedTerminalCourseId, standaloneExamCourseIds]);
-  const selectedPopupLab = useMemo(() => {
-    if (popupMode !== "terminal") return null;
-    const popupLabId = getInitialSelectedLabId();
-    if (!popupLabId) return null;
-    return labs.find((item) => Number(item.id) === popupLabId)
-      ?? (isAdmin ? adminLabs.find((item) => Number(item.id) === popupLabId) : null)
-      ?? null;
-  }, [adminLabs, isAdmin, labs, popupMode]);
-  const activeLab = useMemo(() => {
-    if (selectedPopupLab) return selectedPopupLab;
-    if (selectedCourseLab) return selectedCourseLab;
-    if (selectedTerminalCourseId && terminalCourseSelectionTouchedRef.current) return null;
-    return firstAvailableLearningLab;
-  }, [firstAvailableLearningLab, selectedCourseLab, selectedPopupLab, selectedTerminalCourseId]);
-  const hasTransitioningLab = useMemo(
-    () => labs.some((item) => ["provisioning", "terminating"].includes(String(item.status || "").toLowerCase())),
-    [labs],
-  );
-  useEffect(() => {
-    terminalCourseSelectionTouchedRef.current = false;
-  }, [session?.id]);
-  useEffect(() => {
-    if (terminalCourseSelectionTouchedRef.current) return;
-    if (selectedCourseLab) return;
-    const nextCourseId = Number(firstAvailableLearningLab?.courseId || 0);
-    if (!nextCourseId || Number(selectedCourseId || 0) === nextCourseId) return;
-    setSelectedCourseId(nextCourseId);
-  }, [firstAvailableLearningLab?.courseId, selectedCourseId, selectedCourseLab]);
-  const activeLabCourse = useMemo(() => courses.find((item) => Number(item.id) === Number(activeLab?.courseId)) ?? null, [courses, activeLab?.courseId]);
+
+
+
+
+
+
+
+
+
+
+
+
+
   const qnaUnreadCount = useMemo(() => {
     const currentUserId = Number(session?.id || 0);
     if (!currentUserId || !qnaLastReadAt) return 0;
@@ -2551,18 +1897,8 @@ export function usePortalApp() {
       && !termsConsentRequired
       && session.marketingEmailConsentDecided !== true,
   );
-  const selectedWrittenExam = useMemo(() => {
-    if (session?.role === "admin") {
-      return writtenExams.find((item) => String(item.courseId) === String(writtenExamForm.courseId)) ?? null;
-    }
-    return writtenExams.find((item) => String(item.courseId) === String(selectedCourseId)) ?? writtenExams[0] ?? null;
-  }, [selectedCourseId, session?.role, writtenExamForm.courseId, writtenExams]);
-  const selectedLabExam = useMemo(() => {
-    if (session?.role === "admin") {
-      return labExams.find((item) => String(item.courseId) === String(labExamForm.courseId)) ?? null;
-    }
-    return labExams.find((item) => String(item.courseId) === String(selectedCourseId)) ?? labExams[0] ?? null;
-  }, [labExamForm.courseId, labExams, selectedCourseId, session?.role]);
+
+
 
   function pushToast(message, tone = "info") {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -2659,7 +1995,7 @@ export function usePortalApp() {
           setSession(authenticatedUser);
           handleAccountSharingWarning(result.accountSharingWarning);
           setPendingOtpEnrollment(EMPTY_PENDING_OTP_ENROLLMENT);
-          await loadCourses(cancelled, authenticatedUser);
+
           if (!cancelled) {
             setLoading(false);
             void refreshAll(authenticatedUser, cancelled);
@@ -2671,7 +2007,7 @@ export function usePortalApp() {
               message: result.message || "데이터베이스 연결이 불가능해 제한 모드로 실행 중입니다.",
             });
           }
-          await loadCourses(cancelled);
+
         }
       } catch (error) {
         if (!cancelled && [401, 503].includes(Number(error?.status))) {
@@ -2681,7 +2017,7 @@ export function usePortalApp() {
               message: error.message || "서버가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.",
             });
           }
-          await loadCourses(cancelled);
+
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -2690,45 +2026,13 @@ export function usePortalApp() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (session?.role !== "admin") return;
-    const fallbackCourseId = String(writtenExams[0]?.courseId || adminCourses[0]?.id || "");
-    if (!fallbackCourseId) return;
-    setWrittenExamForm((current) => (current.courseId ? current : { ...current, courseId: fallbackCourseId }));
-  }, [adminCourses, session?.role, writtenExams]);
 
-  useEffect(() => {
-    if (session?.role !== "admin") return;
-    const fallbackCourseId = String(labExams[0]?.courseId || adminCourses[0]?.id || "");
-    if (!fallbackCourseId) return;
-    setLabExamForm((current) => (current.courseId ? current : { ...current, courseId: fallbackCourseId }));
-  }, [adminCourses, labExams, session?.role]);
 
-  useEffect(() => {
-    if (!session) return;
-    const runningLab = labs.find((lab) => lab.status === "running" && isLearningLabResource(lab, standaloneExamCourseIds));
-    if (!runningLab) return;
-    const timer = window.setInterval(() => api(`/api/labs/${runningLab.id}/heartbeat`, { method: "POST" }).catch(() => {}), 120000);
-    return () => window.clearInterval(timer);
-  }, [labs, session, standaloneExamCourseIds]);
 
-  useEffect(() => {
-    if (!session || route === "admin" || (!hasTransitioningLab && !startingLabIds.length)) return;
-    let stopped = false;
-    const refreshTransitioningLabs = () => {
-      if (!isPageVisible()) return;
-      void loadLabs(stopped).catch(() => {
-        // Keep the last known lab state and retry on the next short polling tick.
-      });
-    };
-    const timer = window.setInterval(refreshTransitioningLabs, LAB_TRANSITION_REFRESH_INTERVAL_MS);
-    const unsubscribeVisibleResume = subscribeToVisiblePageResume(refreshTransitioningLabs);
-    return () => {
-      stopped = true;
-      window.clearInterval(timer);
-      unsubscribeVisibleResume();
-    };
-  }, [hasTransitioningLab, route, session?.id, startingLabIds.length]);
+
+
+
+
 
   useEffect(() => {
     if (!session) {
@@ -2753,7 +2057,7 @@ export function usePortalApp() {
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
-      courseCode: "",
+
     });
   }, [session]);
 
@@ -2776,64 +2080,7 @@ export function usePortalApp() {
     return () => { cancelled = true; };
   }, [qnaPosts, route, section, session?.id]);
 
-  useEffect(() => {
-    if (!activeLab) {
-      const hasRunningCustomLab = customLabRequests.some((request) => String(request.status || "").toLowerCase() === "running");
-      if (hasRunningCustomLab && (publicRouteFormDirty || publicTcpRouteFormDirty)) {
-        return;
-      }
-      setPublicRouteForm(EMPTY_PUBLIC_ROUTE);
-      setPublicTcpRouteForm(EMPTY_PUBLIC_TCP_ROUTE);
-      setPublicRouteFormDirty(false);
-      setPublicTcpRouteFormDirty(false);
-      lastActiveLabIdRef.current = null;
-      setDomainAvailability({ tone: "", message: "" });
-      setTerminalRequest({ tone: "", message: "실행 중인 랩이 있으면 여기에서 바로 연결 상태를 확인할 수 있습니다." });
-      setTerminalForm((current) => ({
-        ...current,
-        username: selectedCourse?.terminalSshUser || "",
-        password: "",
-      }));
-      return;
-    }
 
-    const managedLabCourse = ["linux-shell-lab.yaml", "example-lab.yaml", "kubeflow.yaml"].includes(String(activeLabCourse?.heatTemplateName || "").trim().toLowerCase());
-    const labChanged = Number(lastActiveLabIdRef.current || 0) !== Number(activeLab.id || 0);
-
-    if (labChanged) {
-      lastActiveLabIdRef.current = Number(activeLab.id || 0);
-      setPublicRouteFormDirty(false);
-      setPublicTcpRouteFormDirty(false);
-    }
-
-    setTerminalForm((current) => ({
-      ...current,
-      username: managedLabCourse
-        ? String(activeLab.terminalSshUser || "")
-        : activeLab.terminalSshUser || activeLabCourse?.terminalSshUser || selectedCourse?.terminalSshUser || current.username || "",
-      password: managedLabCourse
-        ? String(activeLab.terminalSshPassword || "")
-        : activeLab.terminalSshPassword || current.password || "",
-    }));
-    if (!publicRouteFormDirty || labChanged) {
-      const defaultDomainEntry = (Array.isArray(activeLab.requestedPublicDomains) && activeLab.requestedPublicDomains[0])
-        || (Array.isArray(activeLab.publicDomains) && activeLab.publicDomains[0])
-        || null;
-      setPublicRouteForm({
-        domainType: defaultDomainEntry?.domainType || "managed",
-        subdomain: activeLab.requestedPublicSubdomain || activeLab.publicSubdomain || "",
-        customDomain: defaultDomainEntry?.domainType === "custom" ? defaultDomainEntry.fqdn || "" : "",
-        routeKey: resolveRouteKeyForPort(activeLab.requestedPublicPort || activeLab.publicPort, platformStatus?.customRouteSlots),
-        protocol: activeLab.requestedPublicProtocol || activeLab.publicProtocol || "http",
-        port: activeLab.requestedPublicPort ? String(activeLab.requestedPublicPort) : activeLab.publicPort ? String(activeLab.publicPort) : "80",
-        nodeId: String(defaultDomainEntry?.nodeId || ""),
-      });
-    }
-    if (!publicTcpRouteFormDirty || labChanged) {
-      setPublicTcpRouteForm(EMPTY_PUBLIC_TCP_ROUTE);
-    }
-    setDomainAvailability({ tone: "", message: "" });
-  }, [activeLab?.id, activeLab?.courseId, activeLab?.publicSubdomain, activeLab?.publicProtocol, activeLab?.publicPort, activeLab?.requestedPublicSubdomain, activeLab?.requestedPublicProtocol, activeLab?.requestedPublicPort, activeLab?.publicDomains?.[0]?.nodeId, activeLab?.requestedPublicDomains?.[0]?.nodeId, activeLab?.terminalSshUser, activeLab?.terminalSshPassword, activeLabCourse?.heatTemplateName, activeLabCourse?.terminalSshUser, selectedCourse?.terminalSshUser, platformStatus?.customRouteSlots, publicRouteFormDirty, publicTcpRouteFormDirty, customLabRequests]);
 
   useEffect(() => {
     if (route !== "admin" || !session || session.role !== "admin") return;
@@ -2925,7 +2172,7 @@ export function usePortalApp() {
           const activeUser = await verifyActiveSessionForPolling(stopped, { targetRoute: "portal" });
           if (!activeUser || stopped) return;
           await Promise.all([
-            loadLabs(stopped),
+
             loadLuckyDraw(stopped),
             loadCustomLabRequests(stopped),
             loadConsultingRequests(stopped),
@@ -2959,46 +2206,31 @@ export function usePortalApp() {
   useEffect(() => {
     if (!session || route === "admin" || platformStatus?.recoveryMode) return;
     const events = new EventSource("/api/events", { withCredentials: true });
-    const onCoursesUpdated = () => {
-      void loadCourses();
-      void loadWrittenExams();
-      void loadLabExams();
-      if (isAdmin) void loadAdminCourses();
-    };
-    const onTextbooksUpdated = () => {
-      if (isAdmin) void loadAdminTextbooks();
-      void loadCourses();
-    };
-    const onWrittenExamsUpdated = () => {
-      void loadWrittenExams();
-    };
-    const onLabExamsUpdated = () => {
-      void loadLabExams();
-    };
-    const onLabsUpdated = () => {
-      void loadLabs();
-      if (isAdmin) void loadAdminLabs();
-    };
+
+
+
+
+
     const onPlatformStatusUpdated = () => {
       void loadPlatformStatus(false, { force: true });
       void loadQuotaStatus(false);
     };
-    events.addEventListener("courses-updated", onCoursesUpdated);
-    events.addEventListener("labs-updated", onLabsUpdated);
+
+
     events.addEventListener("platform-status-updated", onPlatformStatusUpdated);
-    events.addEventListener("textbooks-updated", onTextbooksUpdated);
-    events.addEventListener("written-exams-updated", onWrittenExamsUpdated);
-    events.addEventListener("lab-exams-updated", onLabExamsUpdated);
+
+
+
     events.onerror = () => {
       // EventSource reconnects automatically.
     };
     return () => {
-      events.removeEventListener("courses-updated", onCoursesUpdated);
-      events.removeEventListener("labs-updated", onLabsUpdated);
+
+
       events.removeEventListener("platform-status-updated", onPlatformStatusUpdated);
-      events.removeEventListener("textbooks-updated", onTextbooksUpdated);
-      events.removeEventListener("written-exams-updated", onWrittenExamsUpdated);
-      events.removeEventListener("lab-exams-updated", onLabExamsUpdated);
+
+
+
       events.close();
     };
   }, [route, session?.id, platformStatus?.recoveryMode]);
@@ -3040,18 +2272,6 @@ export function usePortalApp() {
           setAuthStatus({ tone: "error", message: result.message || "고급 랩 결제에 실패했습니다." });
           pushToast(message || result.message || "고급 랩 결제에 실패했습니다.", "error");
           await runSafeRefreshTasks([loadCustomLabRequests(), isAdmin ? loadAdmin() : Promise.resolve()]);
-        } else if (paymentStatus === "success") {
-          const result = await api("/api/payments/confirm", {
-            method: "POST",
-            body: { orderId, paymentKey, amount },
-          });
-          setAuthStatus({ tone: "success", message: result.message || "결제가 완료되었습니다." });
-          pushToast(result.message || "결제가 완료되었습니다.", "success");
-          setSection("courses");
-          if (result.payment?.courseId) {
-            setSelectedCourseId(Number(result.payment.courseId));
-          }
-          await runSafeRefreshTasks([loadPayments(), loadCourses(), loadWrittenExams(), loadLabExams(), loadCertificates()]);
         } else if (paymentStatus === "fail") {
           const result = await api("/api/payments/fail", {
             method: "POST",
@@ -3059,7 +2279,7 @@ export function usePortalApp() {
           });
           setAuthStatus({ tone: "error", message: result.message || "결제에 실패했습니다." });
           pushToast(message || result.message || "결제에 실패했습니다.", "error");
-          await loadPayments();
+
         }
       } catch (error) {
         setAuthStatus({ tone: "error", message: error.message || "결제 처리 중 오류가 발생했습니다." });
@@ -3073,8 +2293,8 @@ export function usePortalApp() {
   useEffect(() => {
     if (!session || !isAdmin) return;
     const snapshot = JSON.stringify({
-      labs: (adminLabs || []).map((item) => [item.id, item.status, item.publicRequestPending, item.publicEnabled, item.requestedPublicUrl, item.publicUrl]),
-      access: (adminCourseAccessRequests || []).map((item) => [item.id, item.status]),
+
+
       custom: (adminCustomLabRequests || []).map((item) => [item.id, item.status, item.quotedPrice]),
       zun: (zunContainers || []).map((item) => [item.id, item.status, item.containerUuid]),
       magnum: (magnumClusters || []).map((item) => [item.id, item.status, item.clusterUuid, item.apiAddress]),
@@ -3084,12 +2304,12 @@ export function usePortalApp() {
       pushToast("관리자 화면 정보가 자동으로 갱신되었습니다.");
     }
     adminSnapshotRef.current = snapshot;
-  }, [session?.id, isAdmin, adminLabs, adminCourseAccessRequests, adminCustomLabRequests, zunContainers, magnumClusters, troveInstances]);
+  }, [session?.id, isAdmin,   adminCustomLabRequests, zunContainers, magnumClusters, troveInstances]);
 
   useEffect(() => {
     if (!session || route === "admin") return;
     const snapshot = JSON.stringify({
-      labs: (labs || []).map((item) => [item.id, item.status, item.publicRequestPending, item.publicEnabled, item.requestedPublicUrl, item.publicUrl]),
+
       custom: (customLabRequests || []).map((item) => [item.id, item.status, item.quotedPrice]),
       zun: (zunContainers || []).map((item) => [item.id, item.status, item.containerUuid]),
       magnum: (magnumClusters || []).map((item) => [item.id, item.status, item.clusterUuid, item.apiAddress]),
@@ -3099,11 +2319,11 @@ export function usePortalApp() {
       pushToast("변경된 요청 상태가 반영되었습니다.");
     }
     userSnapshotRef.current = snapshot;
-  }, [session?.id, route, labs, customLabRequests, zunContainers, magnumClusters, troveInstances]);
+  }, [session?.id, route,  customLabRequests, zunContainers, magnumClusters, troveInstances]);
 
   async function refreshAll(user = session, cancelled = false) {
     await runSafeRefreshTasks([
-      loadCourses(cancelled, user),
+
       loadNotices(cancelled),
       loadNotifications(cancelled),
       loadLuckyDraw(cancelled),
@@ -3115,7 +2335,7 @@ export function usePortalApp() {
       loadQuotaStatus(cancelled, user),
       loadLlmQuotaStatus(cancelled, user),
       loadAccessStats(cancelled, user),
-      loadLabs(cancelled),
+
       loadCustomLabRequests(cancelled),
       loadConsultingRequests(cancelled),
       loadSelfServiceVms(cancelled),
@@ -3123,34 +2343,18 @@ export function usePortalApp() {
       loadZunContainers(cancelled),
       loadMagnumClusters(cancelled),
       loadTroveInstances(cancelled),
-      loadWrittenExams(cancelled),
-      loadLabExams(cancelled, user),
-      loadPayments(cancelled),
-      loadCourseQuotes(cancelled),
-      loadCertificates(cancelled),
+
+
+
+
+
       loadQna(cancelled, user),
       loadMyAccessLogs(cancelled),
       userCanAccessAdminConsole(user) ? loadAdmin(cancelled, user) : Promise.resolve(),
     ]);
   }
-  async function loadCourses(cancelled = false, user = session) {
-    const result = await api(user ? "/api/courses" : "/api/public/courses");
-    if (cancelled) return;
-    const nextCourses = withLocalPreviewSampleCourses(result.courses);
-    setCourses(nextCourses);
-    setSelectedCourseId((current) => {
-      if (!current) return nextCourses[0]?.id ?? null;
-      return nextCourses.some((item) => Number(item.id) === Number(current))
-        ? current
-        : (nextCourses[0]?.id ?? null);
-    });
-  }
-  async function loadLabs(cancelled = false) {
-    const result = await api("/api/labs");
-    const nextLabs = withLocalPreviewSampleLabs(result.labs);
-    if (!cancelled) setLabs(nextLabs);
-    return nextLabs;
-  }
+
+
   async function loadCustomLabRequests(cancelled = false) {
     const result = await api("/api/custom-lab-requests");
     if (!cancelled) setCustomLabRequests(result.requests);
@@ -3159,10 +2363,7 @@ export function usePortalApp() {
     const result = await api("/api/consulting-requests");
     if (!cancelled) setConsultingRequests(result.requests);
   }
-  async function loadAdminConsultingRequests(cancelled = false) {
-    const result = await api("/api/admin/consulting-requests");
-    if (!cancelled) setAdminConsultingRequests(result.requests);
-  }
+
   async function loadCloudConsoleProject() {
     const result = await api("/api/cloud-console/project");
     if (Array.isArray(result.projectRequests)) setSelfServiceProjectRequests(result.projectRequests);
@@ -3425,50 +2626,11 @@ export function usePortalApp() {
       sizeGb: current.sizeGb || String(platformStatus.troveAllowedSizesGb?.[0] || 5),
     }));
   }
-  async function loadWrittenExams(cancelled = false) {
-    const result = await api(session?.role === "admin" ? "/api/admin/written-exams" : "/api/written-exams");
-    if (cancelled) return;
-    const exams = result.exams || [];
-    setWrittenExams(exams);
-  }
-  async function loadLabExams(cancelled = false, user = session) {
-    const isAdminView = typeof window !== "undefined" && window.location.pathname === "/admin";
-    const result = await api(user?.role === "admin" || isAdminView ? "/api/admin/lab-exams" : "/api/lab-exams");
-    if (cancelled) return;
-    setLabExams(result.exams || []);
-    setLabExamSessions(result.sessions || []);
-    if (user?.role === "admin" || isAdminView) {
-      setAdminLabExamAttempts(result.attempts || []);
-      setAdminLabExamSessions(result.sessions || []);
-    }
-  }
-  async function loadCertificates(cancelled = false) {
-    const result = await api("/api/certificates");
-    if (cancelled) return;
-    setCertificates(result.certificates || []);
-    setCertificateLeaderboard(result.leaderboard || []);
-    setEligibleCertificates(result.eligibleCourses || []);
-    setMyCertificateTier(result.myTier || EMPTY_CERTIFICATE_TIER);
-  }
-  async function loadPayments(cancelled = false) {
-    const result = await api(session?.role === "admin" ? "/api/admin/payments" : "/api/payments");
-    if (cancelled) return;
-    if (session?.role === "admin") {
-      setAdminPayments(result.payments || []);
-    } else {
-      setPayments(result.payments || []);
-    }
-  }
-  async function loadCourseQuotes(cancelled = false) {
-    if (!canUseCourseQuotePortal(platformStatusRef.current, isAdmin)) {
-      if (!cancelled) setCourseQuotes([]);
-      return [];
-    }
-    const result = await api("/api/course-quotes");
-    if (cancelled) return result.quotes || [];
-    setCourseQuotes(result.quotes || []);
-    return result.quotes || [];
-  }
+
+
+
+
+
   async function loadNotices(cancelled = false) {
     const result = await api("/api/notices");
     if (!cancelled) setNotices(result.notices);
@@ -3695,7 +2857,7 @@ export function usePortalApp() {
   async function onAttemptLuckyDraw() {
     try {
       const result = await api("/api/lucky-draw/attempt", { method: "POST" });
-      await runSafeRefreshTasks([loadLuckyDraw(), loadCourses(), loadCoupons(), loadNotifications()]);
+      await runSafeRefreshTasks([loadLuckyDraw(),  loadCoupons(), loadNotifications()]);
       setLuckyDrawStatus({ tone: "success", message: result.reward?.label || result.message || "무료 강의 뽑기 참여가 완료되었습니다." });
       pushToast(result.reward?.label || result.message || "무료 강의 뽑기 참여가 완료되었습니다.", "success");
     } catch (error) {
@@ -3794,7 +2956,7 @@ export function usePortalApp() {
       eventId: String(eventId ?? item.eventId ?? ""),
       label: item.label || "",
       rewardType: item.rewardType || "message",
-      courseId: item.courseId != null ? String(item.courseId) : "",
+
       couponDiscountType: item.couponDiscountType || "percent",
       couponDiscountValue: String(item.couponDiscountValue ?? 0),
       couponExpiresInDays: String(item.couponExpiresInDays ?? 7),
@@ -3815,7 +2977,7 @@ export function usePortalApp() {
       const body = {
         rewardType: luckyDrawRewardForm.rewardType,
         label: luckyDrawRewardForm.label,
-        courseId: luckyDrawRewardForm.courseId ? Number(luckyDrawRewardForm.courseId) : null,
+
         couponDiscountType: luckyDrawRewardForm.couponDiscountType,
         couponDiscountValue: Number(luckyDrawRewardForm.couponDiscountValue || 0),
         couponExpiresInDays: Number(luckyDrawRewardForm.couponExpiresInDays || 7),
@@ -4089,17 +3251,7 @@ export function usePortalApp() {
       pushToast(error.message || "접속 이력을 새로고침하지 못했습니다.", "error");
     }
   }
-  async function loadServiceValidationStatus(cancelled = false) {
-    const result = await api("/api/admin/service-validation-status");
-    if (!cancelled) {
-      setServiceValidationStatus((current) => ({
-        ...EMPTY_SERVICE_VALIDATION_STATUS,
-        ...result,
-        tone: current?.tone || "",
-        message: current?.message || "",
-      }));
-    }
-  }
+
   async function loadQna(cancelled = false, user = session) {
     if (!user) return;
     const result = await api("/api/qna");
@@ -4107,68 +3259,52 @@ export function usePortalApp() {
   }
   async function loadAdminSnapshot(cancelled = false, user = session) {
     const snapshotApi = (path, fallback, message) => safeAdminApi(path, fallback, message, user);
-    const [usersResult, pinsResult, coursesResult, textbooksResult, labsResult, activeLabsResult, accessRequestsResult, surveyResult, paymentsResult, quotesResult, heatTemplatesResult, applicationYamlsResult, cloudInitTemplatesResult, labDomainsResult, customLabRequestsResult, consultingRequestsResult, logsResult, auditLogsResult, b2bReportResult, apiStatusResult, instanceMonitorResult, invitesResult, selfServiceVmResult, zunContainersResult, magnumClustersResult, troveInstancesResult, serviceValidationResult, certificatesResult, mailLogsResult, messagesResult, accessLogsResult, accessStatsResult, luckyDrawResult, couponsResult, arenaOverviewResult] = await runTaskFactoriesWithConcurrency([
-      () => snapshotApi("/api/admin/users", { users: [] }, "사용자 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/password-reset-pins", { pins: [] }, "비밀번호 재설정 PIN 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/courses", { courses: [] }, "과정 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/textbooks", { textbooks: [] }, "교재 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/labs?limit=250", { labs: [] }, "랩 요청 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/labs?activeOnly=true&limit=250", { labs: [] }, "실행 중인 랩 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/course-access-requests", { requests: [] }, "과정 승인 요청을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/course-surveys", { responses: [], summary: [] }, "과정 설문을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/payments", { payments: [] }, "결제 이력을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/course-quotes", { quotes: [] }, "견적서 이력을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/heat-templates", { templates: [] }, "Heat 템플릿을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/application-yamls", { items: [] }, "Application YAML 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/cloud-init-templates", { items: [] }, "cloud-init 템플릿을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/lab-domains", { routes: [] }, "도메인 승인 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/custom-lab-requests", { requests: [] }, "고급 랩 요청을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/consulting-requests", { requests: [] }, "운영지원 요청을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/logs", { logs: [] }, "시스템 로그를 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/audit-logs?limit=200", { logs: [] }, "관리자 감사 로그를 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/reports/b2b-summary", { report: null }, "B2B 리포트를 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/api-status?light=1", { ...EMPTY_API_MONITOR }, "서비스 대시보드를 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/instance-monitor", { ok: false, items: [], totals: {} }, "인스턴스 모니터링 데이터를 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/invites", { invites: [] }, "초대 코드를 불러오지 못했습니다."),
-      () => snapshotApi("/api/self-service-vms", { vms: [] }, "사용자화 가상머신 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/zun-containers", { containers: [] }, "컨테이너 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/magnum-clusters", { clusters: [] }, "쿠버네티스 클러스터 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/trove-instances", { instances: [] }, "DB 인스턴스 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/service-validation-status", { ...EMPTY_SERVICE_VALIDATION_STATUS }, "검증 자원 상태를 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/certificates", { certificates: [] }, "자격증 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/mail-logs", { logs: [] }, "메일 이력을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/messages", { messages: [] }, "쪽지 이력을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/access-logs?limit=200", { logs: [] }, "접속 이력을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/access-stats", { ...EMPTY_ACCESS_STATS }, "접속 통계를 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/lucky-draw/events", { events: [] }, "무료 강의 뽑기 이벤트를 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/coupons", { coupons: [] }, "쿠폰 목록을 불러오지 못했습니다."),
-      () => snapshotApi("/api/admin/arena/overview", { ...EMPTY_ADMIN_ARENA_OVERVIEW }, "아레나 개요를 불러오지 못했습니다."),
-    ], 5);
+    const [usersResult, pinsResult, heatTemplatesResult, applicationYamlsResult, cloudInitTemplatesResult, customLabRequestsResult, consultingRequestsResult, logsResult, auditLogsResult, apiStatusResult, instanceMonitorResult, invitesResult, selfServiceVmResult, zunContainersResult, magnumClustersResult, troveInstancesResult, serviceValidationResult, mailLogsResult, messagesResult, accessLogsResult, accessStatsResult, luckyDrawResult, couponsResult] = await runTaskFactoriesWithConcurrency([() => snapshotApi("/api/admin/users", { users: [] }, "사용자 목록을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/password-reset-pins", { pins: [] }, "비밀번호 재설정 PIN 목록을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/heat-templates", { templates: [] }, "Heat 템플릿을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/application-yamls", { items: [] }, "Application YAML 목록을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/cloud-init-templates", { items: [] }, "cloud-init 템플릿을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/custom-lab-requests", { requests: [] }, "고급 랩 요청을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/consulting-requests", { requests: [] }, "운영지원 요청을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/logs", { logs: [] }, "시스템 로그를 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/audit-logs?limit=200", { logs: [] }, "관리자 감사 로그를 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/api-status?light=1", { ...EMPTY_API_MONITOR }, "서비스 대시보드를 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/instance-monitor", { ok: false, items: [], totals: {} }, "인스턴스 모니터링 데이터를 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/invites", { invites: [] }, "초대 코드를 불러오지 못했습니다."),
+() => snapshotApi("/api/self-service-vms", { vms: [] }, "사용자화 가상머신 목록을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/zun-containers", { containers: [] }, "컨테이너 목록을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/magnum-clusters", { clusters: [] }, "쿠버네티스 클러스터 목록을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/trove-instances", { instances: [] }, "DB 인스턴스 목록을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/service-validation-status", { ...EMPTY_SERVICE_VALIDATION_STATUS }, "검증 자원 상태를 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/mail-logs", { logs: [] }, "메일 이력을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/messages", { messages: [] }, "쪽지 이력을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/access-logs?limit=200", { logs: [] }, "접속 이력을 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/access-stats", { ...EMPTY_ACCESS_STATS }, "접속 통계를 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/lucky-draw/events", { events: [] }, "무료 강의 뽑기 이벤트를 불러오지 못했습니다."),
+() => snapshotApi("/api/admin/coupons", { coupons: [] }, "쿠폰 목록을 불러오지 못했습니다.")], 5);
     if (cancelled) return;
     const heatTemplates = heatTemplatesResult.templates || [];
     const cloudInitTemplates = cloudInitTemplatesResult.items || [];
     setAdminUsers(usersResult.users || []);
     setAdminPasswordResetPins(pinsResult.pins || []);
-    setAdminCourses(coursesResult.courses || []);
-    setAdminTextbooks(textbooksResult.textbooks || []);
-    setAdminLabs([...(labsResult.labs || []), ...(activeLabsResult.labs || [])].reduce((labs, lab) => (
-      labs.some((item) => Number(item.id) === Number(lab.id)) ? labs : [...labs, lab]
-    ), []));
-    setAdminCourseAccessRequests(accessRequestsResult.requests || []);
-    setAdminSurveyResponses(surveyResult.responses || []);
-    setAdminSurveySummary(surveyResult.summary || []);
-    setAdminPayments(paymentsResult.payments || []);
-    setAdminCourseQuotes(quotesResult.quotes || []);
+
+
+
+
+
+
+
+
     setAdminHeatTemplates(heatTemplates);
     setAdminApplicationYamls(applicationYamlsResult.items || []);
     setAdminCloudInitTemplates(cloudInitTemplates);
-    setAdminLabDomains(labDomainsResult.routes || []);
+
     setAdminCustomLabRequests(customLabRequestsResult.requests || []);
     setAdminConsultingRequests(consultingRequestsResult.requests || []);
     setAdminPublicQuoteInquiries(consultingRequestsResult.publicQuoteInquiries || []);
     setAdminLogs(logsResult.logs || []);
     setAdminAuditLogs(auditLogsResult.logs || []);
-    setAdminB2bReport(b2bReportResult.report || null);
+
     setApiMonitor(apiStatusResult || EMPTY_API_MONITOR);
     setAdminInstanceMonitor(instanceMonitorResult || { ok: false, items: [], totals: {} });
     setAdminInvites(invitesResult.invites || []);
@@ -4183,46 +3319,46 @@ export function usePortalApp() {
       tone: current?.tone || "",
       message: current?.message || "",
     }));
-    setAdminCertificates(certificatesResult.certificates || []);
+
     setAdminMailLogs(mailLogsResult.logs || []);
     setAdminMessages(messagesResult.messages || []);
     setAdminAccessLogs(accessLogsResult.logs || []);
     setAdminAccessStats(accessStatsResult || EMPTY_ACCESS_STATS);
     setAdminLuckyDrawEvents(luckyDrawResult.events || []);
     setAdminCoupons(couponsResult.coupons || []);
-    setAdminArenaOverview(arenaOverviewResult || EMPTY_ADMIN_ARENA_OVERVIEW);
+
     const adminLoadErrorCount = [
       usersResult,
       pinsResult,
-      coursesResult,
-      textbooksResult,
-      labsResult,
-      accessRequestsResult,
-      paymentsResult,
-      quotesResult,
+
+
+
+
+
+
       heatTemplatesResult,
       applicationYamlsResult,
       cloudInitTemplatesResult,
-      labDomainsResult,
+
       customLabRequestsResult,
       consultingRequestsResult,
       logsResult,
       auditLogsResult,
-      b2bReportResult,
+
       apiStatusResult,
       invitesResult,
       selfServiceVmResult,
       zunContainersResult,
       magnumClustersResult,
       serviceValidationResult,
-      certificatesResult,
+
       mailLogsResult,
       messagesResult,
       accessLogsResult,
       accessStatsResult,
       luckyDrawResult,
       couponsResult,
-      arenaOverviewResult,
+
     ].filter((item) => item?.__error).length;
     if (adminLoadErrorCount > 0) {
       setAdminStatus(`일부 관리자 데이터를 불러오지 못했습니다. (${adminLoadErrorCount}건)`);
@@ -4242,22 +3378,11 @@ export function usePortalApp() {
   }
 
   async function loadAdminOperationalSnapshot(cancelled = false) {
-    const [labsResult, activeLabsResult, accessRequestsResult, labDomainsResult, customLabRequestsResult, selfServiceVmResult, instanceMonitorResult, accessStatsResult] = await runTaskFactoriesWithConcurrency([
-      () => safeAdminApi("/api/admin/labs?limit=250", { labs: [] }, "랩 요청 목록을 불러오지 못했습니다."),
-      () => safeAdminApi("/api/admin/labs?activeOnly=true&limit=250", { labs: [] }, "실행 중인 랩 목록을 불러오지 못했습니다."),
-      () => safeAdminApi("/api/admin/course-access-requests", { requests: [] }, "과정 승인 요청을 불러오지 못했습니다."),
-      () => safeAdminApi("/api/admin/lab-domains", { routes: [] }, "도메인 승인 목록을 불러오지 못했습니다."),
-      () => safeAdminApi("/api/admin/custom-lab-requests", { requests: [] }, "고급 랩 요청을 불러오지 못했습니다."),
-      () => safeAdminApi("/api/self-service-vms", { vms: [] }, "사용자화 가상머신 목록을 불러오지 못했습니다."),
-      () => safeAdminApi("/api/admin/instance-monitor", { ok: false, items: [], totals: {} }, "인스턴스 모니터링 데이터를 불러오지 못했습니다."),
-      () => safeAdminApi("/api/admin/access-stats", { ...EMPTY_ACCESS_STATS }, "접속 통계를 불러오지 못했습니다."),
-    ], 4);
+    const [customLabRequestsResult, selfServiceVmResult, instanceMonitorResult, accessStatsResult] = await runTaskFactoriesWithConcurrency([() => safeAdminApi("/api/admin/custom-lab-requests", { requests: [] }, "고급 랩 요청을 불러오지 못했습니다."),
+() => safeAdminApi("/api/self-service-vms", { vms: [] }, "사용자화 가상머신 목록을 불러오지 못했습니다."),
+() => safeAdminApi("/api/admin/instance-monitor", { ok: false, items: [], totals: {} }, "인스턴스 모니터링 데이터를 불러오지 못했습니다."),
+() => safeAdminApi("/api/admin/access-stats", { ...EMPTY_ACCESS_STATS }, "접속 통계를 불러오지 못했습니다.")], 4);
     if (cancelled) return;
-    if (!labsResult.__error) setAdminLabs([...(labsResult.labs || []), ...(activeLabsResult.labs || [])].reduce((labs, lab) => (
-      labs.some((item) => Number(item.id) === Number(lab.id)) ? labs : [...labs, lab]
-    ), []));
-    if (!accessRequestsResult.__error) setAdminCourseAccessRequests(accessRequestsResult.requests || []);
-    if (!labDomainsResult.__error) setAdminLabDomains(labDomainsResult.routes || []);
     if (!customLabRequestsResult.__error) setAdminCustomLabRequests(customLabRequestsResult.requests || []);
     if (!selfServiceVmResult.__error) {
       setSelfServiceVms(selfServiceVmResult.vms || []);
@@ -4307,20 +3432,7 @@ export function usePortalApp() {
     return result.items || [];
   }
 
-  async function loadAdminArenaOverview(cancelled = false) {
-    try {
-      const result = await api("/api/admin/arena/overview");
-      if (!cancelled) {
-        setAdminArenaOverview(result || EMPTY_ADMIN_ARENA_OVERVIEW);
-      }
-      return result || EMPTY_ADMIN_ARENA_OVERVIEW;
-    } catch {
-      if (!cancelled) {
-        setAdminArenaOverview(EMPTY_ADMIN_ARENA_OVERVIEW);
-      }
-      return EMPTY_ADMIN_ARENA_OVERVIEW;
-    }
-  }
+
 
   async function loadAdminInvites(cancelled = false) {
     const result = await api("/api/admin/invites");
@@ -4330,43 +3442,10 @@ export function usePortalApp() {
     return result.invites || [];
   }
 
-  async function loadAdminCourses(cancelled = false) {
-    const result = await api("/api/admin/courses");
-    if (!cancelled) {
-      setAdminCourses(result.courses || []);
-    }
-    return result.courses || [];
-  }
-  async function loadAdminUsers(cancelled = false) {
-    const result = await api("/api/admin/users");
-    if (!cancelled) {
-      setAdminUsers(result.users || []);
-    }
-    return result.users || [];
-  }
-  async function loadAdminLabs(cancelled = false, options = null) {
-    let isCancelled = Boolean(cancelled);
-    let loadOptions = options || {};
-    if (cancelled && typeof cancelled === "object") {
-      isCancelled = false;
-      loadOptions = cancelled;
-    }
-    const params = new URLSearchParams({ limit: "250" });
-    if (loadOptions.includeArchived) params.set("includeArchived", "1");
-    if (loadOptions.archivedOnly) params.set("archivedOnly", "1");
-    const result = await api(`/api/admin/labs?${params.toString()}`);
-    if (!isCancelled) {
-      setAdminLabs(result.labs || []);
-    }
-    return result.labs || [];
-  }
-  async function loadAdminTextbooks(cancelled = false) {
-    const result = await api("/api/admin/textbooks");
-    if (!cancelled) {
-      setAdminTextbooks(result.textbooks || []);
-    }
-    return result.textbooks || [];
-  }
+
+
+
+
 
   function normalizeUserRole(role) {
     const normalized = String(role || "").trim().toLowerCase();
@@ -4473,14 +3552,14 @@ export function usePortalApp() {
           email: signupForm.email,
           username: signupForm.username,
           password: signupForm.password,
-          courseCode: signupForm.courseCode,
+
           inviteCode: signupForm.inviteCode,
           signupReason: signupForm.signupReason,
           termsAgreementIds: termsEnabled ? requiredTerms.map((term) => term.id) : [],
           marketingEmailConsent: signupForm.marketingEmailConsent === true,
         },
       });
-      setSignupForm({ name: "", email: "", username: "", password: "", confirmPassword: "", courseCode: "", inviteCode: "", signupReason: "", termsAgreementIds: [], marketingEmailConsent: false });
+      setSignupForm({ name: "", email: "", username: "", password: "", confirmPassword: "",  inviteCode: "", signupReason: "", termsAgreementIds: [], marketingEmailConsent: false });
       setSignupCheck({ tone: "", message: "" });
       setAuthTab("login");
       const signupMessage = result?.welcomeCoupon?.code
@@ -4571,439 +3650,24 @@ export function usePortalApp() {
       clearClientSessionState(route);
     }
   }
-  async function onApplyLab(courseId) {
-    const normalizedCourseId = Number(courseId);
-    if (!Number.isFinite(normalizedCourseId) || normalizedCourseId <= 0) {
-      return;
-    }
-    if (applyingLabCourseIdsRef.current.has(normalizedCourseId)) {
-      return;
-    }
-    applyingLabCourseIdsRef.current.add(normalizedCourseId);
-    setApplyingLabCourseIds(Array.from(applyingLabCourseIdsRef.current));
-    try {
-      const result = await api("/api/labs", { method: "POST", body: { courseId: normalizedCourseId } });
-      let resolvedLab = result?.lab || null;
-      if (resolvedLab?.id) {
-        setLabs((current) => [resolvedLab, ...current.filter((item) => item.id !== resolvedLab?.id)]);
-      }
-      const [latestLabs] = await Promise.all([loadLabs(), loadCourses()]);
-      if (!resolvedLab?.id) {
-        resolvedLab = (latestLabs || []).find((item) =>
-          Number(item.courseId) === normalizedCourseId
-          && isLearningLabResource(item, standaloneExamCourseIds)
-          && ["pending", "approved", "provisioning", "running", "paused", "terminating"].includes(String(item.status || "").toLowerCase()),
-        ) || null;
-      }
-      if (resolvedLab?.id) {
-        setLabs((current) => [resolvedLab, ...current.filter((item) => item.id !== resolvedLab?.id)]);
-      }
-      const message = result?.message || (resolvedLab?.id ? "랩 신청이 등록되었습니다." : "랩 요청 결과를 받아왔지만 랩 상태를 아직 확인하지 못했습니다. 잠시 후 다시 확인해 주세요.");
-      setAuthStatus({ tone: "success", message });
-      pushToast(message, "success");
-    } catch (error) {
-      const message = error?.message || "랩 요청 처리 중 오류가 발생했습니다.";
-      const normalizedMessage = /failed to fetch|networkerror|load failed/i.test(String(message))
-        ? "랩 요청을 서버로 보내지 못했습니다. 브라우저 네트워크, 세션 상태, 프록시 연결을 확인해 주세요."
-        : message;
-      setAuthStatus({ tone: "error", message: normalizedMessage });
-      pushToast(normalizedMessage, "error");
-    } finally {
-      applyingLabCourseIdsRef.current.delete(normalizedCourseId);
-      setApplyingLabCourseIds(Array.from(applyingLabCourseIdsRef.current));
-    }
-  }
-  function addStartingLabIds(ids) {
-    const validIds = ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
-    if (!validIds.length) return;
-    validIds.forEach((id) => startingLabIdsRef.current.add(id));
-    setStartingLabIds(Array.from(startingLabIdsRef.current));
-  }
-  function removeStartingLabIds(ids) {
-    const validIds = ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
-    if (!validIds.length) return;
-    validIds.forEach((id) => startingLabIdsRef.current.delete(id));
-    setStartingLabIds(Array.from(startingLabIdsRef.current));
-  }
-  function getCourseRequiredLabOverrides(course) {
-    const heatParameters = course?.heatParameters && typeof course.heatParameters === "object" ? course.heatParameters : {};
-    const source = Array.isArray(course?.requiredLabOverrides)
-      ? course.requiredLabOverrides
-      : Array.isArray(heatParameters.requiredLabOverrides)
-        ? heatParameters.requiredLabOverrides
-        : Array.isArray(heatParameters.labParameterOverrideSchema)
-          ? heatParameters.labParameterOverrideSchema
-          : [];
-    const seen = new Set();
-    return source
-      .map((item) => (item && typeof item === "object" ? item : {}))
-      .map((item) => {
-        const key = String(item.key || item.name || "").trim();
-        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return null;
-        return {
-          key,
-          label: String(item.label || item.title || key).trim() || key,
-          type: String(item.type || "text").trim().toLowerCase(),
-          required: item.required !== false,
-          description: String(item.description || item.helper || item.help || "").trim(),
-          placeholder: String(item.placeholder || "").trim(),
-          multiline: item.multiline === true,
-        };
-      })
-      .filter(Boolean)
-      .filter((item) => {
-        const lower = item.key.toLowerCase();
-        if (seen.has(lower)) return false;
-        seen.add(lower);
-        return true;
-      });
-  }
-  function requestLabParameterOverridesForCourse(course) {
-    const fields = getCourseRequiredLabOverrides(course);
-    if (!fields.length) return Promise.resolve(null);
-    const courseTitle = String(course?.title || "선택한 과정").trim();
-    return new Promise((resolve, reject) => {
-      labParameterOverridePromptRef.current?.reject?.(new Error("새 랩 시작 요청으로 이전 입력이 취소되었습니다."));
-      labParameterOverridePromptRef.current = { resolve, reject };
-      setLabParameterOverridePrompt({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        courseTitle,
-        fields,
-      });
-    });
-  }
-  function onSubmitLabParameterOverrides(values = {}) {
-    const pending = labParameterOverridePromptRef.current;
-    if (!pending) return;
-    labParameterOverridePromptRef.current = null;
-    setLabParameterOverridePrompt(null);
-    pending.resolve(values && Object.keys(values).length ? values : null);
-  }
-  function onCancelLabParameterOverrides() {
-    const pending = labParameterOverridePromptRef.current;
-    labParameterOverridePromptRef.current = null;
-    setLabParameterOverridePrompt(null);
-    pending?.reject?.(new Error("랩 시작이 취소되었습니다."));
-  }
-  async function onStartLab(labId, courseId = null) {
-    const initiallyRequestedLabId = Number(labId);
-    if (Number.isInteger(initiallyRequestedLabId) && initiallyRequestedLabId > 0 && startingLabIdsRef.current.has(initiallyRequestedLabId)) {
-      return;
-    }
-    addStartingLabIds([initiallyRequestedLabId]);
-    let targetLabId = initiallyRequestedLabId;
-    try {
-      setTerminalSession(null);
-      let latestLabs = await loadLabs();
-      if (courseId != null) {
-        const latestMatchingLab = (latestLabs || []).find((item) =>
-          Number(item.courseId) === Number(courseId) && isLearningLabResource(item, standaloneExamCourseIds) && ["approved", "paused"].includes(String(item.status || "").toLowerCase()));
-        if (latestMatchingLab?.id) {
-          targetLabId = Number(latestMatchingLab.id);
-          addStartingLabIds([targetLabId]);
-        }
-      }
 
-      if (!Number.isInteger(targetLabId) || targetLabId <= 0) {
-        setAuthStatus({ tone: "error", message: "시작할 수 있는 최신 랩 정보를 찾지 못했습니다. 목록을 새로고침해 주세요." });
-        return;
-      }
 
-      const targetLab = (latestLabs || []).find((item) => Number(item.id) === targetLabId) || null;
-      const targetCourseId = Number(courseId ?? targetLab?.courseId ?? 0);
-      const targetCourse = (courses || []).find((item) => Number(item.id) === targetCourseId) || null;
-      let labParameterOverrides = null;
-      const preflightWarning = buildLabResourcePreflightWarning(targetCourse, quotaStatus);
-      if (preflightWarning && typeof window !== "undefined" && !window.confirm(preflightWarning)) {
-        const message = "랩 시작을 취소했습니다.";
-        setAuthStatus({ tone: "info", message });
-        pushToast(message, "info");
-        return;
-      }
 
-      if (["approved", "failed"].includes(String(targetLab?.status || "").toLowerCase())) {
-        try {
-          labParameterOverrides = await requestLabParameterOverridesForCourse(targetCourse);
-        } catch (error) {
-          const message = error?.message || "랩 시작이 취소되었습니다.";
-          setAuthStatus({ tone: "info", message });
-          pushToast(message, "info");
-          return;
-        }
-      }
 
-      try {
-        const result = await api(`/api/labs/${targetLabId}/start`, {
-          method: "POST",
-          body: {
-            ...(courseId != null ? { courseId } : {}),
-            ...(labParameterOverrides ? { labParameterOverrides } : {}),
-          },
-        });
-        setLabs((current) => current.map((lab) => (Number(lab.id) === targetLabId ? result.lab : lab)));
-        await loadLabs();
-        setAuthStatus({ tone: "success", message: result.message || "랩 생성을 시작했습니다." });
-        pushToast(result.message || "랩 생성을 시작했습니다.", "success");
-      } catch (error) {
-        if (Number(error?.status) === 404) {
-          latestLabs = await loadLabs();
-          if (courseId != null) {
-            const retryLab = (latestLabs || []).find((item) =>
-              Number(item.courseId) === Number(courseId) && isLearningLabResource(item, standaloneExamCourseIds) && ["approved", "paused"].includes(String(item.status || "").toLowerCase()));
-            const retryLabId = Number(retryLab?.id || 0);
-            if (retryLabId > 0 && retryLabId !== targetLabId) {
-              const retryResult = await api(`/api/labs/${retryLabId}/start`, {
-                method: "POST",
-                body: {
-                  courseId,
-                  ...(labParameterOverrides ? { labParameterOverrides } : {}),
-                },
-              });
-              setLabs((current) => current.map((lab) => (Number(lab.id) === retryLabId ? retryResult.lab : lab)));
-              await loadLabs();
-              setAuthStatus({ tone: "success", message: retryResult.message || "최신 랩 정보로 다시 맞춘 뒤 랩을 시작했습니다." });
-              pushToast(retryResult.message || "최신 랩 정보로 다시 맞춘 뒤 랩을 시작했습니다.", "success");
-              return;
-            }
-          }
-        }
-        throw error;
-      }
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || "랩 시작 중 오류가 발생했습니다.", "error");
-    } finally {
-      removeStartingLabIds([initiallyRequestedLabId, targetLabId]);
-    }
-  }
-  async function onPurchaseCourse(courseId) {
-    const targetCourse = (courses || []).find((item) => Number(item.id) === Number(courseId));
-    const isGovernmentCourse = isGovernmentProgramTypeValue(targetCourse?.programType);
-    const requiresApprovalCourse = targetCourse?.courseType === "online" || isGovernmentCourse || targetCourse?.accessScope === "code";
-    if (targetCourse && Number(targetCourse.price || 0) > 0 && platformStatus?.paymentGatewayEnabled && !requiresApprovalCourse) {
-      await onPrepareCoursePayment(courseId);
-      return;
-    }
-    try {
-      const result = await api(`/api/courses/${courseId}/purchase-request`, { method: "POST" });
-      setCourses(withLocalPreviewSampleCourses(result.courses || []));
-      await runSafeRefreshTasks([loadWrittenExams(), loadLabExams()]);
-      setAuthStatus({ tone: "success", message: result.message });
-      pushToast(result.message || (isGovernmentCourse ? "과정 신청이 접수되었습니다." : "수강신청이 접수되었습니다."), "success");
-      if (isAdmin) {
-        await loadAdmin();
-      }
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || (isGovernmentCourse ? "과정 신청 중 오류가 발생했습니다." : "수강신청 중 오류가 발생했습니다."), "error");
-    }
-  }
-  async function onPrepareCoursePayment(courseId) {
-    try {
-      const myCoupons = (coupons || []).filter((item) => {
-        if (String(item.status || "").toLowerCase() !== "active") return false;
-        if (Number(item.usedCount || 0) >= Number(item.maxUses || 1)) return false;
-        if (item.courseId != null && Number(item.courseId) !== Number(courseId)) return false;
-        if (item.expiresAt) {
-          const expiresAt = new Date(item.expiresAt);
-          if (Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() <= Date.now()) return false;
-        }
-        return true;
-      });
-      const suggestedCode = myCoupons[0]?.code || "";
-      const couponPrompt = myCoupons.length
-        ? `사용할 쿠폰 코드를 입력해 주세요.\n사용 가능: ${myCoupons.map((item) => `${item.code} (${item.courseTitle || "전체 과정"})`).join(", ")}`
-        : "사용할 쿠폰 코드가 있으면 입력해 주세요. 없으면 비워두고 확인하세요.";
-      const couponInput = window.prompt(couponPrompt, suggestedCode);
-      if (couponInput == null) return;
-      const couponCode = String(couponInput || "").trim().toUpperCase();
-      const result = await api(`/api/courses/${courseId}/payment/prepare`, { method: "POST", body: { couponCode } });
-      setAuthStatus({ tone: "success", message: result.message });
-      await runSafeRefreshTasks([loadPayments(), loadCourses(), loadCoupons()]);
-      const checkout = result.checkout || {};
-      const provider = normalizePaymentGatewayProvider(checkout.provider || "");
-      if (provider === "coupon") {
-        await runSafeRefreshTasks([loadWrittenExams(), loadLabExams(), loadCertificates(), isAdmin ? loadAdmin() : Promise.resolve()]);
-        pushToast(result.message || "쿠폰 적용이 완료되었습니다.", "success");
-        return;
-      }
-      if (provider === "tosspayments") {
-        const clientKey = String(checkout.publicKey || "").trim();
-        if (!clientKey) {
-          throw new Error("토스 결제 클라이언트 키가 설정되지 않았습니다.");
-        }
-        const TossPayments = await ensureTossPaymentsSdk();
-        const tossPayments = TossPayments(clientKey);
-        const payment = tossPayments.payment({ customerKey: `terminal-lab-user-${session?.id || "guest"}` });
-        const origin = window.location.origin;
-        const baseSuccess = `${origin}/?paymentStatus=success`;
-        const baseFail = `${origin}/?paymentStatus=fail`;
-        await payment.requestPayment({
-          method: "CARD",
-          amount: {
-            currency: checkout.currency || "KRW",
-            value: Number(checkout.amount || 0),
-          },
-          orderId: checkout.orderId,
-          orderName: checkout.orderName || checkout.courseTitle || "Terminal Lab 과정 결제",
-          successUrl: baseSuccess,
-          failUrl: baseFail,
-          customerEmail: session?.email || undefined,
-          customerName: session?.name || session?.username || undefined,
-        });
-        return;
-      }
-      throw new Error(`현재 PG 제공사(${provider || "미설정"})는 웹 결제창을 지원하지 않습니다.`);
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || "결제 준비 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onCreateCourseQuote(payload) {
-    if (!canUseCourseQuotePortal(platformStatus, isAdmin)) {
-      const message = "현재 견적서 발행 기능은 관리자 설정에서 비활성화되어 있습니다.";
-      setCourseQuoteStatus({ tone: "error", message });
-      pushToast(message, "error");
-      throw new Error(message);
-    }
-    try {
-      const result = await api("/api/course-quotes", {
-        method: "POST",
-        body: payload,
-      });
-      setCourseQuoteStatus({ tone: "success", message: result.message || "공식 견적서를 발행했습니다." });
-      pushToast(result.message || "공식 견적서를 발행했습니다.", "success");
-      await runSafeRefreshTasks([loadCourseQuotes(), isAdmin ? loadAdmin() : Promise.resolve()]);
-      return result.quote;
-    } catch (error) {
-      setCourseQuoteStatus({ tone: "error", message: error.message || "견적서 발행 중 오류가 발생했습니다." });
-      pushToast(error.message || "견적서 발행 중 오류가 발생했습니다.", "error");
-      throw error;
-    }
-  }
-  async function onCreateAdminCourseQuote(payload) {
-    try {
-      const result = await api("/api/admin/course-quotes", {
-        method: "POST",
-        body: payload,
-      });
-      setAdminStatus(result.message || "관리자 견적서를 발행했습니다.");
-      pushToast(result.message || "관리자 견적서를 발행했습니다.", "success");
-      await runSafeRefreshTasks([loadAdmin(), loadCourseQuotes()]);
-      return result.quote;
-    } catch (error) {
-      setAdminStatus(error.message || "관리자 견적서 발행 중 오류가 발생했습니다.");
-      pushToast(error.message || "관리자 견적서 발행 중 오류가 발생했습니다.", "error");
-      throw error;
-    }
-  }
-  async function onUpdateCourseQuoteStatus(quoteId, status) {
-    try {
-      const result = await api(`/api/admin/course-quotes/${quoteId}`, {
-        method: "PATCH",
-        body: { status },
-      });
-      setAdminStatus(result.message || "견적서 상태를 저장했습니다.");
-      pushToast(result.message || "견적서 상태를 저장했습니다.", "success");
-      await runSafeRefreshTasks([loadCourseQuotes(), loadAdmin()]);
-      return result.quote;
-    } catch (error) {
-      setAdminStatus(error.message || "견적서 상태 저장 중 오류가 발생했습니다.");
-      pushToast(error.message || "견적서 상태 저장 중 오류가 발생했습니다.", "error");
-      throw error;
-    }
-  }
-  async function onConfirmPayment(paymentId) {
-    try {
-      const result = await api(`/api/payments/${paymentId}/confirm`, { method: "POST" });
-      setAuthStatus({ tone: "success", message: result.message });
-      pushToast(result.message || "결제 완료 처리를 마쳤습니다.", "success");
-      await runSafeRefreshTasks([loadPayments(), loadCourses(), loadWrittenExams(), loadLabExams(), loadCertificates(), isAdmin ? loadAdmin() : Promise.resolve()]);
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || "결제 완료 처리 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onCancelPayment(paymentId) {
-    try {
-      const result = await api(`/api/payments/${paymentId}/cancel`, { method: "POST" });
-      setAuthStatus({ tone: "success", message: result.message });
-      pushToast(result.message || "결제를 취소했습니다.", "success");
-      await runSafeRefreshTasks([loadPayments(), isAdmin ? loadAdmin() : Promise.resolve()]);
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || "결제 취소 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onRevokeMyCourseAccess(course) {
-    if (!course?.id) return;
-    const isPaymentEnrollment = String(course.enrollmentGrantedVia || "").trim().toLowerCase() === "payment";
-    const reason = window.prompt(
-      isPaymentEnrollment ? "수강 취소 요청 사유를 입력해 주세요." : "수강 취소 사유를 입력해 주세요. 비워두면 바로 취소합니다.",
-      "",
-    );
-    if (reason == null) return;
-    const trimmedReason = String(reason || "").trim();
-    if (isPaymentEnrollment && !trimmedReason) {
-      setAuthStatus({ tone: "error", message: "수강 취소 사유를 입력해 주세요." });
-      pushToast("수강 취소 사유를 입력해 주세요.", "error");
-      return;
-    }
-    if (!window.confirm(`${course.title || "선택한 과정"} ${isPaymentEnrollment ? "수강 취소를 요청" : "수강을 취소"}할까요?`)) return;
-    try {
-      const result = await api(`/api/courses/${course.id}/revoke-access`, {
-        method: "POST",
-        body: { reason: trimmedReason },
-      });
-      setAuthStatus({ tone: "success", message: result.message });
-      pushToast(result.message || (isPaymentEnrollment ? "수강 취소 요청을 접수했습니다." : "수강 과정을 취소했습니다."), "success");
-      await runSafeRefreshTasks([loadCourses(), loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || "수강 취소 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onRequestCourseExtension(course) {
-    if (!course?.id) return;
-    const reason = window.prompt(
-      `${course.title || "선택한 과정"} 수강 기간 연장 사유를 입력해 주세요. 비워두면 기본 요청으로 접수합니다.`,
-      "",
-    );
-    if (reason == null) return;
-    try {
-      const result = await api(`/api/courses/${course.id}/extend-access`, {
-        method: "POST",
-        body: { reason: String(reason || "").trim() },
-      });
-      setAuthStatus({ tone: "success", message: result.message });
-      pushToast(result.message || "수강 기간 연장 요청을 접수했습니다.", "success");
-      await runSafeRefreshTasks([loadCourses(), isAdmin ? loadAdmin() : Promise.resolve()]);
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || "수강 기간 연장 요청 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onRefundPayment(paymentId) {
-    const cancelReason = window.prompt("환불 사유를 입력해 주세요.", "관리자 요청 환불");
-    if (cancelReason == null) return;
-    const cancelAmountText = window.prompt("부분 환불 금액을 입력하세요. 전액 환불이면 비워두세요.", "");
-    const cancelAmount = String(cancelAmountText || "").trim() ? Number(cancelAmountText) : 0;
-    try {
-      const result = await api(`/api/payments/${paymentId}/refund`, {
-        method: "POST",
-        body: {
-          cancelReason,
-          cancelAmount: Number.isFinite(cancelAmount) && cancelAmount > 0 ? cancelAmount : undefined,
-        },
-      });
-      setAuthStatus({ tone: "success", message: result.message });
-      pushToast(result.message || "환불 처리를 완료했습니다.", "success");
-      await runSafeRefreshTasks([loadPayments(), isAdmin ? loadAdmin() : Promise.resolve()]);
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || "환불 처리 중 오류가 발생했습니다.", "error");
-    }
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   async function onCreateAdminCoupon(event) {
     event.preventDefault();
     try {
@@ -5012,7 +3676,7 @@ export function usePortalApp() {
         method: "POST",
         body: {
           userId: Number(adminCouponForm.userId),
-          courseId: adminCouponForm.courseId ? Number(adminCouponForm.courseId) : null,
+
           discountType: adminCouponForm.discountType,
           discountValue: Number(adminCouponForm.discountValue || 0),
           expiresInDays: Number(adminCouponForm.expiresInDays || 7),
@@ -5101,28 +3765,28 @@ export function usePortalApp() {
       });
       setAuthStatus({ tone: "success", message: result.message });
       setSession(null);
-      setCourses([]);
-      setLabs([]);
+
+
       setCustomLabRequests([]);
       setQnaPosts([]);
-      setSelectedCourseId(null);
-      setOpenSelectedCourseDetail(false);
+
+
       setAdminUsers([]);
       setAdminPasswordResetPins([]);
-      setAdminCourses([]);
-      setAdminLabs([]);
-      setAdminCourseAccessRequests([]);
-      setAdminSurveyResponses([]);
-      setAdminSurveySummary([]);
-      setPreferredSurveyPhase("pre");
+
+
+
+
+
+
       setAdminCustomLabRequests([]);
       setAdminAccessLogs([]);
       setAdminAccessStats(EMPTY_ACCESS_STATS);
-      setAdminArenaOverview(EMPTY_ADMIN_ARENA_OVERVIEW);
+
       setMyAccessLogs([]);
       setSelectedUserIds([]);
       setUserSearch("");
-      setCourseForm(EMPTY_COURSE);
+
       setTerminalSession(null);
       pushToast(result.message || "회원 탈퇴가 완료되었습니다.", "success");
       clearClientSessionState("portal");
@@ -5202,21 +3866,7 @@ export function usePortalApp() {
       pushToast(error.message || "OTP 비활성화 중 오류가 발생했습니다.", "error");
     }
   }
-  async function onRedeemCourseCode(event) {
-    event.preventDefault();
-    const courseCode = String(profileForm.courseCode || "").trim();
-    if (!courseCode) return setAuthStatus({ tone: "error", message: "과정 코드를 입력해 주세요." });
-    try {
-      const result = await api("/api/courses/redeem-code", { method: "POST", body: { courseCode } });
-      setCourses(withLocalPreviewSampleCourses(result.courses || []));
-      setProfileForm((current) => ({ ...current, courseCode: "" }));
-      setAuthStatus({ tone: "success", message: result.message });
-      pushToast(result.message || "과정 코드를 등록했습니다.", "success");
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || "과정 코드 등록 중 오류가 발생했습니다.", "error");
-    }
-  }
+
   async function onToggleCircuitBreaker() {
     try {
       const nextEnabled = !platformStatus.labCircuitBreaker;
@@ -5249,12 +3899,8 @@ export function usePortalApp() {
   }
   async function onSaveLlmSettings() {
     try {
-      const optionsValidationMessage = validateLlmSurveyFeedbackOptionsJson();
-      if (optionsValidationMessage) {
-        setAdminStatus(optionsValidationMessage);
-        openAdminSaveDialog(optionsValidationMessage, "error");
-        return;
-      }
+
+
       const result = await api("/api/admin/platform-status", {
         method: "PUT",
         body: buildPlatformStatusPayload(),
@@ -5277,12 +3923,8 @@ export function usePortalApp() {
           openAdminSaveDialog(validationMessage, "error");
           return;
         }
-        const optionsValidationMessage = validateLlmSurveyFeedbackOptionsJson();
-        if (optionsValidationMessage) {
-          setAdminStatus(optionsValidationMessage);
-          openAdminSaveDialog(optionsValidationMessage, "error");
-          return;
-        }
+
+
         const result = await api("/api/admin/platform-status", {
           method: "PUT",
           body: buildPlatformStatusPayload(),
@@ -5505,7 +4147,7 @@ export function usePortalApp() {
       });
       setServiceValidationFeedback("success", result.message || "검증 자원을 생성했습니다.");
       pushToast(result.message, "success");
-      await runSafeRefreshTasks([loadCourses(), loadNotices(), loadAdmin(), loadPlatformStatus()]);
+      await runSafeRefreshTasks([ loadNotices(), loadAdmin(), loadPlatformStatus()]);
     } catch (error) {
       setAdminStatus(error.message);
       setServiceValidationFeedback("error", error.message || "검증 자원 생성 중 오류가 발생했습니다.");
@@ -5523,7 +4165,7 @@ export function usePortalApp() {
       });
       setServiceValidationFeedback("success", result.message || "검증 자원을 정리했습니다.");
       pushToast(result.message, "success");
-      await runSafeRefreshTasks([loadCourses(), loadNotices(), loadAdmin(), loadPlatformStatus()]);
+      await runSafeRefreshTasks([ loadNotices(), loadAdmin(), loadPlatformStatus()]);
     } catch (error) {
       setAdminStatus(error.message);
       setServiceValidationFeedback("error", error.message || "검증 자원 정리 중 오류가 발생했습니다.");
@@ -5550,500 +4192,30 @@ export function usePortalApp() {
       setServiceValidationFeedback("error", error.message || "OpenStack VM 생성/삭제 테스트 중 오류가 발생했습니다.");
     }
   }
-  function onWrittenExamEdit(exam) {
-    setWrittenExamForm({
-      courseId: String(exam.courseId || ""),
-      title: exam.title || "",
-      description: exam.description || "",
-      passScore: String(exam.passScore || 60),
-      accessPolicyMode: exam.accessPolicy?.mode || "course_access",
-      requiredCourseIds: Array.isArray(exam.accessPolicy?.requiredCourseIds) ? exam.accessPolicy.requiredCourseIds.map(String) : [],
-      requiredCourseMatch: exam.accessPolicy?.requiredCourseMatch === "any" ? "any" : "all",
-      allowFree: exam.accessPolicy?.allowFree !== false,
-      allowPromotion: exam.accessPolicy?.allowPromotion !== false,
-      entitlementDays: String(exam.accessPolicy?.entitlementDays || 0),
-      refundBlocksNewAttempts: exam.accessPolicy?.refundBlocksNewAttempts !== false,
-      accessGuidance: exam.accessPolicy?.guidance || "",
-      questionsText: JSON.stringify(exam.questions || [], null, 2),
-    });
-  }
-  function onCancelWrittenExamEdit() {
-    setWrittenExamForm(EMPTY_WRITTEN_EXAM_FORM);
-  }
-  async function onWrittenExamSave(event) {
-    event?.preventDefault?.();
-    if (!writtenExamForm.courseId) {
-      setAdminStatus("과정을 먼저 선택해 주세요.");
-      return false;
-    }
-    try {
-      const questions = JSON.parse(writtenExamForm.questionsText || "[]");
-      const result = await api(`/api/admin/written-exams/${writtenExamForm.courseId}`, {
-        method: "PUT",
-        body: {
-          title: writtenExamForm.title,
-          description: writtenExamForm.description,
-          passScore: Number(writtenExamForm.passScore || 60),
-          accessPolicy: {
-            mode: writtenExamForm.accessPolicyMode || "course_access",
-            requiredCourseIds: (writtenExamForm.requiredCourseIds || []).map(Number).filter(Boolean),
-            requiredCourseMatch: writtenExamForm.requiredCourseMatch || "all",
-            allowFree: writtenExamForm.allowFree !== false,
-            allowPromotion: writtenExamForm.allowPromotion !== false,
-            entitlementDays: Number(writtenExamForm.entitlementDays || 0),
-            refundBlocksNewAttempts: writtenExamForm.refundBlocksNewAttempts !== false,
-            guidance: writtenExamForm.accessGuidance || "",
-          },
-          questions,
-        },
-      });
-      setAdminStatus(result.message);
-      pushToast(result.message, "success");
-      setWrittenExams((current) => upsertByKey(current, result.exam, "courseId"));
-      void loadWrittenExams();
-      return true;
-    } catch (error) {
-      setAdminStatus(error.message);
-      return false;
-    }
-  }
-  async function onWrittenExamDelete(courseId) {
-    try {
-      const result = await api(`/api/admin/written-exams/${courseId}`, { method: "DELETE" });
-      setAdminStatus(result.message);
-      pushToast(result.message, "success");
-      setWrittenExams((current) => removeByKey(current, courseId, "courseId"));
-      setWrittenExamForm((current) => String(current.courseId) === String(courseId) ? {
-        ...EMPTY_WRITTEN_EXAM_FORM,
-        courseId: String(courseId),
-      } : current);
-      void loadWrittenExams();
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  async function onSubmitWrittenExam(courseId) {
-    try {
-      const result = await api(`/api/written-exams/${courseId}/submit`, {
-        method: "POST",
-        body: { answers: writtenExamAnswers[courseId] || {} },
-      });
-      setWrittenExamStatus({
-        tone: result.attempt?.passed ? "success" : "info",
-        message: `${result.message} (${result.attempt?.score || 0}/${result.attempt?.totalPoints || 0})`,
-      });
-      pushToast(result.message, result.attempt?.passed ? "success" : "info");
-      await loadWrittenExams();
-    } catch (error) {
-      setWrittenExamStatus({ tone: "error", message: error.message });
-    }
-  }
-  async function onClaimExamEntitlement(courseId) {
-    try {
-      const result = await api(`/api/exams/${courseId}/entitlements/claim`, { method: "POST" });
-      pushToast(result.message, "success");
-      await runSafeRefreshTasks([loadCourses(), loadWrittenExams(), loadLabExams()]);
-      return result;
-    } catch (error) {
-      pushToast(error.message, "error");
-      throw error;
-    }
-  }
-  async function onClaimCourseAcquisition(courseId) {
-    try {
-      const result = await api(`/api/courses/${courseId}/acquisition/claim`, { method: "POST" });
-      pushToast(result.message, "success");
-      await runSafeRefreshTasks([loadCourses(), loadWrittenExams(), loadLabExams()]);
-      return result;
-    } catch (error) {
-      pushToast(error.message, "error");
-      throw error;
-    }
-  }
-  function onLabExamEdit(exam) {
-    setLabExamForm({
-      courseId: String(exam.courseId || ""),
-      heatTemplateName: exam.heatTemplateName || "",
-      examKind: exam.examKind || "lab",
-      title: exam.title || "",
-        description: exam.description || "",
-        scenarioContent: exam.scenarioContent || "",
-        questionsText: JSON.stringify(Array.isArray(exam.questions) ? exam.questions : [], null, 2),
-        gradingGuide: exam.gradingGuide || "",
-        operationPolicy: exam.operationPolicy || "",
-        gradingNodeRole: exam.gradingNodeRole || "",
-        requiredNodeCount: String(exam.requiredNodeCount || 1),
-        preflightScript: exam.preflightScript || "",
-        isAttemptOpen: exam.isAttemptOpen !== false,
-        allowRetake: Boolean(exam.allowRetake),
-        maxAttempts: String(exam.maxAttempts || 1),
-        accessPolicyMode: exam.accessPolicy?.mode || "course_access",
-        requiredCourseIds: Array.isArray(exam.accessPolicy?.requiredCourseIds) ? exam.accessPolicy.requiredCourseIds.map(String) : [],
-        requiredCourseMatch: exam.accessPolicy?.requiredCourseMatch === "any" ? "any" : "all",
-        allowFree: exam.accessPolicy?.allowFree !== false,
-        allowPromotion: exam.accessPolicy?.allowPromotion !== false,
-        entitlementDays: String(exam.accessPolicy?.entitlementDays || 0),
-        refundBlocksNewAttempts: exam.accessPolicy?.refundBlocksNewAttempts !== false,
-        accessGuidance: exam.accessPolicy?.guidance || "",
-        manualReviewRequired: Boolean(exam.manualReviewRequired),
-        terminateLabAfterSubmit: Boolean(exam.terminateLabAfterSubmit),
-        passScore: String(exam.passScore || 60),
-        timeoutHours: String(Number(((Number(exam.timeoutSeconds || 3600) / 3600).toFixed(2)))),
-        scriptContent: exam.scriptContent || EMPTY_LAB_EXAM_FORM.scriptContent,
-    });
-  }
-  function onCancelLabExamEdit() {
-    setLabExamForm(EMPTY_LAB_EXAM_FORM);
-  }
-  async function onLabExamSave(event) {
-    event?.preventDefault?.();
-    if (!labExamForm.courseId) {
-      setAdminStatus("과정을 먼저 선택해 주세요.");
-      return false;
-    }
-    let questions = [];
-    try {
-      questions = JSON.parse(String(labExamForm.questionsText || "[]"));
-      if (!Array.isArray(questions)) throw new Error("array");
-    } catch {
-      setAdminStatus("문제 목록 JSON 형식을 확인해 주세요.");
-      return false;
-    }
-    if (!confirmMarkdownBlockingWarnings([
-      { label: "시험 시나리오", value: labExamForm.scenarioContent },
-      ...questions.map((question, index) => ({ label: question?.title || `문제 ${index + 1}`, value: question?.content || "" })),
-    ])) {
-      setAdminStatus("Markdown 코드 블록을 확인한 뒤 다시 저장해 주세요.");
-      return false;
-    }
-    try {
-      const result = await api(`/api/admin/lab-exams/${labExamForm.courseId}`, {
-        method: "PUT",
-        body: {
-            title: labExamForm.title,
-            heatTemplateName: labExamForm.heatTemplateName,
-            examKind: labExamForm.examKind,
-            description: labExamForm.description,
-            scenarioContent: labExamForm.scenarioContent,
-            questions,
-            gradingGuide: labExamForm.gradingGuide,
-            operationPolicy: labExamForm.operationPolicy,
-            gradingNodeRole: labExamForm.gradingNodeRole,
-            requiredNodeCount: Number(labExamForm.requiredNodeCount || 1),
-            preflightScript: labExamForm.preflightScript,
-            isAttemptOpen: labExamForm.isAttemptOpen !== false,
-            allowRetake: Boolean(labExamForm.allowRetake),
-            maxAttempts: Number(labExamForm.maxAttempts || 1),
-            accessPolicy: {
-              mode: labExamForm.accessPolicyMode || "course_access",
-              requiredCourseIds: (labExamForm.requiredCourseIds || []).map(Number).filter(Boolean),
-              requiredCourseMatch: labExamForm.requiredCourseMatch || "all",
-              allowFree: labExamForm.allowFree !== false,
-              allowPromotion: labExamForm.allowPromotion !== false,
-              entitlementDays: Number(labExamForm.entitlementDays || 0),
-              refundBlocksNewAttempts: labExamForm.refundBlocksNewAttempts !== false,
-              guidance: labExamForm.accessGuidance || "",
-            },
-            manualReviewRequired: Boolean(labExamForm.manualReviewRequired),
-            terminateLabAfterSubmit: Boolean(labExamForm.terminateLabAfterSubmit),
-            passScore: Number(labExamForm.passScore || 60),
-          timeoutHours: Number(labExamForm.timeoutHours || 1),
-          scriptContent: labExamForm.scriptContent,
-        },
-      });
-      setAdminStatus(result.message);
-      if (result.validation) {
-        setLabExamTestStatus({
-          tone: result.validation.valid ? (result.validation.warningCount ? "warn" : "success") : "error",
-          message: result.message,
-          result: null,
-          validation: result.validation,
-        });
-      }
-      pushToast(result.message, "success");
-      setLabExams((current) => upsertByKey(current, result.exam, "courseId"));
-      void loadLabExams();
-      return true;
-    } catch (error) {
-      if (error.payload?.validation) {
-        setLabExamTestStatus({
-          tone: "error",
-          message: error.message,
-          result: null,
-          validation: error.payload.validation,
-        });
-      }
-      setAdminStatus(error.message);
-      return false;
-    }
-  }
-  async function onLabExamDelete(courseId) {
-    try {
-      const result = await api(`/api/admin/lab-exams/${courseId}`, { method: "DELETE" });
-      setAdminStatus(result.message);
-      pushToast(result.message, "success");
-      setLabExams((current) => removeByKey(current, courseId, "courseId"));
-      setLabExamForm((current) => String(current.courseId) === String(courseId) ? {
-        ...EMPTY_LAB_EXAM_FORM,
-        courseId: String(courseId),
-      } : current);
-      void loadLabExams();
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  async function onSubmitLabExam(courseId, options = {}) {
-    try {
-      const labRequestId = Number(options?.labRequestId || 0) || null;
-      const result = await api(`/api/lab-exams/${courseId}/submit`, {
-        method: "POST",
-        body: {
-          ...(labRequestId ? { labRequestId } : {}),
-          sshPassword: labExamSshPassword,
-        },
-      });
-      setLabExamStatus({
-        tone: result.attempt?.passed ? "success" : "info",
-        message: `${result.message} (${result.attempt?.score || 0}/${result.attempt?.totalPoints || 0})`,
-      });
-      setTerminalSession(null);
-      pushToast(result.message, result.attempt?.passed ? "success" : "info");
-      await runSafeRefreshTasks([loadLabExams(), loadCertificates()]);
-    } catch (error) {
-      setLabExamStatus({ tone: "error", message: error.message });
-    }
-  }
-  async function onStartLabExam(courseId, options = {}) {
-    try {
-      setLabExamStatus({ tone: "info", message: "시험 전용 랩을 준비하고 있습니다." });
-      const result = await api(`/api/lab-exams/${courseId}/sessions/start`, {
-        method: "POST",
-        body: options?.preview ? { preview: true } : {},
-      });
-      const lab = result.lab || null;
-      if (result.session) {
-        setLabExamSessions((current) => upsertByKey(current, result.session, "id"));
-        if (isAdmin) setAdminLabExamSessions((current) => upsertByKey(current, result.session, "id"));
-      }
-      setLabExamStatus({ tone: "success", message: result.message || "시험 전용 랩이 준비되었습니다." });
-      if (lab) {
-        setLabs((current) => upsertByKey(current, lab, "id"));
-        if (isAdmin) setAdminLabs((current) => upsertByKey(current, lab, "id"));
-        setSelectedCourseId(String(lab.courseId || courseId || ""));
-      }
-      pushToast(result.message || "시험 전용 랩이 준비되었습니다.", "success");
-      await runSafeRefreshTasks([loadLabs(), loadLabExams(), ...(isAdmin ? [loadAdmin()] : [])]);
-      return result;
-    } catch (error) {
-      setLabExamStatus({ tone: "error", message: error.message });
-      pushToast(error.message, "error");
-      return null;
-    }
-  }
-  async function onLabExamConsoleReady(sessionId) {
-    try {
-      const result = await api(`/api/lab-exam-sessions/${sessionId}/console-ready`, { method: "POST" });
-      if (result.session) setLabExamSessions((current) => upsertByKey(current, result.session, "id"));
-      if (result.lab) setLabs((current) => upsertByKey(current, result.lab, "id"));
-      setLabExamStatus({ tone: "success", message: result.message });
-      return result;
-    } catch (error) {
-      setLabExamStatus({ tone: "error", message: error.message });
-      return null;
-    }
-  }
-  async function onRebuildLabExamSession(sessionId) {
-    try {
-      setLabExamStatus({ tone: "info", message: "시험 전용 랩을 재구성하고 있습니다." });
-      setTerminalSession(null);
-      const result = await api(`/api/lab-exam-sessions/${sessionId}/rebuild`, { method: "POST" });
-      if (result.session) {
-        setLabExamSessions((current) => upsertByKey(current, result.session, "id"));
-        if (isAdmin) setAdminLabExamSessions((current) => upsertByKey(current, result.session, "id"));
-      }
-      setLabExamStatus({ tone: "success", message: result.message });
-      pushToast(result.message, "success");
-      await runSafeRefreshTasks([loadLabs(), loadLabExams(), ...(isAdmin ? [loadAdmin()] : [])]);
-      return result;
-    } catch (error) {
-      setLabExamStatus({ tone: "error", message: error.message });
-      pushToast(error.message, "error");
-      return null;
-    }
-  }
-  async function onFinishLabExamSession(sessionId, options = {}) {
-    try {
-      setLabExamStatus({ tone: "info", message: "시험을 종료하고 채점 중입니다." });
-      const result = await api(`/api/lab-exam-sessions/${sessionId}/finish`, {
-        method: "POST",
-        body: {
-          reason: options?.reason || "submitted",
-          ...(options?.screenCapture ? { screenCapture: options.screenCapture } : {}),
-        },
-      });
-      setLabExamStatus({
-        tone: result.attempt?.passed ? "success" : "info",
-        message: `${result.message} (${result.attempt?.score || 0}/${result.attempt?.totalPoints || 0})`,
-      });
-      setTerminalSession(null);
-      pushToast(result.message || "채점이 완료되었습니다.", result.attempt?.passed ? "success" : "info");
-      await runSafeRefreshTasks([
-        loadLabs(),
-        loadLabExams(),
-        loadCertificates(),
-        loadNotifications(),
-        loadMessages(),
-      ]);
-      return result;
-    } catch (error) {
-      setLabExamStatus({ tone: "error", message: error.message });
-      pushToast(error.message, "error");
-      return null;
-    }
-  }
-  async function onReviewLabExamAttempt(attemptId, reviewStatus, reviewNote = "") {
-    try {
-      const result = await api(`/api/admin/lab-exam-attempts/${attemptId}/review`, {
-        method: "PATCH",
-        body: { reviewStatus, reviewNote },
-      });
-      setAdminStatus(result.message);
-      pushToast(result.message, "success");
-      await loadLabExams();
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onResendLabExamResultMail(attemptId) {
-    try {
-      const result = await api(`/api/admin/lab-exam-attempts/${attemptId}/resend-mail`, { method: "POST" });
-      setAdminStatus(result.message);
-      pushToast(result.message, "success");
-      await loadLabExams();
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onUpdateLabExamAttemptManualResult(attemptId, payload = {}) {
-    try {
-      const result = await api(`/api/admin/lab-exam-attempts/${attemptId}/manual-result`, {
-        method: "PATCH",
-        body: payload,
-      });
-      setAdminStatus(result.message);
-      pushToast(result.message, payload.resend ? "success" : "info");
-      await runSafeRefreshTasks([loadLabExams(), loadNotifications(), loadMessages()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onGenerateLabExamAttemptLlmReport(attemptId, payload = {}) {
-    try {
-      const result = await api(`/api/admin/lab-exam-attempts/${attemptId}/llm-report`, {
-        method: "POST",
-        body: payload,
-      });
-      pushToast(result.message, "success");
-      return result.report || "";
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-      return "";
-    }
-  }
-  async function onRegradeLabExamAttempt(attemptId) {
-    const confirmed = window.confirm("이 결과를 현재 시험 전용 랩 상태로 다시 채점할까요? 중지되었거나 종료 표시된 시험 랩은 먼저 다시 시작한 뒤 채점합니다.");
-    if (!confirmed) return;
-    try {
-      const result = await api(`/api/admin/lab-exam-attempts/${attemptId}/regrade`, { method: "POST" });
-      setAdminStatus(result.message);
-      pushToast(result.message, result.attempt?.passed ? "success" : "info");
-      await runSafeRefreshTasks([loadLabExams(), loadNotifications(), loadMessages()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onCreateManualLabExamResult(sessionId) {
-    const rawScore = window.prompt("임시 점수를 입력해 주세요. 예: 80/100", "0/100");
-    if (rawScore == null) return;
-    const scoreMatch = String(rawScore || "").trim().match(/^(\d+(?:\.\d+)?)(?:\s*\/\s*(\d+(?:\.\d+)?))?$/);
-    if (!scoreMatch) {
-      pushToast("점수 형식이 올바르지 않습니다. 예: 80/100", "error");
-      return;
-    }
-    const score = Number(scoreMatch[1] || 0);
-    const totalPoints = Number(scoreMatch[2] || 100);
-    const reviewNote = window.prompt("사용자에게 전달할 강사/AI 코멘트를 입력해 주세요.", "시험 서버 장애로 관리자가 임시 결과를 등록했습니다.");
-    if (reviewNote == null) return;
-    const confirmed = window.confirm(`${score}/${totalPoints} 점으로 임시 결과를 저장하고 사용자에게 메일/쪽지를 발송할까요?`);
-    if (!confirmed) return;
-    try {
-      const result = await api(`/api/admin/lab-exam-sessions/${sessionId}/manual-result`, {
-        method: "POST",
-        body: {
-          score,
-          totalPoints,
-          reviewNote,
-        },
-      });
-      setAdminStatus(result.message);
-      pushToast(result.message, "success");
-      if (result.attempt) {
-        setAdminLabExamAttempts((current) => upsertByKey(current, result.attempt, "id"));
-      }
-      if (result.session) {
-        setAdminLabExamSessions((current) => upsertByKey(current, result.session, "id"));
-        setLabExamSessions((current) => upsertByKey(current, result.session, "id"));
-      }
-      await runSafeRefreshTasks([loadLabExams(), loadNotifications(), loadMessages()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onForceEndLabExamSession(sessionId, options = {}) {
-    const deleteLab = options.deleteLab !== false;
-    try {
-      const result = await api(`/api/admin/lab-exam-sessions/${sessionId}/force-end`, { method: "POST", body: { deleteLab } });
-      setAdminStatus(result.message);
-      pushToast(result.message, "success");
-      if (result.attempt) {
-        setAdminLabExamAttempts((current) => upsertByKey(current, result.attempt, "id"));
-      }
-      if (result.session) {
-        setAdminLabExamSessions((current) => upsertByKey(current, result.session, "id"));
-        setLabExamSessions((current) => upsertByKey(current, result.session, "id"));
-      }
-      if (result.lab) {
-        setLabs((current) => upsertByKey(current, result.lab, "id"));
-      }
-      await runSafeRefreshTasks([loadLabExams(), loadLabs(), loadAdmin(), loadNotifications(), loadMessages()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onAdminLabPowerAction(labRequestId, action) {
-    const labId = Number(labRequestId || 0);
-    const normalizedAction = String(action || "").toLowerCase() === "resume" ? "resume" : "pause";
-    if (!labId) return;
-    const label = normalizedAction === "resume" ? "다시 시작" : "중지";
-    const confirmed = window.confirm(`이 랩을 ${label}할까요?`);
-    if (!confirmed) return;
-    try {
-      const result = await api(`/api/admin/labs/${labId}/${normalizedAction}`, { method: "POST" });
-      setAdminStatus(result.message);
-      pushToast(result.message, "success");
-      await runSafeRefreshTasks([loadLabs(), loadLabExams(), loadAdmin()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   async function onWarnInstanceUsage(item = {}) {
     const type = String(item.type || "").trim();
     const id = Number(item.id || 0) || 0;
@@ -6080,159 +4252,12 @@ export function usePortalApp() {
       pushToast(error.message, "error");
     }
   }
-  async function onDeleteLabExamAttempt(attemptId, options = {}) {
-    if (!options.skipConfirm) {
-      const confirmed = window.confirm("이 채점 결과를 삭제할까요? 삭제하면 해당 사용자는 제출 횟수 한도 내에서 다시 응시할 수 있습니다.");
-      if (!confirmed) return;
-    }
-    try {
-      const result = await api(`/api/admin/lab-exam-attempts/${attemptId}`, { method: "DELETE" });
-      setAdminStatus(result.message);
-      pushToast(result.message, "success");
-      await runSafeRefreshTasks([loadLabExams(), loadCertificates()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onBulkRemoveLabExamItems({ attemptIds = [], sessionIds = [] } = {}, options = {}) {
-    const normalizedAttemptIds = [...new Set(attemptIds.map((id) => String(id || "").trim()).filter(Boolean))];
-    const normalizedSessionIds = [...new Set(sessionIds.map((id) => String(id || "").trim()).filter(Boolean))];
-    const total = normalizedAttemptIds.length + normalizedSessionIds.length;
-    if (!total) {
-      pushToast("제거할 시험 기록 또는 시험 세션을 선택해 주세요.", "error");
-      return null;
-    }
-    if (!options.skipConfirm) {
-      const confirmed = window.confirm(`선택한 시험 기록 ${normalizedAttemptIds.length}건과 시험 세션 ${normalizedSessionIds.length}건을 제거할까요? 진행 중 세션의 전용 랩도 함께 삭제됩니다.`);
-      if (!confirmed) return null;
-    }
-    try {
-      const result = await api("/api/admin/lab-exams/bulk-remove", {
-        method: "POST",
-        body: { attemptIds: normalizedAttemptIds, sessionIds: normalizedSessionIds },
-      });
-      setAdminStatus(result.message);
-      pushToast(result.message, result.failed?.length ? "info" : "success");
-      await runSafeRefreshTasks([loadLabExams(), loadLabs(), loadAdmin(), loadCertificates()]);
-      return result;
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-      return null;
-    }
-  }
-  async function onValidateLabExamScript() {
-    if (!labExamForm.courseId) {
-      const message = "과정을 먼저 선택해 주세요.";
-      setLabExamTestStatus({ tone: "error", message, result: null, validation: null });
-      setAdminStatus(message);
-      return;
-    }
-    try {
-      setLabExamTestStatus({ tone: "info", message: "채점 스크립트를 저장 전 검증하고 있습니다.", result: null, validation: null });
-      const timeoutSeconds = Math.min(24 * 60 * 60, Math.max(5 * 60, Math.round(Number(labExamForm.timeoutHours || 1) * 3600) || 3600));
-      const result = await api(`/api/admin/lab-exams/${labExamForm.courseId}/validate-script`, {
-        method: "POST",
-        body: {
-          scriptContent: labExamForm.scriptContent,
-          preflightScript: labExamForm.preflightScript,
-          passScore: Number(labExamForm.passScore || 60),
-          timeoutSeconds,
-        },
-      });
-      const validation = result.validation || null;
-      const tone = validation?.valid ? (validation.warningCount ? "warn" : "success") : "error";
-      setLabExamTestStatus({
-        tone,
-        message: result.message,
-        result: null,
-        validation,
-      });
-      setAdminStatus(result.message);
-      pushToast(result.message, validation?.valid ? "success" : "error");
-    } catch (error) {
-      setLabExamTestStatus({ tone: "error", message: error.message, result: null, validation: null });
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onTestLabExamScript(labRequestId) {
-    if (!labExamForm.courseId) {
-      const message = "과정을 먼저 선택해 주세요.";
-      setLabExamTestStatus({ tone: "error", message, result: null, validation: null });
-      setAdminStatus(message);
-      return;
-    }
-    try {
-      setLabExamTestStatus({ tone: "info", message: "채점 스크립트를 테스트하고 있습니다.", result: null, validation: null });
-      const timeoutSeconds = Math.min(300, Math.max(10, Math.round(Number(labExamForm.timeoutHours || 1) * 3600) || 120));
-      const result = await api(`/api/admin/lab-exams/${labExamForm.courseId}/test`, {
-        method: "POST",
-        body: {
-          labRequestId,
-          scriptContent: labExamForm.scriptContent,
-          scenarioContent: labExamForm.scenarioContent,
-          timeoutSeconds,
-        },
-      });
-      setLabExamTestStatus({
-        tone: result.result?.passed ? "success" : "warn",
-        message: `${result.message} (${result.result?.score || 0}/${result.result?.totalPoints || 0})`,
-        result: result.result || null,
-        validation: null,
-      });
-      setAdminStatus(result.message);
-      pushToast(result.message, result.result?.passed ? "success" : "info");
-    } catch (error) {
-      setLabExamTestStatus({ tone: "error", message: error.message, result: null, validation: null });
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onPreflightLabExam(labRequestId) {
-    if (!labExamForm.courseId || !labRequestId) {
-      const message = "과정과 실행 중인 랩을 선택해 주세요.";
-      setLabExamTestStatus({ tone: "error", message, result: null, validation: null });
-      return;
-    }
-    try {
-      setLabExamTestStatus({ tone: "info", message: "시험 랩 환경을 점검하고 있습니다.", result: null, validation: null });
-      const result = await api(`/api/admin/lab-exams/${labExamForm.courseId}/preflight`, {
-        method: "POST",
-        body: {
-          ...labExamForm,
-          labRequestId,
-          requiredNodeCount: Number(labExamForm.requiredNodeCount || 1),
-          passScore: Number(labExamForm.passScore || 60),
-          timeoutHours: Number(labExamForm.timeoutHours || 1),
-          sshPassword: labExamSshPassword,
-        },
-      });
-      setLabExamTestStatus({
-        tone: result.result?.passed ? "success" : "warn",
-        message: result.message,
-        result: result.result || null,
-        validation: null,
-      });
-      setAdminStatus(result.message);
-      pushToast(result.message, result.result?.passed ? "success" : "info");
-    } catch (error) {
-      setLabExamTestStatus({ tone: "error", message: error.message, result: null, validation: null });
-      setAdminStatus(error.message);
-      pushToast(error.message, "error");
-    }
-  }
-  async function onIssueCertificate(courseId) {
-    try {
-      const result = await api(`/api/certificates/${courseId}/issue`, { method: "POST" });
-      setCertificateStatus({ tone: "success", message: result.message });
-      pushToast(result.message, "success");
-      await loadCertificates();
-    } catch (error) {
-      setCertificateStatus({ tone: "error", message: error.message });
-    }
-  }
+
+
+
+
+
+
   async function onRefreshApiMonitor() {
     try {
       await runSafeRefreshTasks([loadApiMonitor(false, true), loadAdminInstanceMonitor(false, true)]);
@@ -6351,11 +4376,11 @@ export function usePortalApp() {
           }
         };
         try {
-        const targetCourseId = Number(selectedCourseId || activeLab?.courseId || 0) || null;
+
         await streamApi("/api/llm/chat/stream", {
           body: {
             question,
-            courseId: targetCourseId,
+
             history,
           },
             onEvent: async (streamEvent) => {
@@ -6428,136 +4453,14 @@ export function usePortalApp() {
     setLlmStatus({ tone: "", message: "" });
     pushToast("AI 대화를 초기화했습니다.", "success");
   }
-  function onSelectTerminalCourse(courseId) {
-    const nextCourseId = Number(courseId) || courseId || null;
-    terminalCourseSelectionTouchedRef.current = true;
-    setSelectedCourseId(nextCourseId);
-    setTerminalSession(null);
-    setTerminalRequest({ tone: "", message: "선택한 과정 기준으로 터미널 정보를 갱신했습니다. 실행 중인 랩은 연결 버튼으로 다시 연결해 주세요." });
-  }
+
   function onClearTerminalSession(message = "터미널 세션이 만료되었습니다. 다시 연결해 주세요.") {
     terminalSessionRequestRef.current.cancel();
     setTerminalSession(null);
     setTerminalSessionBusy(false);
     setTerminalRequest({ tone: "info", message });
   }
-  async function onCreateTerminalSession(overrides = {}) {
-    const safeOverrides = overrides
-      && typeof overrides === "object"
-      && !("nativeEvent" in overrides)
-      && !("preventDefault" in overrides)
-      && !("currentTarget" in overrides)
-      && !("target" in overrides)
-      ? overrides
-      : {};
-    const replacePendingRequest = Boolean(safeOverrides.replacePending || safeOverrides.supersedePending);
-    const {
-      replacePending: _replacePending,
-      supersedePending: _supersedePending,
-      keepSection: _keepSection,
-      stayOnCurrentSection: _stayOnCurrentSection,
-      ...requestOverrides
-    } = safeOverrides;
-    const initialReplayMetadata = getInitialTerminalReplayMetadata();
-    const requestedReplayMetadata = safeOverrides.replayMetadata && typeof safeOverrides.replayMetadata === "object"
-      ? safeOverrides.replayMetadata
-      : {};
-    const replayMetadata = {
-      ...initialReplayMetadata,
-      ...requestedReplayMetadata,
-    };
-    const stayOnCurrentSection = Boolean(safeOverrides.stayOnCurrentSection || safeOverrides.keepSection);
-    const hasReplayMetadata = Object.values(replayMetadata).some((value) => String(value || "").trim());
-    const popupLabId = popupMode === "terminal" ? getInitialSelectedLabId() : 0;
-    const targetLabId = Number(safeOverrides.labId || selectedCourseLab?.id || activeLab?.id || popupLabId || 0);
-    const targetLab = labs.find((item) => Number(item.id) === targetLabId) || selectedCourseLab || activeLab || null;
-    const targetCourseId = Number(safeOverrides.courseId || targetLab?.courseId || selectedCourseId || 0);
-    const targetCourse = courses.find((item) => Number(item.id) === targetCourseId) || selectedCourse || null;
-    const requestTargetKey = [
-      targetLabId || "no-lab",
-      String(safeOverrides.nodeId || "").trim() || String(safeOverrides.targetHost || "").trim() || "default",
-    ].join(":");
-    const requestStart = terminalSessionRequestRef.current.begin({
-      key: requestTargetKey,
-      replace: replacePendingRequest,
-    });
-    if (!requestStart.started) {
-      setTerminalRequest({ tone: "info", message: "이미 터미널 연결 상태를 확인하고 있습니다. 잠시만 기다려 주세요." });
-      return { retryable: true };
-    }
-    const activeRequest = requestStart.request;
-    const targetBackendType = String(targetLab?.labBackendType || targetCourse?.labBackendType || "").trim().toLowerCase();
-    const preparingMessage = targetBackendType === "container"
-      ? "컨테이너 터미널 상태를 확인하고 있습니다. 콘솔이 준비되면 자동으로 연결됩니다."
-      : "터미널 연결 상태를 확인하고 있습니다. SSH가 준비되면 자동으로 연결됩니다. 보통 10~30초 정도 걸립니다.";
-    setTerminalSessionBusy(true);
-    try {
-      setTerminalRequest({ tone: "info", message: preparingMessage });
-      const terminalRequestBody = {
-        ...terminalForm,
-        ...(targetCourseId ? { courseId: targetCourseId } : {}),
-        ...(targetLabId ? { labId: targetLabId } : {}),
-        ...requestOverrides,
-        ...(hasReplayMetadata ? { replayMetadata } : {}),
-      };
-      const readinessStartedAt = Date.now();
-      while (true) {
-        const readiness = await api("/api/terminal/readiness", {
-          method: "POST",
-          body: terminalRequestBody,
-          signal: activeRequest.controller.signal,
-        });
-        if (!terminalSessionRequestRef.current.isCurrent(activeRequest)) {
-          return { cancelled: true, retryable: false };
-        }
-        if (readiness?.message) {
-          setTerminalRequest({ tone: "info", message: readiness.message });
-        }
-        if (readiness?.ready) break;
-        if (Date.now() - readinessStartedAt > TERMINAL_READINESS_MAX_WAIT_MS) {
-          throw new Error("터미널 연결 확인 시간이 길어지고 있습니다. 잠시 후 다시 연결해 주세요.");
-        }
-        await waitForMs(Math.max(1000, Math.min(5000, Number(readiness?.retryAfterMs || 2000))));
-        if (!terminalSessionRequestRef.current.isCurrent(activeRequest)) {
-          return { cancelled: true, retryable: false };
-        }
-      }
-      const result = await api("/api/terminal/session", {
-        method: "POST",
-        body: terminalRequestBody,
-        signal: activeRequest.controller.signal,
-      });
-      if (!terminalSessionRequestRef.current.isCurrent(activeRequest)) {
-        return { cancelled: true, retryable: false };
-      }
-      const successMessage = String(result?.message || `${result.targetLabel} 연결을 준비했습니다.`);
-      if (!stayOnCurrentSection) setSection("terminal");
-      setTerminalSession(result);
-      setTerminalNonce((value) => value + 1);
-      setTerminalRequest({ tone: "success", message: successMessage });
-      pushToast(successMessage, "success");
-      return result;
-    } catch (error) {
-      if (error?.name === "AbortError" || !terminalSessionRequestRef.current.isCurrent(activeRequest)) {
-        return { cancelled: true, retryable: false };
-      }
-      const bootPending = error?.payload?.code === "VM_BOOT_NOT_READY" || Number(error?.status || 0) === 425;
-      const message = error.message || (bootPending ? "터미널 연결 확인이 아직 끝나지 않았습니다. 잠시 후 다시 연결해 주세요." : "터미널 연결 준비 중 오류가 발생했습니다.");
-      const status = Number(error?.status || 0);
-      const retryable = bootPending
-        || /터미널 연결 확인 시간이 길어지고 있습니다|failed to fetch|networkerror|load failed/i.test(String(message))
-        || status === 408
-        || status === 429
-        || status >= 500;
-      setTerminalRequest({ tone: bootPending ? "info" : "error", message });
-      pushToast(message, bootPending ? "info" : "error");
-      return { retryable };
-    } finally {
-      if (terminalSessionRequestRef.current.finish(activeRequest)) {
-        setTerminalSessionBusy(false);
-      }
-    }
-  }
+
   async function onCreateCustomLabTerminalSession(requestId, overrides = {}) {
     const targetRequestId = Number(requestId || 0);
     if (!targetRequestId) {
@@ -6587,371 +4490,21 @@ export function usePortalApp() {
       pushToast(error.message || "고급 랩 콘솔 연결 준비 중 오류가 발생했습니다.", "error");
     }
   }
-  async function onUploadLabFile(file, labId = null, overrides = {}) {
-    if (!file) return;
-    const targetLabId = Number(labId || activeLab?.id || 0);
-    if (!targetLabId) {
-      setTerminalRequest({ tone: "error", message: "업로드할 랩을 찾을 수 없습니다." });
-      return;
-    }
-    try {
-      setTerminalUploadState({ uploading: true, fileName: file.name });
-      const formData = new FormData();
-      formData.append("file", file, file.name);
-      if (overrides?.nodeId) formData.append("nodeId", String(overrides.nodeId));
-      if (overrides?.targetHost) formData.append("targetHost", String(overrides.targetHost));
-      const result = await api(`/api/labs/${targetLabId}/upload`, {
-        method: "POST",
-        body: formData,
-      });
-      const remotePath = result.upload?.remotePath || `~/uploads/${file.name}`;
-      setTerminalRequest({ tone: "success", message: `${file.name} 업로드 완료 (${remotePath})` });
-      pushToast(`${file.name} 업로드 완료`, "success");
-      await loadLabs();
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message || "파일 업로드 중 오류가 발생했습니다." });
-      pushToast(error.message || "파일 업로드 중 오류가 발생했습니다.", "error");
-    } finally {
-      setTerminalUploadState({ uploading: false, fileName: "" });
-    }
-  }
-  function onOpenTerminalPopup(labOverride = null, options = {}) {
-    const popupUrl = new URL(window.location.href);
-    const safeLabOverride = labOverride
-      && typeof labOverride === "object"
-      && !("nativeEvent" in labOverride)
-      && !("preventDefault" in labOverride)
-      && !("currentTarget" in labOverride)
-      && !("target" in labOverride)
-      ? labOverride
-      : null;
-    const targetLab = safeLabOverride || activeLab || selectedCourseLab || null;
-    const targetCourseId = Number(targetLab?.courseId || selectedCourseId || 0);
-    const targetLabId = Number(targetLab?.id || 0);
-    popupUrl.pathname = "/";
-    popupUrl.searchParams.set("popup", "terminal");
-    if (targetCourseId) popupUrl.searchParams.set("courseId", String(targetCourseId));
-    if (targetLabId) popupUrl.searchParams.set("labId", String(targetLabId));
-    const replayMetadata = options?.replayMetadata && typeof options.replayMetadata === "object" ? options.replayMetadata : {};
-    if (String(replayMetadata.purpose || "").trim()) popupUrl.searchParams.set("replayPurpose", String(replayMetadata.purpose || "").trim());
-    if (String(replayMetadata.labExamCourseId || "").trim()) popupUrl.searchParams.set("labExamCourseId", String(replayMetadata.labExamCourseId || "").trim());
-    if (String(replayMetadata.labExamTitle || "").trim()) popupUrl.searchParams.set("labExamTitle", String(replayMetadata.labExamTitle || "").trim());
-    if (String(replayMetadata.labExamKind || "").trim()) popupUrl.searchParams.set("labExamKind", String(replayMetadata.labExamKind || "").trim());
-    if (String(replayMetadata.labRequestId || "").trim()) popupUrl.searchParams.set("replayLabRequestId", String(replayMetadata.labRequestId || "").trim());
-    const nodeId = String(options?.nodeId || "").trim();
-    const targetHost = String(options?.targetHost || "").trim();
-    if (nodeId) popupUrl.searchParams.set("nodeId", nodeId);
-    if (targetHost) popupUrl.searchParams.set("targetHost", targetHost);
-    const openInNewTab = Boolean(options?.newTab);
-    const popup = openInNewTab
-      ? window.open(popupUrl.toString(), "_blank")
-      : window.open(popupUrl.toString(), "terminal-lab-console", "popup=yes,width=1440,height=960,resizable=yes,scrollbars=yes");
-    if (!popup) {
-      pushToast("브라우저 팝업이 차단되어 콘솔 창을 열 수 없습니다.", "error");
-      return;
-    }
-    if (openInNewTab) popup.opener = null;
-    popup.focus?.();
-    pushToast(openInNewTab ? "웹 터미널 새 탭을 열었습니다." : "콘솔 새 창을 열었습니다.", "success");
-  }
-  async function onOpenVncConsole(labId = null, overrides = {}) {
-    const targetLabId = Number(labId || activeLab?.id || 0);
-    if (!targetLabId) {
-      pushToast("VNC 콘솔을 열 랩을 찾을 수 없습니다.", "error");
-      return;
-    }
-    try {
-      const result = await api(`/api/labs/${targetLabId}/console/vnc`, {
-        method: "POST",
-        body: {
-          nodeId: String(overrides?.nodeId || "").trim(),
-          targetHost: String(overrides?.targetHost || "").trim(),
-          serverName: String(overrides?.serverName || "").trim(),
-        },
-      });
-      const popup = window.open(result.url, "terminal-lab-vnc-console", "popup=yes,width=1440,height=960,resizable=yes,scrollbars=yes");
-      if (!popup) {
-        throw new Error("브라우저 팝업이 차단되어 VNC 콘솔을 열 수 없습니다.");
-      }
-      popup.focus?.();
-      setTerminalRequest({ tone: "success", message: result.message || `${result.targetLabel} VNC 콘솔을 열었습니다.` });
-      pushToast(result.message || `${result.targetLabel} VNC 콘솔을 열었습니다.`, "success");
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message || "VNC 콘솔을 열지 못했습니다." });
-      pushToast(error.message || "VNC 콘솔을 열지 못했습니다.", "error");
-    }
-  }
-  async function onSendVncClipboard(labId = null, payload = {}) {
-    const targetLabId = Number(labId || activeLab?.id || 0);
-    if (!targetLabId) {
-      pushToast("VNC 콘솔을 찾을 랩이 없습니다.", "error");
-      throw new Error("VNC 콘솔을 찾을 랩이 없습니다.");
-    }
-    const text = String(payload?.text || "").trimEnd();
-    if (!text) {
-      pushToast("VNC 콘솔에 보낼 텍스트를 입력해 주세요.", "error");
-      throw new Error("VNC 콘솔에 보낼 텍스트를 입력해 주세요.");
-    }
-    try {
-      const result = await api(`/api/labs/${targetLabId}/console/vnc/clipboard`, {
-        method: "POST",
-        body: {
-          nodeId: String(payload?.nodeId || "").trim(),
-          targetHost: String(payload?.targetHost || "").trim(),
-          serverName: String(payload?.serverName || "").trim(),
-          text,
-          mode: String(payload?.mode || "clipboard").trim(),
-        },
-      });
-      setTerminalRequest({ tone: "success", message: result.message || "VNC 콘솔로 텍스트를 보냈습니다." });
-      pushToast(result.message || "VNC 콘솔로 텍스트를 보냈습니다.", "success");
-      return result;
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message || "VNC 콘솔로 텍스트를 보내지 못했습니다." });
-      pushToast(error.message || "VNC 콘솔로 텍스트를 보내지 못했습니다.", "error");
-      throw error;
-    }
-  }
-  async function onExtendLab(labId) {
-    try {
-      const targetLabId = Number(labId || activeLab?.id || 0);
-      if (!targetLabId) throw new Error("연장할 랩을 찾을 수 없습니다.");
-      const result = await api(`/api/labs/${targetLabId}/extend`, { method: "POST" });
-      if (result.lab) {
-        setLabs((current) => current.map((item) => (Number(item.id) === Number(result.lab.id) ? result.lab : item)));
-      }
-      await loadLabs();
-      setTerminalRequest({ tone: "success", message: result.message || "랩 사용 시간을 연장했습니다." });
-      pushToast(result.message || "랩 사용 시간을 연장했습니다.", "success");
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message, "error");
-    }
-  }
-  async function onPauseLab(labId) {
-    try {
-      const targetLabId = Number(labId || activeLab?.id || 0);
-      if (!targetLabId) throw new Error("일시 중지할 랩을 찾을 수 없습니다.");
-      const result = await api(`/api/labs/${targetLabId}/pause`, { method: "POST" });
-      if (result.lab) {
-        setLabs((current) => current.map((item) => (Number(item.id) === Number(result.lab.id) ? result.lab : item)));
-      }
-      setTerminalSession(null);
-      setTerminalRequest({ tone: "success", message: result.message || "유지형 랩을 일시 중지했습니다." });
-      pushToast(result.message || "유지형 랩을 일시 중지했습니다.", "success");
-      await loadLabs();
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || "유지형 랩 일시 중지 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onResetLab(labId) {
-    const targetLabId = Number(labId || activeLab?.id || 0);
-    if (!targetLabId) {
-      pushToast("초기화할 랩을 찾을 수 없습니다.", "error");
-      return;
-    }
-    const targetLab = labs.find((item) => Number(item.id) === Number(targetLabId)) || activeLab || null;
-    const targetCourse = courses.find((item) => Number(item.id) === Number(targetLab?.courseId || 0)) || null;
-    const isContainerLab = String(targetLab?.labBackendType || targetCourse?.labBackendType || "vm") === "container";
-    const resetConfirmMessage = isContainerLab
-      ? "컨테이너를 재생성하면 현재 컨테이너와 작업 내용이 삭제되고 새 컨테이너로 다시 준비됩니다. 계속할까요?"
-      : "랩을 초기화하면 현재 VM과 작업 내용이 삭제되고 새 랩으로 다시 준비됩니다. 계속할까요?";
-    if (!window.confirm(resetConfirmMessage)) return;
-    try {
-      const result = await api(`/api/labs/${targetLabId}/reset`, { method: "POST" });
-      const successMessage = result.message || (isContainerLab ? "컨테이너를 재생성했습니다." : "랩을 초기화했습니다.");
-      if (result.lab) {
-        setLabs((current) => [result.lab, ...current.filter((item) => Number(item.id) !== Number(targetLabId) && Number(item.id) !== Number(result.lab.id))]);
-      }
-      setTerminalSession(null);
-      setTerminalRequest({ tone: "success", message: successMessage });
-      setAuthStatus({ tone: "success", message: successMessage });
-      pushToast(successMessage, "success");
-      await loadLabs();
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || (isContainerLab ? "컨테이너 재생성 중 오류가 발생했습니다." : "랩 초기화 중 오류가 발생했습니다."), "error");
-    }
-  }
-  async function onRebuildLabWithVolume(labId) {
-    const targetLabId = Number(labId || activeLab?.id || 0);
-    if (!targetLabId) {
-      pushToast("재구성할 랩을 찾을 수 없습니다.", "error");
-      return;
-    }
-    const targetLab = labs.find((item) => Number(item.id) === Number(targetLabId)) || activeLab || null;
-    const targetCourse = courses.find((item) => Number(item.id) === Number(targetLab?.courseId || 0)) || null;
-    const isContainerLab = String(targetLab?.labBackendType || targetCourse?.labBackendType || "vm") === "container";
-    if (isContainerLab) {
-      pushToast("컨테이너 랩은 볼륨 디스크 재구성을 지원하지 않습니다.", "error");
-      return;
-    }
-    const bootVolumeSizeGb = Math.max(1, Math.min(2048, Number.parseInt(platformStatus?.labAutoBootVolumeSizeGb, 10) || 20));
-    const bootVolumeType = String(platformStatus?.labAutoBootVolumeType || "").trim();
-    const volumeText = `Cinder volume ${bootVolumeSizeGb}GB${bootVolumeType ? ` / ${bootVolumeType}` : ""}`;
-    if (!window.confirm(`현재 VM과 작업 내용이 삭제되고 ${volumeText} 기반 새 VM으로 다시 생성됩니다. 계속할까요?`)) return;
-    try {
-      const result = await api(`/api/labs/${targetLabId}/reset`, {
-        method: "POST",
-        body: {
-          bootFromVolume: true,
-          bootVolumeSizeGb,
-          bootVolumeType,
-        },
-      });
-      const successMessage = result.message || "볼륨 디스크 기반으로 랩을 다시 생성했습니다.";
-      if (result.lab) {
-        setLabs((current) => [result.lab, ...current.filter((item) => Number(item.id) !== Number(targetLabId) && Number(item.id) !== Number(result.lab.id))]);
-      }
-      setTerminalSession(null);
-      setTerminalRequest({ tone: "success", message: successMessage });
-      setAuthStatus({ tone: "success", message: successMessage });
-      pushToast(successMessage, "success");
-      await loadLabs();
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || "볼륨 디스크 재구성 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onRemoveLab(labId) {
-    const targetLabId = Number(labId || activeLab?.id || 0);
-    if (!targetLabId) {
-      pushToast("제거할 랩을 찾을 수 없습니다.", "error");
-      return;
-    }
-    const targetLab = labs.find((item) => Number(item.id) === Number(targetLabId)) || activeLab || null;
-    const targetCourse = courses.find((item) => Number(item.id) === Number(targetLab?.courseId || 0)) || null;
-    const isContainerLab = String(targetLab?.labBackendType || targetCourse?.labBackendType || "vm") === "container";
-    const removeConfirmMessage = isContainerLab
-      ? "컨테이너를 제거하면 현재 컨테이너와 작업 내용이 삭제됩니다. 새 컨테이너는 자동으로 생성되지 않습니다. 계속할까요?"
-      : "랩을 종료하면 현재 VM과 작업 내용이 삭제됩니다. 계속할까요?";
-    if (!window.confirm(removeConfirmMessage)) return;
-    try {
-      const result = await api(`/api/labs/${targetLabId}/remove`, { method: "POST" });
-      const successMessage = result.message || (isContainerLab ? "컨테이너를 제거했습니다." : "랩을 종료했습니다.");
-      setLabs((current) => current.map((item) => (Number(item.id) === Number(targetLabId) ? { ...item, ...(result.lab || {}), status: result.lab?.status || "terminated" } : item)));
-      setTerminalSession(null);
-      setTerminalRequest({ tone: "success", message: successMessage });
-      setAuthStatus({ tone: "success", message: successMessage });
-      pushToast(successMessage, "success");
-      await loadLabs();
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || (isContainerLab ? "컨테이너 제거 중 오류가 발생했습니다." : "랩 종료 중 오류가 발생했습니다."), "error");
-    }
-  }
-  async function onResetLabSshHostKey(labId, nodeId, nodeLabel = "") {
-    const targetLabId = Number(labId || activeLab?.id || 0);
-    const normalizedNodeId = String(nodeId || "").trim();
-    if (!targetLabId || !normalizedNodeId) {
-      pushToast("SSH 호스트 키를 초기화할 노드를 찾을 수 없습니다.", "error");
-      return null;
-    }
-    const targetLabel = String(nodeLabel || "선택 VM").trim() || "선택 VM";
-    const confirmed = window.confirm(
-      `${targetLabel}의 저장된 SSH 호스트 키 기록만 삭제합니다. 다음 연결에서 현재 VM의 키를 새로 확인합니다. VM 대상이 맞는지 확인했나요?`,
-    );
-    if (!confirmed) return null;
 
-    terminalSessionRequestRef.current.cancel();
-    setTerminalSessionBusy(false);
-    try {
-      const result = await api(`/api/labs/${targetLabId}/nodes/${encodeURIComponent(normalizedNodeId)}/ssh-host-key/reset`, {
-        method: "POST",
-      });
-      const activeTerminalNodeId = String(terminalSession?.nodeId || "").trim();
-      if (
-        Number(terminalSession?.labId || 0) === targetLabId
-        && (!activeTerminalNodeId || activeTerminalNodeId === normalizedNodeId)
-      ) {
-        setTerminalSession(null);
-      }
-      const successMessage = result.message || `${targetLabel}의 SSH 호스트 키 기록을 초기화했습니다.`;
-      setTerminalRequest({ tone: "success", message: successMessage });
-      pushToast(successMessage, "success");
-      return result;
-    } catch (error) {
-      const message = error.message || "SSH 호스트 키 기록을 초기화하지 못했습니다.";
-      setTerminalRequest({ tone: "error", message });
-      pushToast(message, "error");
-      return null;
-    }
-  }
-  async function onRebootLabNode(labId, nodeId, nodeLabel = "") {
-    const targetLabId = Number(labId || activeLab?.id || 0);
-    const normalizedNodeId = String(nodeId || "").trim();
-    if (!targetLabId || !normalizedNodeId) {
-      pushToast("재부팅할 VM을 찾을 수 없습니다.", "error");
-      return null;
-    }
-    const targetLabel = String(nodeLabel || "선택 VM").trim() || "선택 VM";
-    if (!window.confirm(`${targetLabel}을(를) 일반 재부팅할까요?\n실행 중인 작업과 터미널 연결이 잠시 중단됩니다.`)) {
-      return null;
-    }
 
-    terminalSessionRequestRef.current.cancel();
-    setTerminalSessionBusy(false);
-    try {
-      const result = await api(`/api/labs/${targetLabId}/nodes/${encodeURIComponent(normalizedNodeId)}/reboot`, {
-        method: "POST",
-      });
-      if (result.lab) {
-        setLabs((current) => current.map((item) => (
-          Number(item.id) === Number(result.lab.id) ? result.lab : item
-        )));
-        if (isAdmin) {
-          setAdminLabs((current) => current.map((item) => (
-            Number(item.id) === Number(result.lab.id) ? result.lab : item
-          )));
-        }
-      }
-      if (
-        Number(terminalSession?.labId || 0) === targetLabId
-        && String(terminalSession?.nodeId || "").trim() === normalizedNodeId
-      ) {
-        setTerminalSession(null);
-      }
-      const message = result.message || `${targetLabel}에 일반 재부팅을 요청했습니다.`;
-      setTerminalRequest({ tone: "success", message });
-      pushToast(message, "success");
-      await loadLabs();
-      return result;
-    } catch (error) {
-      const message = error.message || "선택한 VM을 재부팅하지 못했습니다.";
-      setTerminalRequest({ tone: "error", message });
-      pushToast(message, "error");
-      return null;
-    }
-  }
-  async function onRebuildLabNode(labId, nodeId, nodeLabel = "") {
-    const targetLabId = Number(labId || activeLab?.id || 0);
-    const normalizedNodeId = String(nodeId || "").trim();
-    if (!targetLabId || !normalizedNodeId) {
-      pushToast("재생성할 노드를 찾을 수 없습니다.", "error");
-      return;
-    }
-    const targetLabel = String(nodeLabel || "선택 VM").trim() || "선택 VM";
-    if (!window.confirm(`${targetLabel}을(를) 재생성하면 해당 인스턴스가 다시 설치됩니다. 계속할까요?`)) return;
-    try {
-      const result = await api(`/api/labs/${targetLabId}/nodes/${encodeURIComponent(normalizedNodeId)}/rebuild`, { method: "POST" });
-      if (result.lab) {
-        setLabs((current) => current.map((item) => (Number(item.id) === Number(result.lab.id) ? result.lab : item)));
-      }
-      if (String(terminalSession?.nodeId || "").trim() === normalizedNodeId) {
-        setTerminalSession(null);
-      }
-      setTerminalRequest({ tone: "success", message: result.message || `${targetLabel} 재생성을 완료했습니다.` });
-      pushToast(result.message || `${targetLabel} 재생성을 완료했습니다.`, "success");
-      await loadLabs();
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || "노드 재생성 중 오류가 발생했습니다.", "error");
-    }
-  }
+
+
+
+
+
+
+
+
+
+
 async function onCheckLabDomain(labOverride = null) {
-  const targetLab = labOverride?.id ? labOverride : activeLab;
-  const isCustomLab = String(targetLab?.resourceType || "").toLowerCase() === "custom-lab";
+  const targetLab = labOverride?.resourceType === "custom-lab" ? labOverride : null;
+
   const domainType = String(publicRouteForm.domainType || "managed") === "custom" ? "custom" : "managed";
   if (domainType === "custom") {
     const customDomain = String(publicRouteForm.customDomain || "").trim();
@@ -6960,8 +4513,8 @@ async function onCheckLabDomain(labOverride = null) {
       return;
     }
     try {
-      const excludeQuery = targetLab ? (isCustomLab ? `&customLabRequestId=${targetLab.id}` : `&labId=${targetLab.id}`) : "";
-      const result = await api(`/api/lab-domains/check?domainType=custom&customDomain=${encodeURIComponent(customDomain)}${excludeQuery}`);
+      const excludeQuery = targetLab ? (`&customLabRequestId=${targetLab.id}`) : "";
+      const result = await api(`/api/domain-availability?domainType=custom&customDomain=${encodeURIComponent(customDomain)}${excludeQuery}`);
       const verification = result.verification || {};
       setDomainAvailability({
         tone: result.available && result.verified ? "success" : result.available ? "warn" : "error",
@@ -6981,17 +4534,17 @@ async function onCheckLabDomain(labOverride = null) {
     return;
   }
     try {
-      const excludeQuery = targetLab ? (isCustomLab ? `&customLabRequestId=${targetLab.id}` : `&labId=${targetLab.id}`) : "";
-      const result = await api(`/api/lab-domains/check?subdomain=${encodeURIComponent(subdomain)}${excludeQuery}`);
+      const excludeQuery = targetLab ? (`&customLabRequestId=${targetLab.id}`) : "";
+      const result = await api(`/api/domain-availability?subdomain=${encodeURIComponent(subdomain)}${excludeQuery}`);
       setDomainAvailability({ tone: result.available ? "success" : "error", message: result.message });
     } catch (error) {
       setDomainAvailability({ tone: "error", message: error.message });
     }
   }
   async function onPublishLabDomain(labOverride = null) {
-      const targetLab = labOverride?.id ? labOverride : activeLab;
+      const targetLab = labOverride?.resourceType === "custom-lab" ? labOverride : null;
       if (!targetLab) return;
-      const isCustomLab = String(targetLab?.resourceType || "").toLowerCase() === "custom-lab";
+
       try {
         const explicitNodes = Array.isArray(targetLab?.vmNodes) ? targetLab.vmNodes.filter(Boolean) : [];
         const domainType = String(publicRouteForm.domainType || "managed") === "custom" ? "custom" : "managed";
@@ -7009,8 +4562,8 @@ async function onCheckLabDomain(labOverride = null) {
         let availability = null;
         if (domainType === "custom") {
           if (!requestedCustomDomain) throw new Error("사용자 도메인을 입력해 주세요. 예: app.example.com");
-          const excludeQuery = isCustomLab ? `customLabRequestId=${targetLab.id}` : `labId=${targetLab.id}`;
-          availability = await api(`/api/lab-domains/check?domainType=custom&customDomain=${encodeURIComponent(requestedCustomDomain)}&${excludeQuery}`);
+          const excludeQuery = `customLabRequestId=${targetLab.id}`;
+          availability = await api(`/api/domain-availability?domainType=custom&customDomain=${encodeURIComponent(requestedCustomDomain)}&${excludeQuery}`);
           const verification = availability.verification || {};
           setDomainAvailability({
             tone: availability.available && availability.verified ? "success" : availability.available ? "warn" : "error",
@@ -7024,8 +4577,8 @@ async function onCheckLabDomain(labOverride = null) {
             return;
           }
         } else if (requestedSubdomain) {
-          const excludeQuery = isCustomLab ? `customLabRequestId=${targetLab.id}` : `labId=${targetLab.id}`;
-          availability = await api(`/api/lab-domains/check?subdomain=${encodeURIComponent(requestedSubdomain)}&${excludeQuery}`);
+          const excludeQuery = `customLabRequestId=${targetLab.id}`;
+          availability = await api(`/api/domain-availability?subdomain=${encodeURIComponent(requestedSubdomain)}&${excludeQuery}`);
           setDomainAvailability({ tone: availability.available ? "success" : "error", message: availability.message });
           if (!availability.available) {
             setTerminalRequest({ tone: "error", message: availability.message });
@@ -7034,7 +4587,7 @@ async function onCheckLabDomain(labOverride = null) {
         } else {
           setDomainAvailability({ tone: "success", message: "빈 서브도메인으로 요청하여 랜덤 도메인을 자동 생성합니다." });
         }
-        const result = await api(isCustomLab ? `/api/custom-lab-requests/${targetLab.id}/domain` : `/api/labs/${targetLab.id}/domain`, {
+        const result = await api(`/api/custom-lab-requests/${targetLab.id}/domain`, {
           method: "POST",
           body: {
           domainType,
@@ -7049,12 +4602,10 @@ async function onCheckLabDomain(labOverride = null) {
         const updatedLab = result.request || result.lab;
         const reviewRequired = Boolean(updatedLab?.publicRequestPending);
         const message = reviewRequired ? ADMIN_REVIEW_REQUIRED_MESSAGE : (result.message || "공개 도메인 승인 요청이 접수되었습니다.");
-        if (isCustomLab) {
+        {
           setCustomLabRequests((current) => current.map((request) => (Number(request.id) === Number(targetLab.id) ? result.request || result.lab : request)));
-        } else {
-          setLabs((current) => current.map((lab) => (lab.id === targetLab.id ? result.lab : lab)));
         }
-        await runSafeRefreshTasks([isCustomLab ? loadCustomLabRequests() : loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
+        await runSafeRefreshTasks([loadCustomLabRequests(), isAdmin ? loadAdmin() : Promise.resolve()]);
         setTerminalRequest({ tone: "success", message });
         setDomainAvailability({
           tone: "success",
@@ -7069,12 +4620,12 @@ async function onCheckLabDomain(labOverride = null) {
       }
   }
   async function onUnpublishLabDomain(subdomain = "", options = {}, labOverride = null) {
-      const targetLab = labOverride?.id ? labOverride : activeLab;
+      const targetLab = labOverride?.resourceType === "custom-lab" ? labOverride : null;
       if (!targetLab) return;
-      const isCustomLab = String(targetLab?.resourceType || "").toLowerCase() === "custom-lab";
+
       const normalizedSubdomain = typeof subdomain === "string" ? subdomain : "";
       try {
-          const result = await api(isCustomLab ? `/api/custom-lab-requests/${targetLab.id}/domain` : `/api/labs/${targetLab.id}/domain`, {
+          const result = await api(`/api/custom-lab-requests/${targetLab.id}/domain`, {
             method: "DELETE",
             body: normalizedSubdomain ? {
               subdomain: normalizedSubdomain,
@@ -7084,12 +4635,10 @@ async function onCheckLabDomain(labOverride = null) {
             } : {},
           });
           setPublicRouteFormDirty(false);
-          if (isCustomLab) {
+          {
             setCustomLabRequests((current) => current.map((request) => (Number(request.id) === Number(targetLab.id) ? result.request || result.lab : request)));
-          } else {
-            setLabs((current) => current.map((lab) => (lab.id === targetLab.id ? result.lab : lab)));
           }
-          await runSafeRefreshTasks([isCustomLab ? loadCustomLabRequests() : loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
+          await runSafeRefreshTasks([loadCustomLabRequests(), isAdmin ? loadAdmin() : Promise.resolve()]);
           setTerminalRequest({ tone: "success", message: "공개 도메인 연결을 해제했습니다." });
         setDomainAvailability({ tone: "", message: "" });
         pushToast(result.message || "공개 도메인 연결을 해제했습니다.", "success");
@@ -7098,268 +4647,20 @@ async function onCheckLabDomain(labOverride = null) {
         pushToast(error.message || "공개 도메인 해제 중 오류가 발생했습니다.", "error");
       }
   }
-  async function onRequestLabPublicPort() {
-    if (!activeLab) return;
-    try {
-      const targetPort = Number(publicTcpRouteForm.targetPort || 0);
-      const nodeId = String(publicTcpRouteForm.nodeId || "").trim();
-      if (!Number.isInteger(targetPort) || targetPort <= 0) {
-        throw new Error("공개할 내부 TCP 포트를 입력해 주세요.");
-      }
-      const result = await api(`/api/labs/${activeLab.id}/public-port`, {
-        method: "POST",
-        body: { targetPort, nodeId },
-      });
-      setPublicTcpRouteFormDirty(false);
-      setLabs((current) => current.map((lab) => (lab.id === activeLab.id ? result.lab : lab)));
-      setPublicTcpRouteForm(EMPTY_PUBLIC_TCP_ROUTE);
-      await runSafeRefreshTasks([loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
-      const message = result.lab?.publicTcpRequestPending ? ADMIN_REVIEW_REQUIRED_MESSAGE : (result.message || "외부 TCP 포트 노출 요청이 접수되었습니다.");
-      setTerminalRequest({ tone: "success", message });
-      pushToast(message, "success");
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || "외부 TCP 포트 요청 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onReleaseLabPublicPort(targetPort = null, externalPort = null, route = {}) {
-      if (!activeLab) return;
-      const normalizedTargetPort = typeof targetPort === "number" || typeof targetPort === "string" ? Number(targetPort) : undefined;
-      const normalizedExternalPort = typeof externalPort === "number" || typeof externalPort === "string" ? Number(externalPort) : undefined;
-      const nodeId = String(route?.nodeId || "").trim();
-      const targetHost = String(route?.targetHost || "").trim();
-      try {
-        const result = await api(`/api/labs/${activeLab.id}/public-port`, {
-          method: "DELETE",
-          body: {
-            targetPort: Number.isInteger(normalizedTargetPort) ? normalizedTargetPort : undefined,
-            externalPort: Number.isInteger(normalizedExternalPort) ? normalizedExternalPort : undefined,
-            nodeId: nodeId || undefined,
-            targetHost: targetHost || undefined,
-          },
-        });
-      setPublicTcpRouteFormDirty(false);
-      setLabs((current) => current.map((lab) => (lab.id === activeLab.id ? result.lab : lab)));
-      await runSafeRefreshTasks([loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
-      setTerminalRequest({ tone: "success", message: result.message || "외부 TCP 포트 노출을 해제했습니다." });
-      pushToast(result.message || "외부 TCP 포트 노출을 해제했습니다.", "success");
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || "외부 TCP 포트 해제 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onRequestExternalSsh() {
-    if (!activeLab) return;
-    try {
-      const result = await api(`/api/labs/${activeLab.id}/external-ssh`, { method: "POST" });
-      setLabs((current) => current.map((lab) => (lab.id === activeLab.id ? result.lab : lab)));
-      await runSafeRefreshTasks([loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
-      const message = result.lab?.externalSshRequestPending ? ADMIN_REVIEW_REQUIRED_MESSAGE : (result.message || "외부 SSH 요청이 접수되었습니다.");
-      setTerminalRequest({ tone: "success", message });
-      pushToast(message, "success");
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || "외부 SSH 요청 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onReleaseExternalSsh() {
-    if (!activeLab) return;
-    try {
-      const result = await api(`/api/labs/${activeLab.id}/external-ssh`, { method: "DELETE" });
-      setLabs((current) => current.map((lab) => (lab.id === activeLab.id ? result.lab : lab)));
-      await runSafeRefreshTasks([loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
-      setTerminalRequest({ tone: "success", message: result.message });
-      pushToast(result.message || "외부 SSH 할당을 해제했습니다.", "success");
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || "외부 SSH 해제 중 오류가 발생했습니다.", "error");
-      }
-    }
-    async function onRequestExternalRdp() {
-      if (!activeLab) return;
-      try {
-        const result = await api(`/api/labs/${activeLab.id}/external-rdp`, { method: "POST" });
-        setLabs((current) => current.map((lab) => (lab.id === activeLab.id ? result.lab : lab)));
-        await runSafeRefreshTasks([loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
-        const message = result.lab?.externalRdpRequestPending ? ADMIN_REVIEW_REQUIRED_MESSAGE : (result.message || "외부 RDP 요청이 접수되었습니다.");
-        setTerminalRequest({ tone: "success", message });
-        pushToast(message, "success");
-      } catch (error) {
-        setTerminalRequest({ tone: "error", message: error.message });
-        pushToast(error.message || "외부 RDP 요청 중 오류가 발생했습니다.", "error");
-      }
-    }
-    async function onReleaseExternalRdp() {
-      if (!activeLab) return;
-      try {
-        const result = await api(`/api/labs/${activeLab.id}/external-rdp`, { method: "DELETE" });
-        setLabs((current) => current.map((lab) => (lab.id === activeLab.id ? result.lab : lab)));
-        await runSafeRefreshTasks([loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
-        setTerminalRequest({ tone: "success", message: result.message });
-        pushToast(result.message || "외부 RDP 할당을 해제했습니다.", "success");
-      } catch (error) {
-        setTerminalRequest({ tone: "error", message: error.message });
-        pushToast(error.message || "외부 RDP 해제 중 오류가 발생했습니다.", "error");
-      }
-    }
-    async function onApproveLabDomain(labId, domain = "", resource = null) {
-    const domainEntry = domain && typeof domain === "object" ? domain : null;
-    const subdomain = domainEntry ? domainEntry.subdomain : domain;
-    const isCustomLabDomain = resource?.resourceType === "custom-lab"
-      || (adminCustomLabRequests || []).some((request) =>
-        Number(request.id) === Number(labId)
-        && (request.requestedPublicDomains || []).some((entry) => String(entry.subdomain || "") === String(subdomain || "")));
-    const noteKey = subdomain ? `${isCustomLabDomain ? "custom-lab" : "lab"}:${labId}:${subdomain}` : labId;
-    try {
-      const result = await api(isCustomLabDomain ? `/api/admin/custom-lab-requests/${labId}/approve-domain` : `/api/admin/labs/${labId}/approve-domain`, {
-        method: "POST",
-        body: {
-          reviewNote: labDomainReviewNotes[noteKey] || labDomainReviewNotes[subdomain ? `${labId}:${subdomain}` : labId] || "",
-          subdomain,
-          domainType: domainEntry?.domainType || "",
-          fqdn: domainEntry?.fqdn || "",
-        },
-      });
-      if (isCustomLabDomain) {
-        setAdminCustomLabRequests((current) => current.map((request) => (request.id === labId ? result.request || result.lab : request)));
-      } else {
-        setAdminLabs((current) => current.map((lab) => (lab.id === labId ? result.lab : lab)));
-      }
-      setLabDomainReviewNotes((current) => ({ ...current, [noteKey]: "", [subdomain ? `${labId}:${subdomain}` : labId]: "" }));
-      await runSafeRefreshTasks([loadAdmin(), loadLabs(), loadCustomLabRequests()]);
-      setAdminStatus(result.message || "공개 도메인 요청을 승인했습니다.");
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  async function onApproveExternalSsh(labId) {
-    try {
-      const result = await api(`/api/admin/labs/${labId}/approve-external-ssh`, {
-        method: "POST",
-        body: { reviewNote: labSshReviewNotes[labId] || "" },
-      });
-      setAdminLabs((current) => current.map((lab) => (lab.id === labId ? result.lab : lab)));
-      setLabSshReviewNotes((current) => ({ ...current, [labId]: "" }));
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-      setAdminStatus(result.message);
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-    async function onRejectExternalSsh(labId) {
-      try {
-        const result = await api(`/api/admin/labs/${labId}/reject-external-ssh`, {
-          method: "POST",
-          body: { reviewNote: labSshReviewNotes[labId] || "" },
-      });
-      setAdminLabs((current) => current.map((lab) => (lab.id === labId ? result.lab : lab)));
-      setLabSshReviewNotes((current) => ({ ...current, [labId]: "" }));
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-      setAdminStatus(result.message);
-    } catch (error) {
-        setAdminStatus(error.message);
-      }
-    }
-    async function onApproveExternalRdp(labId) {
-      try {
-        const result = await api(`/api/admin/labs/${labId}/approve-external-rdp`, {
-          method: "POST",
-          body: { reviewNote: labSshReviewNotes[`rdp-${labId}`] || "" },
-        });
-        setAdminLabs((current) => current.map((lab) => (lab.id === labId ? result.lab : lab)));
-        setLabSshReviewNotes((current) => ({ ...current, [`rdp-${labId}`]: "" }));
-        await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-        setAdminStatus(result.message);
-      } catch (error) {
-        setAdminStatus(error.message);
-      }
-    }
-    async function onRejectExternalRdp(labId) {
-      try {
-        const result = await api(`/api/admin/labs/${labId}/reject-external-rdp`, {
-          method: "POST",
-          body: { reviewNote: labSshReviewNotes[`rdp-${labId}`] || "" },
-        });
-        setAdminLabs((current) => current.map((lab) => (lab.id === labId ? result.lab : lab)));
-        setLabSshReviewNotes((current) => ({ ...current, [`rdp-${labId}`]: "" }));
-        await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-        setAdminStatus(result.message);
-      } catch (error) {
-        setAdminStatus(error.message);
-      }
-    }
-    async function onRejectLabDomain(labId, domain = "", resource = null) {
-    const domainEntry = domain && typeof domain === "object" ? domain : null;
-    const subdomain = domainEntry ? domainEntry.subdomain : domain;
-    const isCustomLabDomain = resource?.resourceType === "custom-lab"
-      || (adminCustomLabRequests || []).some((request) =>
-        Number(request.id) === Number(labId)
-        && (request.requestedPublicDomains || []).some((entry) => String(entry.subdomain || "") === String(subdomain || "")));
-    const noteKey = subdomain ? `${isCustomLabDomain ? "custom-lab" : "lab"}:${labId}:${subdomain}` : labId;
-    try {
-      const result = await api(isCustomLabDomain ? `/api/admin/custom-lab-requests/${labId}/reject-domain` : `/api/admin/labs/${labId}/reject-domain`, {
-        method: "POST",
-        body: {
-          reviewNote: labDomainReviewNotes[noteKey] || labDomainReviewNotes[subdomain ? `${labId}:${subdomain}` : labId] || "",
-          subdomain,
-          domainType: domainEntry?.domainType || "",
-          fqdn: domainEntry?.fqdn || "",
-        },
-      });
-      if (isCustomLabDomain) {
-        setAdminCustomLabRequests((current) => current.map((request) => (request.id === labId ? result.request || result.lab : request)));
-      } else {
-        setAdminLabs((current) => current.map((lab) => (lab.id === labId ? result.lab : lab)));
-      }
-      setLabDomainReviewNotes((current) => ({ ...current, [noteKey]: "", [subdomain ? `${labId}:${subdomain}` : labId]: "" }));
-      await runSafeRefreshTasks([loadAdmin(), loadLabs(), loadCustomLabRequests()]);
-      setAdminStatus(result.message || "공개 도메인 요청을 반려했습니다.");
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  async function onApprovePublicPort(labId, targetPort = null, route = {}) {
-    try {
-      const routeKey = String(route?.nodeId || route?.targetHost || "").trim();
-      const reviewKey = targetPort != null ? `${labId}:${targetPort}${routeKey ? `:${routeKey}` : ""}` : String(labId);
-      const result = await api(`/api/admin/labs/${labId}/approve-public-port`, {
-        method: "POST",
-        body: {
-          reviewNote: labTcpReviewNotes[reviewKey] || "",
-          targetPort: targetPort != null ? Number(targetPort) : undefined,
-          nodeId: route?.nodeId || undefined,
-          targetHost: route?.targetHost || undefined,
-        },
-      });
-      setAdminLabs((current) => current.map((lab) => (lab.id === labId ? result.lab : lab)));
-      setLabTcpReviewNotes((current) => ({ ...current, [reviewKey]: "" }));
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-      setAdminStatus(result.message || "외부 TCP 포트 요청을 승인했습니다.");
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  async function onRejectPublicPort(labId, targetPort = null, route = {}) {
-    try {
-      const routeKey = String(route?.nodeId || route?.targetHost || "").trim();
-      const reviewKey = targetPort != null ? `${labId}:${targetPort}${routeKey ? `:${routeKey}` : ""}` : String(labId);
-      const result = await api(`/api/admin/labs/${labId}/reject-public-port`, {
-        method: "POST",
-        body: {
-          reviewNote: labTcpReviewNotes[reviewKey] || "",
-          targetPort: targetPort != null ? Number(targetPort) : undefined,
-          nodeId: route?.nodeId || undefined,
-          targetHost: route?.targetHost || undefined,
-        },
-      });
-      setAdminLabs((current) => current.map((lab) => (lab.id === labId ? result.lab : lab)));
-      setLabTcpReviewNotes((current) => ({ ...current, [reviewKey]: "" }));
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-      setAdminStatus(result.message || "외부 TCP 포트 요청을 반려했습니다.");
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   async function onCreateQna(event) {
     event.preventDefault();
     if (!qnaForm.title.trim() || !qnaForm.body.trim()) return;
@@ -7367,7 +4668,7 @@ async function onCheckLabDomain(labOverride = null) {
       await api("/api/qna", {
         method: "POST",
         body: {
-          courseId: qnaForm.courseId || null,
+
           labRequestId: qnaForm.labRequestId || null,
           postType: qnaForm.postType || "question",
           title: qnaForm.title,
@@ -7501,7 +4802,7 @@ async function onCheckLabDomain(labOverride = null) {
         supportMessageEnabled: patch.supportMessageEnabled ?? currentUser?.supportMessageEnabled ?? false,
         selfServiceVmEnabled: patch.selfServiceVmEnabled ?? currentUser?.selfServiceVmEnabled ?? false,
         pocFreeAccessEnabled: patch.pocFreeAccessEnabled ?? currentUser?.pocFreeAccessEnabled ?? false,
-        instructorShareEnabled: patch.instructorShareEnabled ?? currentUser?.instructorShareEnabled ?? false,
+
       };
       if (patch.adminPermissions !== undefined) {
         body.adminPermissions = normalizeAdminPermissions(patch.adminPermissions);
@@ -7736,635 +5037,25 @@ async function onCheckLabDomain(labOverride = null) {
       pushToast(error.message || "비승인 사용자 일괄 승인 중 오류가 발생했습니다.", "error");
     }
   }
-  async function onCourseSubmit(event) {
-    event.preventDefault();
-    const invalidFields = getInvalidCourseFields(courseForm);
-    if (invalidFields.length) {
-      setCourseFormInvalidFields(invalidFields);
-      setAdminStatus("과정 필수 항목을 모두 입력해 주세요.");
-      return;
-    }
-    if (!confirmMarkdownBlockingWarnings([
-      { label: "실습 가이드", value: courseForm.labGuideMarkdown },
-      { label: "실습 명령어", value: courseForm.commandsMarkdown },
-    ])) {
-      setAdminStatus("Markdown 코드 블록을 확인한 뒤 다시 저장해 주세요.");
-      return;
-    }
-    let heatParameters = {};
-    try { heatParameters = JSON.parse(courseForm.heatParametersText || "{}"); } catch { return setAdminStatus("Heat 파라미터 JSON 형식이 올바르지 않습니다."); }
-    let surveyConfig = {};
-    try { surveyConfig = JSON.parse(courseForm.surveyConfigText || "{}"); } catch { return setAdminStatus("설문 설정 JSON 형식이 올바르지 않습니다."); }
-    surveyConfig = normalizeCourseSurveyConfig(surveyConfig);
-    const payload = {
-      slug: courseForm.slug,
-      category: courseForm.category,
-      courseType: courseForm.courseType,
-      packageItems: (courseForm.packageItems || []).map(Number).filter(Boolean),
-      programType: isGovernmentProgramTypeValue(courseForm.programType) ? "정부지원금" : courseForm.programType,
-      title: courseForm.title,
-      summary: courseForm.summary,
-      price: Math.max(0, Number(courseForm.price || 0)),
-      promoEnabled: Boolean(courseForm.promoEnabled),
-      promoPrice: Math.max(0, Number(courseForm.promoPrice || 0)),
-      promoStartsAt: fromDatetimeLocalInput(courseForm.promoStartsAt),
-      promoEndsAt: fromDatetimeLocalInput(courseForm.promoEndsAt),
-      duration: courseForm.duration,
-      courseAccessDays: Math.max(1, Number(courseForm.courseAccessDays || 30)),
-      level: courseForm.level,
-      body: courseForm.body,
-      youtubeUrl: courseForm.youtubeUrl,
-      courseCurriculum: lines(courseForm.courseCurriculumText).map((value) => {
-        const [title, duration = "", description = ""] = value.split("|").map((part) => part.trim());
-        return { title, duration, description };
-      }).filter((item) => item.title),
-      courseVideos: lines(courseForm.courseVideosText).map((value) => {
-        const [title, url, description = ""] = value.split("|").map((part) => part.trim());
-        return { title, url, description };
-      }).filter((item) => item.title && item.url),
-      courseRecordings: parseCourseRecordingsText(courseForm.courseRecordingsText),
-      onlineMeetingUrl: courseForm.onlineMeetingUrl,
-      onlineBoardUrl: courseForm.onlineBoardUrl,
-      onlineCourseNotice: courseForm.onlineCourseNotice,
-      onlineSessionNote: courseForm.onlineSessionNote,
-      labGuideMarkdown: courseForm.labGuideMarkdown,
-      commandsMarkdown: courseForm.commandsMarkdown,
-      aiSystemPrompt: courseForm.aiSystemPrompt,
-      aiQuickPrompts: lines(courseForm.aiQuickPromptsText),
-      externalToolLinks: parseExternalToolLinksText(courseForm.externalToolLinksText),
-      externalLearningTools: parseExternalLearningToolsText(courseForm.externalLearningToolsText),
-      labStartChecklist: lines(courseForm.labStartChecklistText).slice(0, 20),
-      objectives: lines(courseForm.objectivesText),
-      materials: lines(courseForm.materialsText).map((value) => { const [label, href] = value.split("|").map((part) => part.trim()); return { label, href }; }),
-      textbookAssignments: (Array.isArray(courseForm.textbookAssignments) ? courseForm.textbookAssignments : [])
-        .map((item, index) => ({
-          textbookId: Number(item.textbookId || item.id),
-          sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : index,
-          required: Boolean(item.required),
-          visible: item.visible == null ? true : Boolean(item.visible),
-        }))
-        .filter((item) => item.textbookId > 0),
-      exampleFiles: (Array.isArray(courseForm.exampleFiles) ? courseForm.exampleFiles : [])
-        .map((item) => ({
-          label: String(item?.label || "").trim(),
-          href: String(item?.href || "").trim(),
-        }))
-        .filter((item) => item.label && item.href),
-      gitRepositories: String(courseForm.gitRepositoryLabel || "").trim() && String(courseForm.gitRepositoryHref || "").trim()
-        ? [{ label: String(courseForm.gitRepositoryLabel || "").trim(), href: String(courseForm.gitRepositoryHref || "").trim() }]
-        : [],
-      labEnabled: courseForm.labEnabled,
-      labApprovalMode: courseForm.labApprovalMode,
-      publicDomainApprovalMode: courseForm.publicDomainApprovalMode,
-      publicTcpApprovalMode: courseForm.publicTcpApprovalMode,
-      externalSshApprovalMode: courseForm.externalSshApprovalMode,
-      externalRdpApprovalMode: courseForm.externalRdpApprovalMode,
-      externalSshRouteMode: courseForm.externalSshRouteMode,
-      labBackendType: courseForm.labBackendType,
-      containerImageName: courseForm.containerImageName,
-      containerCommandText: courseForm.containerCommandText,
-      containerExposedPort: courseForm.containerExposedPort === "" ? null : Math.max(1, Number(courseForm.containerExposedPort || 22)),
-      containerAccessMode: courseForm.containerAccessMode,
-      containerConsoleMode: courseForm.containerConsoleMode,
-      labRetentionMode: courseForm.labRetentionMode,
-      labRetentionPreset: courseForm.labRetentionPreset,
-      labRetentionDays: Math.max(1, Number(courseForm.labRetentionDays || 1)),
-      allowResumeExistingLab: courseForm.allowResumeExistingLab,
-      labResizePolicy: courseForm.labResizePolicy,
-      labResizeAllowedFlavors: String(courseForm.labResizeAllowedFlavorsText || "").split(",").map((item) => item.trim()).filter(Boolean),
-      terminalReplayMode: courseForm.terminalReplayMode || "inherit",
-      trafficMonitoringEnabled: courseForm.trafficMonitoringEnabled,
-      trafficDailyLimitGb: Math.max(0, Number(courseForm.trafficDailyLimitGb || 0)),
-      trafficTotalLimitGb: Math.max(0, Number(courseForm.trafficTotalLimitGb || 0)),
-      trafficExceededAction: courseForm.trafficExceededAction,
-      heatTemplateName: courseForm.heatTemplateName,
-      heatApiUrl: courseForm.heatApiUrl,
-      heatStackPrefix: courseForm.heatStackPrefix,
-      labProvisioningTimeoutMinutes: Math.max(1, Math.min(120, Math.round(Number(courseForm.labProvisioningTimeoutMinutes || 10) || 10))),
-      heatParameters: {
-        ...heatParameters,
-        labProvisioningTimeoutMinutes: Math.max(1, Math.min(120, Math.round(Number(courseForm.labProvisioningTimeoutMinutes || 10) || 10))),
-      },
-      terminalSshUser: courseForm.terminalSshUser,
-      terminalSshPort: Number(courseForm.terminalSshPort || 22),
-      terminalJumpHost: courseForm.terminalJumpHost,
-      terminalJumpUser: courseForm.terminalJumpUser,
-      isPublished: courseForm.isPublished,
-      isLandingPreview: courseForm.isLandingPreview,
-      courseStatus: courseForm.courseStatus,
-      releaseLabel: courseForm.releaseLabel,
-      accessScope: courseForm.accessScope,
-      accessCode: courseForm.accessCode,
-      surveyConfig,
-    };
-    try {
-      const result = await api(courseForm.id ? `/api/admin/courses/${courseForm.id}` : "/api/admin/courses", { method: courseForm.id ? "PUT" : "POST", body: payload });
-      setAdminCourses((current) => upsertByKey(current, result.course, "id"));
-      setCourses((current) => upsertByKey(current, result.course, "id"));
-      const editingCourse = Boolean(courseForm.id);
-      setCourseForm(EMPTY_COURSE);
-      setCourseFormInvalidFields([]);
-      const cleanupCount = Math.max(0, Number(result.policyCleanup?.cleanedLabs || 0) || 0);
-      const message = editingCourse
-        ? cleanupCount
-          ? `과정을 수정했습니다. 사용금지 정책으로 랩 ${cleanupCount}개의 외부 연결과 대기 요청을 정리했습니다.`
-          : "과정을 수정했습니다."
-        : "과정을 등록했습니다.";
-      setAdminStatus(message);
-      if (editingCourse) {
-        openAdminSaveDialog(message);
-      }
-      if (!editingCourse) {
-        setCourseSubmissionNotice(result.slugAdjusted
-          ? `새로운 과정 등록이 되었습니다.\n슬러그는 ${result.course?.slug || result.requestedSlug || payload.slug}로 저장되었습니다.`
-          : "새로운 과정 등록이 되었습니다.");
-      }
-      const refreshTasks = [loadCourses(), loadAdminCourses(), loadPlatformStatus(false, { force: true })];
-      if (cleanupCount) refreshTasks.push(loadLabs(), loadAdminLabs(), loadNotifications());
-      void runSafeRefreshTasks(refreshTasks);
-    } catch (error) {
-      if (error.message === "과정 필수 항목을 모두 입력해 주세요.") {
-        setCourseFormInvalidFields(getInvalidCourseFields(courseForm));
-      }
-      setAdminStatus(error.message);
-      openAdminSaveDialog(error.message, "error");
-    }
-  }
-  async function onTextbookSubmit(event) {
-    event.preventDefault();
-    const title = String(textbookForm.title || "").trim();
-    if (!title) {
-      setAdminStatus("교재 제목을 입력해 주세요.");
-      return;
-    }
-    if (!confirmMarkdownBlockingWarnings([{ label: "교재 본문", value: textbookForm.contentMarkdown }])) {
-      setAdminStatus("Markdown 코드 블록을 확인한 뒤 다시 저장해 주세요.");
-      return;
-    }
-    const payload = {
-      slug: textbookForm.slug || title,
-      title,
-      summary: textbookForm.summary,
-      contentMarkdown: textbookForm.contentMarkdown,
-      status: textbookForm.status,
-      version: textbookForm.version,
-    };
-    try {
-      const result = await api(textbookForm.id ? `/api/admin/textbooks/${textbookForm.id}` : "/api/admin/textbooks", {
-        method: textbookForm.id ? "PUT" : "POST",
-        body: payload,
-      });
-      setAdminTextbooks((current) => upsertByKey(current, result.textbook, "id"));
-      setTextbookForm(EMPTY_TEXTBOOK);
-      setAdminStatus(textbookForm.id ? "교재를 수정했습니다." : "교재를 등록했습니다.");
-      openAdminSaveDialog(textbookForm.id ? "교재를 수정했습니다." : "교재를 등록했습니다.");
-      void runSafeRefreshTasks([loadAdminTextbooks(), loadAdminCourses(), loadCourses()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      openAdminSaveDialog(error.message, "error");
-    }
-  }
-  function onTextbookEdit(textbook) {
-    setTextbookForm({
-      id: textbook.id,
-      slug: textbook.slug || "",
-      title: textbook.title || "",
-      summary: textbook.summary || "",
-      contentMarkdown: textbook.contentMarkdown || "",
-      status: textbook.status || "draft",
-      version: textbook.version || "1.0",
-    });
-  }
-  function onCancelTextbookEdit() {
-    setTextbookForm(EMPTY_TEXTBOOK);
-  }
-  async function onTextbookDelete(textbookId) {
-    try {
-      setAdminTextbooks((current) => removeByKey(current, textbookId, "id"));
-      await api(`/api/admin/textbooks/${textbookId}`, { method: "DELETE" });
-      setTextbookForm((current) => (Number(current.id) === Number(textbookId) ? EMPTY_TEXTBOOK : current));
-      setAdminStatus("교재를 삭제했습니다.");
-      void runSafeRefreshTasks([loadAdminTextbooks(), loadAdminCourses(), loadCourses()]);
-    } catch (error) {
-      void runSafeRefreshTasks([loadAdminTextbooks(), loadAdminCourses(), loadCourses()]);
-      setAdminStatus(error.message);
-    }
-  }
-  function onCourseEdit(course) {
-    setCourseFormInvalidFields([]);
-    setCourseForm({
-      id: course.id, slug: course.slug, category: course.category, courseType: course.courseType || "standard", packageItems: Array.isArray(course.packageItems) ? course.packageItems.map(String) : [], programType: isGovernmentProgramTypeValue(course.programType) ? "정부지원금" : course.programType || "일반", title: course.title, summary: course.summary, price: String(Math.max(0, Number(course.price || 0))), promoEnabled: Boolean(course.promoEnabled), promoPrice: String(Math.max(0, Number(course.promoPrice || 0))), promoStartsAt: toDatetimeLocalInput(course.promoStartsAt), promoEndsAt: toDatetimeLocalInput(course.promoEndsAt), duration: course.duration, courseAccessDays: String(Math.max(1, Number(course.courseAccessDays || course.courseAccessDefaultDays || 30) || 30)), level: course.level, body: course.body,
-      youtubeUrl: course.youtubeUrl || "",
-      courseCurriculumText: (course.courseCurriculum || []).map((item) => `${item.title || ""}${item.duration ? ` | ${item.duration}` : ""}${item.description ? ` | ${item.description}` : ""}`).join("\n"),
-      courseVideosText: (course.courseVideos || []).map((item) => `${item.title || ""} | ${item.url || ""}${item.description ? ` | ${item.description}` : ""}`).join("\n"),
-      courseRecordingsText: formatCourseRecordingsText(course.courseRecordings),
-      onlineMeetingUrl: course.onlineMeetingUrl || "",
-      onlineBoardUrl: course.onlineBoardUrl || "",
-      onlineCourseNotice: course.onlineCourseNotice || DEFAULT_ONLINE_COURSE_NOTICE,
-      onlineSessionNote: course.onlineSessionNote || "",
-      labGuideMarkdown: course.labGuideMarkdown || "",
-      commandsMarkdown: course.commandsMarkdown || "",
-      aiSystemPrompt: course.aiSystemPrompt || "",
-      aiQuickPromptsText: (course.aiQuickPrompts || []).join("\n"),
-      externalToolLinksText: formatExternalToolLinksText(course.externalToolLinks),
-      externalLearningToolsText: formatExternalLearningToolsText(course.externalLearningTools),
-      labStartChecklistText: (course.labStartChecklist || []).join("\n"),
-        objectivesText: (course.objectives || []).join("\n"),
-        materialsText: (course.materials || []).map((item) => `${item.label} | ${item.href}`).join("\n"),
-        textbookAssignments: (course.textbooks || []).map((item, index) => ({
-          textbookId: Number(item.textbookId || item.id),
-          sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : index,
-          required: Boolean(item.required),
-          visible: item.visible == null ? true : Boolean(item.visible),
-        })).filter((item) => item.textbookId > 0),
-        exampleFiles: Array.isArray(course.exampleFiles) ? course.exampleFiles.map((item) => ({
-          label: String(item?.label || "").trim(),
-          href: String(item?.href || "").trim(),
-        })) : [],
-        gitRepositoryLabel: String(course.gitRepositories?.[0]?.label || "").trim(),
-        gitRepositoryHref: String(course.gitRepositories?.[0]?.href || "").trim(),
-        labEnabled: Boolean(course.labEnabled), labApprovalMode: course.labApprovalMode || "manual", publicDomainApprovalMode: course.publicDomainApprovalMode || "manual", publicTcpApprovalMode: course.publicTcpApprovalMode || "manual", externalSshApprovalMode: course.externalSshApprovalMode || "manual", externalRdpApprovalMode: course.externalRdpApprovalMode || "manual", externalSshRouteMode: course.externalSshRouteMode === "domain" ? "domain" : "both", labBackendType: course.labBackendType || "vm", containerImageName: course.containerImageName || "", containerCommandText: course.containerCommandText || "", containerExposedPort: course.containerExposedPort == null ? "22" : String(course.containerExposedPort || 22), containerAccessMode: course.containerAccessMode || "console", containerConsoleMode: course.containerConsoleMode || "zun", heatTemplateName: course.heatTemplateName || "", heatApiUrl: course.heatApiUrl || "", heatStackPrefix: course.heatStackPrefix || "",
-        labRetentionMode: course.labRetentionMode || "ephemeral",
-        labRetentionPreset: course.labRetentionPreset || "1",
-        labRetentionDays: String(Math.max(1, Number(course.labRetentionDays || 1) || 1)),
-        allowResumeExistingLab: Boolean(course.allowResumeExistingLab),
-        labResizePolicy: course.labResizePolicy || "requestable",
-        labResizeAllowedFlavorsText: Array.isArray(course.labResizeAllowedFlavors) ? course.labResizeAllowedFlavors.join(", ") : "",
-        terminalReplayMode: ["enabled", "disabled"].includes(String(course.terminalReplayMode || "")) ? course.terminalReplayMode : "inherit",
-        trafficMonitoringEnabled: Boolean(course.trafficMonitoringEnabled),
-        trafficDailyLimitGb: String(Math.max(0, Number(course.trafficDailyLimitGb || 0))),
-        trafficTotalLimitGb: String(Math.max(0, Number(course.trafficTotalLimitGb || 0))),
-        trafficExceededAction: course.trafficExceededAction || "warn",
-        labProvisioningTimeoutMinutes: String(Math.max(1, Math.min(120, Number(course.labProvisioningTimeoutMinutes || course.heatParameters?.labProvisioningTimeoutMinutes || 10) || 10))),
-        heatParametersText: JSON.stringify(Object.fromEntries(
-          Object.entries(course.heatParameters || {}).filter(([key]) => key !== "labProvisioningTimeoutMinutes"),
-        ), null, 2), terminalSshUser: course.terminalSshUser || "", terminalSshPort: String(course.terminalSshPort || 22), terminalJumpHost: course.terminalJumpHost || "", terminalJumpUser: course.terminalJumpUser || "",
-      isPublished: Boolean(course.isPublished), isLandingPreview: Boolean(course.isLandingPreview), courseStatus: course.courseStatus || "published", releaseLabel: course.releaseLabel || "", accessScope: course.accessScope || "public", accessCode: course.accessCode || "", surveyConfigText: JSON.stringify(normalizeCourseSurveyConfig(course.surveyConfig), null, 2),
-    });
-  }
-  function createCourseAccessCode(seedSource) {
-    const slugSeed = String(seedSource || "COURSE")
-      .replace(/[^a-zA-Z0-9가-힣]/g, "")
-      .slice(0, 6)
-      .toUpperCase();
-    const randomSuffix = Math.random().toString(36).slice(2, 8).toUpperCase();
-    return `${slugSeed || "COURSE"}-${randomSuffix}`;
-  }
-  function createOnlineCourseSlug(course) {
-    const baseSlug = String(course?.slug || course?.title || "course")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9가-힣_-]+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "") || "course";
-    return baseSlug.endsWith("-online") ? baseSlug : `${baseSlug}-online`;
-  }
-  function createIltCourseSlug(course) {
-    const baseSlug = String(course?.slug || course?.title || "course")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9가-힣_-]+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "") || "course";
-    return baseSlug.endsWith("-ilt") ? `${baseSlug}-copy` : `${baseSlug}-ilt`;
-  }
-  function createIltCourseTitle(course) {
-    const baseTitle = String(course?.title || "새 과정").trim() || "새 과정";
-    return /\bILT\b|Instructor\s*Led\s*Training/i.test(baseTitle) ? baseTitle : `${baseTitle} (ILT)`;
-  }
-  function createCourseCopySlug(course) {
-    const baseSlug = String(course?.slug || course?.title || "course")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9가-힣_-]+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "") || "course";
-    return `${baseSlug}-copy`;
-  }
-  function createCourseCopyTitle(course) {
-    const baseTitle = String(course?.title || "새 과정").trim() || "새 과정";
-    return `${baseTitle} (복사본)`;
-  }
-  function onCloneCourseAsOnlineDraft(course) {
-    if (!course) {
-      setAdminStatus("복사할 과정을 찾을 수 없습니다.");
-      return;
-    }
-    setCourseFormInvalidFields([]);
-    setCourseSubmissionNotice("");
-    setCourseForm({
-      id: null,
-      slug: createOnlineCourseSlug(course),
-      category: course.category || "",
-      courseType: "online",
-      programType: isGovernmentProgramTypeValue(course.programType) ? "정부지원금" : course.programType || "일반",
-      title: String(course.title || "").includes("(온라인)") ? course.title : `${course.title || "새 과정"} (온라인)`,
-      summary: course.summary || "",
-      price: String(Math.max(0, Number(course.price || 0))),
-      promoEnabled: false,
-      promoPrice: "0",
-      promoStartsAt: "",
-      promoEndsAt: "",
-      duration: course.duration || "",
-      courseAccessDays: String(Math.max(1, Number(course.courseAccessDays || course.courseAccessDefaultDays || 30) || 30)),
-      level: course.level || "입문",
-      body: course.body || "",
-      youtubeUrl: course.youtubeUrl || "",
-      courseCurriculumText: (course.courseCurriculum || []).map((item) => `${item.title || ""}${item.duration ? ` | ${item.duration}` : ""}${item.description ? ` | ${item.description}` : ""}`).join("\n"),
-      courseVideosText: (course.courseVideos || []).map((item) => `${item.title || ""} | ${item.url || ""}${item.description ? ` | ${item.description}` : ""}`).join("\n"),
-      courseRecordingsText: formatCourseRecordingsText(course.courseRecordings),
-      onlineMeetingUrl: "",
-      onlineBoardUrl: "",
-      onlineCourseNotice: course.onlineCourseNotice || DEFAULT_ONLINE_COURSE_NOTICE,
-      onlineSessionNote: "",
-      labGuideMarkdown: course.labGuideMarkdown || "",
-      commandsMarkdown: course.commandsMarkdown || "",
-      aiSystemPrompt: course.aiSystemPrompt || "",
-      aiQuickPromptsText: (course.aiQuickPrompts || []).join("\n"),
-      externalToolLinksText: formatExternalToolLinksText(course.externalToolLinks),
-      externalLearningToolsText: formatExternalLearningToolsText(course.externalLearningTools),
-      labStartChecklistText: (course.labStartChecklist || []).join("\n"),
-      objectivesText: (course.objectives || []).join("\n"),
-      materialsText: (course.materials || []).map((item) => `${item.label} | ${item.href}`).join("\n"),
-      textbookAssignments: (course.textbooks || []).map((item, index) => ({
-        textbookId: Number(item.textbookId || item.id),
-        sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : index,
-        required: Boolean(item.required),
-        visible: item.visible == null ? true : Boolean(item.visible),
-      })).filter((item) => item.textbookId > 0),
-      exampleFiles: Array.isArray(course.exampleFiles) ? course.exampleFiles.map((item) => ({
-        label: String(item?.label || "").trim(),
-        href: String(item?.href || "").trim(),
-      })) : [],
-      gitRepositoryLabel: String(course.gitRepositories?.[0]?.label || "").trim(),
-      gitRepositoryHref: String(course.gitRepositories?.[0]?.href || "").trim(),
-      labEnabled: false,
-      labApprovalMode: "manual",
-      publicDomainApprovalMode: "manual",
-      publicTcpApprovalMode: "manual",
-      externalSshApprovalMode: "manual",
-      externalRdpApprovalMode: "manual",
-      externalSshRouteMode: "both",
-      labBackendType: "vm",
-      containerImageName: "",
-      containerCommandText: "",
-      containerExposedPort: "22",
-      containerAccessMode: "console",
-      containerConsoleMode: "zun",
-      heatTemplateName: "",
-      heatApiUrl: "",
-      heatStackPrefix: "",
-      labProvisioningTimeoutMinutes: "10",
-      labRetentionMode: "ephemeral",
-      labRetentionPreset: "1",
-      labRetentionDays: "1",
-      allowResumeExistingLab: false,
-      labResizePolicy: "disabled",
-      labResizeAllowedFlavorsText: "",
-      terminalReplayMode: "inherit",
-      trafficMonitoringEnabled: false,
-      trafficDailyLimitGb: "0",
-      trafficTotalLimitGb: "0",
-      trafficExceededAction: "warn",
-      heatParametersText: "{}",
-      terminalSshUser: "",
-      terminalSshPort: "22",
-      terminalJumpHost: "",
-      terminalJumpUser: "",
-      isPublished: false,
-      isLandingPreview: false,
-      courseStatus: "published",
-      releaseLabel: "",
-      accessScope: "private",
-      accessCode: "",
-      surveyConfigText: JSON.stringify(normalizeCourseSurveyConfig(course.surveyConfig), null, 2),
-      onlineCopySourceCourseId: course.id,
-    });
-    setAdminStatus(`${course.title || "선택한 과정"}을 온라인 과정 초안으로 복사했습니다. 링크와 세션 안내를 입력한 뒤 저장해 주세요.`);
-    pushToast("온라인 과정 초안을 준비했습니다.", "success");
-  }
-  function buildExistingCoursePayload(course, overrides = {}) {
-    return {
-      slug: overrides.slug ?? course.slug ?? "",
-      category: overrides.category ?? course.category ?? "",
-      courseType: overrides.courseType ?? course.courseType ?? "standard",
-      programType: isGovernmentProgramTypeValue(overrides.programType ?? course.programType) ? "정부지원금" : overrides.programType ?? course.programType ?? "일반",
-      title: overrides.title ?? course.title ?? "",
-      summary: overrides.summary ?? course.summary ?? "",
-      price: overrides.price ?? course.price ?? 0,
-      promoEnabled: overrides.promoEnabled ?? Boolean(course.promoEnabled),
-      promoPrice: overrides.promoPrice ?? Math.max(0, Number(course.promoPrice || 0)),
-      promoStartsAt: fromDatetimeLocalInput(overrides.promoStartsAt ?? course.promoStartsAt ?? ""),
-      promoEndsAt: fromDatetimeLocalInput(overrides.promoEndsAt ?? course.promoEndsAt ?? ""),
-      duration: overrides.duration ?? course.duration ?? "",
-      courseAccessDays: Math.max(1, Number(overrides.courseAccessDays ?? course.courseAccessDays ?? course.courseAccessDefaultDays ?? 30) || 30),
-      level: overrides.level ?? course.level ?? "",
-      body: overrides.body ?? course.body ?? "",
-      youtubeUrl: overrides.youtubeUrl ?? course.youtubeUrl ?? "",
-      courseCurriculum: overrides.courseCurriculum ?? course.courseCurriculum ?? [],
-      courseVideos: overrides.courseVideos ?? course.courseVideos ?? [],
-      courseRecordings: overrides.courseRecordings ?? course.courseRecordings ?? [],
-      onlineMeetingUrl: overrides.onlineMeetingUrl ?? course.onlineMeetingUrl ?? "",
-      onlineBoardUrl: overrides.onlineBoardUrl ?? course.onlineBoardUrl ?? "",
-      onlineCourseNotice: overrides.onlineCourseNotice ?? course.onlineCourseNotice ?? DEFAULT_ONLINE_COURSE_NOTICE,
-      onlineSessionNote: overrides.onlineSessionNote ?? course.onlineSessionNote ?? "",
-      labGuideMarkdown: overrides.labGuideMarkdown ?? course.labGuideMarkdown ?? "",
-      commandsMarkdown: overrides.commandsMarkdown ?? course.commandsMarkdown ?? "",
-      aiSystemPrompt: overrides.aiSystemPrompt ?? course.aiSystemPrompt ?? "",
-      aiQuickPrompts: overrides.aiQuickPrompts ?? course.aiQuickPrompts ?? [],
-      externalToolLinks: overrides.externalToolLinks ?? course.externalToolLinks ?? [],
-      externalLearningTools: overrides.externalLearningTools ?? course.externalLearningTools ?? [],
-      labStartChecklist: overrides.labStartChecklist ?? course.labStartChecklist ?? [],
-      objectives: overrides.objectives ?? course.objectives ?? [],
-      materials: overrides.materials ?? course.materials ?? [],
-      textbookAssignments: overrides.textbookAssignments ?? (course.textbooks || []).map((item, index) => ({
-        textbookId: Number(item.textbookId || item.id),
-        sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : index,
-        required: Boolean(item.required),
-        visible: item.visible == null ? true : Boolean(item.visible),
-      })).filter((item) => item.textbookId > 0),
-      exampleFiles: overrides.exampleFiles ?? course.exampleFiles ?? [],
-      gitRepositories: overrides.gitRepositories ?? course.gitRepositories ?? [],
-      labEnabled: overrides.labEnabled ?? Boolean(course.labEnabled),
-      labApprovalMode: overrides.labApprovalMode ?? course.labApprovalMode ?? "manual",
-      publicDomainApprovalMode: overrides.publicDomainApprovalMode ?? course.publicDomainApprovalMode ?? "manual",
-      publicTcpApprovalMode: overrides.publicTcpApprovalMode ?? course.publicTcpApprovalMode ?? "manual",
-      externalSshApprovalMode: overrides.externalSshApprovalMode ?? course.externalSshApprovalMode ?? "manual",
-      externalRdpApprovalMode: overrides.externalRdpApprovalMode ?? course.externalRdpApprovalMode ?? "manual",
-      externalSshRouteMode: overrides.externalSshRouteMode
-        ? (String(overrides.externalSshRouteMode || "").trim().toLowerCase() === "domain" ? "domain" : "both")
-        : (String(course.externalSshRouteMode || "both").trim().toLowerCase() === "domain" ? "domain" : "both"),
-      labBackendType: overrides.labBackendType ?? course.labBackendType ?? "vm",
-      containerImageName: overrides.containerImageName ?? course.containerImageName ?? "",
-      containerCommandText: overrides.containerCommandText ?? course.containerCommandText ?? "",
-      containerExposedPort: overrides.containerExposedPort ?? course.containerExposedPort ?? 22,
-      containerAccessMode: overrides.containerAccessMode ?? course.containerAccessMode ?? "console",
-      containerConsoleMode: overrides.containerConsoleMode ?? course.containerConsoleMode ?? "zun",
-      labRetentionMode: overrides.labRetentionMode ?? course.labRetentionMode ?? "ephemeral",
-      labRetentionPreset: overrides.labRetentionPreset ?? course.labRetentionPreset ?? "1",
-      labRetentionDays: Math.max(1, Number(overrides.labRetentionDays ?? course.labRetentionDays ?? 1) || 1),
-      allowResumeExistingLab: overrides.allowResumeExistingLab ?? Boolean(course.allowResumeExistingLab),
-      labResizePolicy: overrides.labResizePolicy ?? course.labResizePolicy ?? "requestable",
-      labResizeAllowedFlavors: overrides.labResizeAllowedFlavors ?? course.labResizeAllowedFlavors ?? [],
-      terminalReplayMode: overrides.terminalReplayMode ?? course.terminalReplayMode ?? "inherit",
-      trafficMonitoringEnabled: overrides.trafficMonitoringEnabled ?? Boolean(course.trafficMonitoringEnabled),
-      trafficDailyLimitGb: Math.max(0, Number(overrides.trafficDailyLimitGb ?? course.trafficDailyLimitGb ?? 0)),
-      trafficTotalLimitGb: Math.max(0, Number(overrides.trafficTotalLimitGb ?? course.trafficTotalLimitGb ?? 0)),
-      trafficExceededAction: overrides.trafficExceededAction ?? course.trafficExceededAction ?? "warn",
-      heatTemplateName: overrides.heatTemplateName ?? course.heatTemplateName ?? "",
-      heatApiUrl: overrides.heatApiUrl ?? course.heatApiUrl ?? "",
-      heatStackPrefix: overrides.heatStackPrefix ?? course.heatStackPrefix ?? "",
-      labProvisioningTimeoutMinutes: Math.max(1, Math.min(120, Number(
-        overrides.labProvisioningTimeoutMinutes
-          ?? course.labProvisioningTimeoutMinutes
-          ?? course.heatParameters?.labProvisioningTimeoutMinutes
-          ?? 10,
-      ) || 10)),
-      heatParameters: overrides.heatParameters ?? course.heatParameters ?? {},
-      terminalSshUser: overrides.terminalSshUser ?? course.terminalSshUser ?? "",
-      terminalSshPort: Number(overrides.terminalSshPort ?? course.terminalSshPort ?? 22),
-      terminalJumpHost: overrides.terminalJumpHost ?? course.terminalJumpHost ?? "",
-      terminalJumpUser: overrides.terminalJumpUser ?? course.terminalJumpUser ?? "",
-      isPublished: overrides.isPublished ?? Boolean(course.isPublished),
-      isLandingPreview: overrides.isLandingPreview ?? Boolean(course.isLandingPreview),
-      courseStatus: overrides.courseStatus ?? course.courseStatus ?? "published",
-      releaseLabel: overrides.releaseLabel ?? course.releaseLabel ?? "",
-      accessScope: overrides.accessScope ?? course.accessScope ?? "public",
-      accessCode: overrides.accessCode ?? course.accessCode ?? "",
-      surveyConfig: overrides.surveyConfig ?? course.surveyConfig ?? DEFAULT_COURSE_SURVEY_CONFIG,
-    };
-  }
-  async function onCloneCourse(course) {
-    if (!course) {
-      setAdminStatus("복제할 과정을 찾을 수 없습니다.");
-      return;
-    }
-    const payload = buildExistingCoursePayload(course, {
-      slug: createCourseCopySlug(course),
-      title: createCourseCopyTitle(course),
-      isPublished: false,
-      isLandingPreview: false,
-      accessScope: "private",
-      accessCode: "",
-    });
-    try {
-      setAdminStatus("과정을 복제하는 중입니다...");
-      const result = await api("/api/admin/courses", { method: "POST", body: payload });
-      setAdminCourses((current) => upsertByKey(current, result.course, "id"));
-      setCourses((current) => upsertByKey(current, result.course, "id"));
-      setCourseFormInvalidFields([]);
-      const savedSlug = result.course?.slug || payload.slug;
-      const message = result.slugAdjusted
-        ? `과정을 복제했습니다. 슬러그는 ${savedSlug}로 저장되었습니다.`
-        : "과정을 복제했습니다. 공개 전 제목과 노출 설정을 확인해 주세요.";
-      setAdminStatus(message);
-      pushToast("과정 복제가 완료되었습니다.", "success");
-      void runSafeRefreshTasks([loadCourses(), loadAdminCourses(), loadPlatformStatus(false, { force: true })]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "과정 복제 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onCloneCourseAsIlt(course) {
-    if (!course) {
-      setAdminStatus("복제할 과정을 찾을 수 없습니다.");
-      return;
-    }
-    if (String(course.courseType || "standard") === "online") {
-      setAdminStatus("ILT 복제는 일반 과정에서만 사용할 수 있습니다.");
-      return;
-    }
-    const payload = buildExistingCoursePayload(course, {
-      slug: createIltCourseSlug(course),
-      courseType: "standard",
-      programType: "ILT",
-      title: createIltCourseTitle(course),
-      promoEnabled: false,
-      promoPrice: 0,
-      promoStartsAt: "",
-      promoEndsAt: "",
-      isPublished: false,
-      isLandingPreview: false,
-      accessScope: "private",
-      accessCode: "",
-    });
-    try {
-      setAdminStatus("ILT 과정으로 복제하는 중입니다...");
-      const result = await api("/api/admin/courses", { method: "POST", body: payload });
-      setAdminCourses((current) => upsertByKey(current, result.course, "id"));
-      setCourses((current) => upsertByKey(current, result.course, "id"));
-      setCourseFormInvalidFields([]);
-      setCourseForm((current) => (current.id ? current : EMPTY_COURSE));
-      const savedSlug = result.course?.slug || payload.slug;
-      const message = result.slugAdjusted
-        ? `ILT 과정으로 복제했습니다. 슬러그는 ${savedSlug}로 저장되었습니다.`
-        : "ILT 과정으로 복제했습니다. 공개 전 가격과 일정 정보를 확인해 주세요.";
-      setAdminStatus(message);
-      pushToast("ILT 과정 복제가 완료되었습니다.", "success");
-      void runSafeRefreshTasks([loadCourses(), loadAdminCourses(), loadPlatformStatus(false, { force: true })]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "ILT 과정 복제 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onUpdateCourseAccessCode(courseId, accessCode) {
-    const course = adminCourses.find((item) => Number(item.id) === Number(courseId));
-    if (!course) {
-      setAdminStatus("과정을 찾을 수 없습니다.");
-      return;
-    }
-    try {
-      const result = await api(`/api/admin/courses/${course.id}`, {
-        method: "PUT",
-        body: buildExistingCoursePayload(course, { accessCode }),
-      });
-      setAdminCourses((current) => upsertByKey(current, result.course, "id"));
-      setCourses((current) => upsertByKey(current, result.course, "id"));
-      setCourseForm((current) => (Number(current.id) === Number(course.id) ? { ...current, accessCode } : current));
-      setAdminStatus(accessCode ? "과정 코드를 저장했습니다." : "과정 코드를 제거했습니다.");
-      pushToast(accessCode ? "과정 코드를 저장했습니다." : "과정 코드를 제거했습니다.", "success");
-      void runSafeRefreshTasks([loadCourses(), loadAdminCourses()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  function onGenerateCourseAccessCode(courseId = null) {
-    if (courseId != null) {
-      const course = adminCourses.find((item) => Number(item.id) === Number(courseId));
-      if (!course) {
-        setAdminStatus("과정을 찾을 수 없습니다.");
-        return;
-      }
-      const generated = createCourseAccessCode(course.slug || course.title || "COURSE");
-      void onUpdateCourseAccessCode(course.id, generated);
-      return;
-    }
-    const generated = createCourseAccessCode(courseForm.slug || courseForm.title || "COURSE");
-    setCourseForm((current) => ({
-      ...current,
-      accessCode: generated,
-    }));
-    pushToast("과정 코드를 자동 생성했습니다.", "success");
-  }
-  async function onCourseDelete(courseId) {
-    try {
-      setAdminCourses((current) => removeByKey(current, courseId, "id"));
-      setCourses((current) => removeByKey(current, courseId, "id"));
-      setWrittenExams((current) => removeByKey(current, courseId, "courseId"));
-      setLabExams((current) => removeByKey(current, courseId, "courseId"));
-      await api(`/api/admin/courses/${courseId}`, { method: "DELETE" });
-      setAdminStatus("과정을 삭제했습니다.");
-      setCourseFormInvalidFields([]);
-      setCourseForm((current) => (current.id === courseId ? EMPTY_COURSE : current));
-      void runSafeRefreshTasks([loadCourses(), loadAdminCourses(), loadWrittenExams(), loadLabExams()]);
-    } catch (error) {
-      void runSafeRefreshTasks([loadCourses(), loadAdminCourses(), loadWrittenExams(), loadLabExams()]);
-      setAdminStatus(error.message);
-    }
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   function onHeatTemplateEdit(template) {
     setHeatTemplateForm({ name: template.name, content: template.content });
   }
@@ -8727,84 +5418,8 @@ async function onCheckLabDomain(labOverride = null) {
       setAdminStatus(error.message);
     }
   }
-  async function onUploadMaterial(file, label = "") {
-    if (!file) return;
-    const lowerName = String(file.name || "").toLowerCase();
-    if (!MATERIAL_UPLOAD_EXTENSIONS.some((extension) => lowerName.endsWith(extension))) {
-      setMaterialUploadStatus({ tone: "error", message: "PDF, PPT, DOC, MP4, WEBM 교안 파일만 업로드할 수 있습니다." });
-      return;
-    }
-    const maxMaterialUploadMb = Math.max(1, Number(platformStatus?.materialsUploadMaxMb || 80) || 80);
-    if (file.size > maxMaterialUploadMb * 1024 * 1024) {
-      setMaterialUploadStatus({ tone: "error", message: `교안 파일이 너무 큽니다. ${maxMaterialUploadMb}MB 이하 파일로 다시 시도해 주세요.` });
-      return;
-    }
 
-    try {
-      const contentBase64 = await fileToBase64(file);
-      const result = await api("/api/admin/materials", {
-        method: "POST",
-        body: {
-          fileName: file.name,
-          label: label || file.name.replace(/\.[^.]+$/i, ""),
-          contentBase64,
-        },
-      });
 
-      const line = `${result.material.label} | ${result.material.href}`;
-      setCourseForm((current) => ({
-        ...current,
-        materialsText: current.materialsText ? `${current.materialsText}\n${line}` : line,
-      }));
-      setMaterialUploadStatus({ tone: "success", message: `${result.material.fileName} 업로드가 완료되었습니다.` });
-      setAdminStatus(result.message);
-    } catch (error) {
-      setMaterialUploadStatus({ tone: "error", message: error.message });
-      setAdminStatus(error.message);
-    }
-  }
-  async function onUploadExampleFile(file, label = "") {
-    if (!file) return;
-    const lowerName = String(file.name || "").toLowerCase();
-    const allowedExtensions = [".zip", ".tar", ".gz", ".tgz", ".bz2", ".xz", ".7z", ".txt", ".md", ".sh", ".yaml", ".yml", ".json", ".py", ".js", ".ts", ".csv"];
-    if (!allowedExtensions.some((extension) => lowerName.endsWith(extension))) {
-      setExampleUploadStatus({ tone: "error", message: "zip, tgz, txt, md, sh, yaml, json, py, js 같은 예제 파일만 업로드할 수 있습니다." });
-      return;
-    }
-    const maxUploadMb = Math.max(1, Number(platformStatus?.materialsUploadMaxMb || 80) || 80);
-    if (file.size > maxUploadMb * 1024 * 1024) {
-      setExampleUploadStatus({ tone: "error", message: `예제 파일이 너무 큽니다. ${maxUploadMb}MB 이하 파일로 다시 시도해 주세요.` });
-      return;
-    }
-    try {
-      const contentBase64 = await fileToBase64(file);
-      const result = await api("/api/admin/example-files", {
-        method: "POST",
-        body: {
-          fileName: file.name,
-          label: label || file.name,
-          contentBase64,
-        },
-      });
-      setCourseForm((current) => ({
-        ...current,
-        exampleFiles: [
-          ...(Array.isArray(current.exampleFiles) ? current.exampleFiles : []),
-          {
-            label: String(result.exampleFile.label || result.exampleFile.fileName || "").trim(),
-            href: String(result.exampleFile.href || "").trim(),
-          },
-        ]
-          .filter((item) => item.label && item.href)
-          .filter((item, index, items) => items.findIndex((candidate) => candidate.href === item.href) === index),
-      }));
-      setExampleUploadStatus({ tone: "success", message: `${result.exampleFile.fileName} 업로드가 완료되었습니다.` });
-      setAdminStatus(result.message);
-    } catch (error) {
-      setExampleUploadStatus({ tone: "error", message: error.message });
-      setAdminStatus(error.message);
-    }
-  }
   async function onUploadLandingMedia(file) {
     if (!file) return;
     const mimeType = String(file.type || "").toLowerCase();
@@ -9015,400 +5630,25 @@ async function onCheckLabDomain(labOverride = null) {
       pushToast(error.message || "임시 사용자 생성 중 오류가 발생했습니다.", "error");
     }
   }
-  async function onAssignCoursesToUsers(options = {}) {
-    const explicitUserIds = Array.isArray(options?.userIds)
-      ? options.userIds.map((id) => Number(id)).filter(Boolean)
-      : [];
-    const courseId = Number(options?.courseId || adminCourseAssignForm.courseId || 0);
-    const selectedUserIdSet = new Set((selectedUserIds || []).map((id) => Number(id)).filter(Boolean));
-    const targetUserIds = explicitUserIds.length
-      ? explicitUserIds
-      : adminUsers
-        .filter((user) => selectedUserIdSet.has(Number(user.id)))
-        .map((user) => user.id);
-    if (!targetUserIds.length || !courseId) {
-      setAdminStatus("선택한 사용자와 과정을 확인해 주세요.");
-      return;
-    }
-    try {
-      const result = await api("/api/admin/course-access/assign", {
-        method: "POST",
-        body: {
-          userIds: targetUserIds,
-          courseId,
-        },
-      });
-      setAdminStatus(result.message || "과정 권한을 할당했습니다.");
-      pushToast(result.message || "과정 권한을 할당했습니다.", "success");
-      setAdminCourseAssignForm({ courseId: "" });
-      await runSafeRefreshTasks([loadAdminUsers(), loadCourses(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "과정 할당 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onAdminRevokeUserCourseAccess(userId, course) {
-    if (!userId || !course?.courseId) return;
-    if (!window.confirm(`${course.title || "선택한 과정"} 수강을 취소할까요?`)) return;
-    try {
-      const result = await api(`/api/admin/users/${userId}/courses/${course.courseId}/revoke-access`, { method: "POST" });
-      setAdminStatus(result.message || "사용자 수강 과정을 취소했습니다.");
-      pushToast(result.message || "사용자 수강 과정을 취소했습니다.", "success");
-      await runSafeRefreshTasks([loadAdmin(), loadCourses(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "사용자 수강 취소 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onAdminForceRevokeUserCourseAccess(user) {
-    const enrolledCourses = Array.isArray(user?.enrolledCourses) ? user.enrolledCourses : [];
-    if (!user?.id || !enrolledCourses.length) {
-      setAdminStatus("현재 취소할 수강 과정이 없습니다.");
-      pushToast("현재 취소할 수강 과정이 없습니다.", "error");
-      return;
-    }
-    let selectedCourse = enrolledCourses[0];
-    if (enrolledCourses.length > 1) {
-      const courseChoices = enrolledCourses.map((course, index) => `${index + 1}. ${course.title || `과정 #${course.courseId}`}`).join("\n");
-      const selectedIndexText = window.prompt(`취소할 과정을 선택해 주세요.\n${courseChoices}`, "1");
-      if (selectedIndexText == null) return;
-      const selectedIndex = Number(selectedIndexText);
-      if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > enrolledCourses.length) {
-        setAdminStatus("올바른 과정 번호를 입력해 주세요.");
-        pushToast("올바른 과정 번호를 입력해 주세요.", "error");
-        return;
-      }
-      selectedCourse = enrolledCourses[selectedIndex - 1];
-    }
-    await onAdminRevokeUserCourseAccess(user.id, selectedCourse);
-  }
-  async function onApproveLab(labId) {
-    try {
-      await api(`/api/admin/labs/${labId}/approve`, { method: "POST" });
-      setAdminStatus("랩을 생성 대기 상태로 승인했습니다.");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  async function onBulkApproveLabs() {
-    if (!selectedLabIds.length) return setAdminStatus("승인할 랩 요청을 선택해 주세요.");
-    try {
-      const result = await api("/api/admin/labs/bulk-approve", { method: "POST", body: { labIds: selectedLabIds } });
-      setSelectedLabIds([]);
-      setAdminStatus(result.message);
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  async function onPrecreateCourseLabs(courseId, options = {}) {
-    const selectedCourseId = Number(courseId || 0);
-    const course = (adminCourses || []).find((item) => Number(item.id) === selectedCourseId);
-    if (!selectedCourseId || !course) {
-      setAdminStatus("랩을 사전 생성할 과정을 선택해 주세요.");
-      pushToast("랩을 사전 생성할 과정을 선택해 주세요.", "error");
-      return null;
-    }
-    const selectedOnly = Boolean(options.selectedOnly);
-    const explicitSelectedIds = Array.isArray(options.selectedUserIds)
-      ? options.selectedUserIds.map((id) => Number(id)).filter(Boolean)
-      : [];
-    const selectedIds = selectedOnly
-      ? (explicitSelectedIds.length ? explicitSelectedIds : (selectedUserIds || []).map((id) => Number(id)).filter(Boolean))
-      : [];
-    if (selectedOnly && !selectedIds.length) {
-      setAdminStatus("선택 사용자 대상으로 생성하려면 랩 요청 화면에서 사용자를 선택해 주세요.");
-      pushToast("선택된 사용자가 없습니다.", "error");
-      return null;
-    }
-    const actionLabel = options.startNow === false ? "생성 대기 랩 요청을 만들까요?" : "랩 자원 생성을 바로 시작할까요?";
-    const targetLabel = selectedOnly ? `선택 사용자 ${selectedIds.length}명` : "해당 과정 수강생 전체";
-    const bootFromVolume = options.startNow !== false && Boolean(options.bootFromVolume);
-    const bootVolumeSizeGb = Math.max(1, Math.min(2048, Number.parseInt(options.bootVolumeSizeGb, 10) || Number(platformStatus?.labAutoBootVolumeSizeGb || 20) || 20));
-    const bootVolumeType = String(options.bootVolumeType || platformStatus?.labAutoBootVolumeType || "").trim();
-    const bootVolumeLabel = bootFromVolume ? `\nOS 디스크: Cinder volume ${bootVolumeSizeGb}GB${bootVolumeType ? ` / ${bootVolumeType}` : ""}` : "";
-    if (!window.confirm(`${course.title || "선택한 과정"} / ${targetLabel}\n${actionLabel}${bootVolumeLabel}`)) return null;
-    try {
-      const result = await api("/api/admin/labs/bulk-precreate", {
-        method: "POST",
-        body: {
-          courseId: selectedCourseId,
-          userIds: selectedOnly ? selectedIds : [],
-          target: selectedOnly ? "selected" : "enrolled",
-          startNow: options.startNow !== false,
-          bootFromVolume,
-          bootVolumeSizeGb,
-          bootVolumeType,
-        },
-      });
-      const message = result.message || `랩 사전 생성 완료: 생성 ${result.created || 0}건 / 시작 ${result.started || 0}건 / 건너뜀 ${result.skipped || 0}건`;
-      setAdminLabPrecreateReport({
-        ...result,
-        courseTitle: course.title || "",
-        targetLabel,
-        createdAt: new Date().toISOString(),
-      });
-      setAdminStatus(message);
-      pushToast(message, Number(result.failed || 0) ? "error" : "success");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-      return result;
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "랩 사전 생성 중 오류가 발생했습니다.", "error");
-      return null;
-    }
-  }
-  async function onArchiveOldLabRequests() {
-    if (!window.confirm("종료/실패된 오래된 랩 요청 기록을 활성 목록에서 아카이브로 옮길까요?")) return null;
-    try {
-      const result = await api("/api/admin/labs/archive-old", {
-        method: "POST",
-        body: {},
-      });
-      const message = result.message || `오래된 랩 요청 ${result.archivedCount || 0}건을 보관했습니다.`;
-      setAdminStatus(message);
-      pushToast(message, "success");
-      await loadAdminLabs();
-      return result;
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "오래된 랩 요청 보관 중 오류가 발생했습니다.", "error");
-      return null;
-    }
-  }
-  async function onBulkPowerCourseLabs(courseId, action) {
-    const selectedCourseId = Number(courseId || 0);
-    const course = (adminCourses || []).find((item) => Number(item.id) === selectedCourseId);
-    const normalizedAction = String(action || "").toLowerCase() === "resume" ? "resume" : "pause";
-    if (!selectedCourseId || !course) {
-      setAdminStatus("임시 중지/재개할 과정을 선택해 주세요.");
-      pushToast("임시 중지/재개할 과정을 선택해 주세요.", "error");
-      return null;
-    }
-    const actionLabel = normalizedAction === "resume" ? "중지된 랩을 다시 시작할까요?" : "실행 중인 랩을 임시 중지할까요?";
-    const detailLabel = normalizedAction === "resume"
-      ? "기존 VM/컨테이너를 다시 시작합니다. 삭제된 랩은 복구 대상이 아닙니다."
-      : "VM/컨테이너는 삭제하지 않고 stop 상태로 전환합니다. 공개 포트와 외부 접속 설정은 정리됩니다.";
-    if (!window.confirm(`${course.title || "선택한 과정"}\n${actionLabel}\n${detailLabel}`)) return null;
-    try {
-      const result = await api("/api/admin/labs/bulk-power-course", {
-        method: "POST",
-        body: { courseId: selectedCourseId, action: normalizedAction },
-      });
-      const message = result.message || (normalizedAction === "resume" ? "과정 랩을 다시 시작했습니다." : "과정 랩을 임시 중지했습니다.");
-      setAdminStatus(message);
-      pushToast(message, Number(result.failed || 0) ? "error" : "success");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs(), loadLabExams()]);
-      return result;
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "과정 랩 임시 중지/재개 중 오류가 발생했습니다.", "error");
-      return null;
-    }
-  }
-  async function onRunCourseCinderBootSmoke(options = {}) {
-    const bootVolumeSizeGb = Math.max(1, Math.min(2048, Number.parseInt(options.bootVolumeSizeGb, 10) || Number(platformStatus?.labAutoBootVolumeSizeGb || 20) || 20));
-    const bootVolumeType = String(options.bootVolumeType || platformStatus?.labAutoBootVolumeType || "").trim();
-    const bootVolumeLabel = `Cinder volume ${bootVolumeSizeGb}GB${bootVolumeType ? ` / ${bootVolumeType}` : ""}`;
-    if (!window.confirm(`등록된 Heat 기반 과정마다 ${bootVolumeLabel} Stack 생성 요청 후 삭제 스모크를 실행할까요?`)) return null;
-    try {
-      setAdminStatus("전체 과정 Cinder volume 부팅 스모크를 실행하고 있습니다.");
-      const result = await api("/api/admin/labs/cinder-boot-smoke", {
-        method: "POST",
-        body: {
-          bootVolumeSizeGb,
-          bootVolumeType,
-        },
-      });
-      setAdminCourseCinderSmokeReport({
-        ...result,
-        createdAt: new Date().toISOString(),
-      });
-      const message = result.message || "Cinder volume 부팅 스모크를 완료했습니다.";
-      setAdminStatus(message);
-      pushToast(message, Number(result.failed || 0) ? "error" : "success");
-      return result;
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "Cinder volume 부팅 스모크 중 오류가 발생했습니다.", "error");
-      return null;
-    }
-  }
-  async function onDeleteLabRecords() {
-    if (!selectedLabIds.length) return setAdminStatus("삭제할 기록을 선택해 주세요.");
-    try {
-      const result = await api("/api/admin/labs/delete-records", { method: "POST", body: { labIds: selectedLabIds } });
-      setSelectedLabIds([]);
-      setAdminStatus(result.message);
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  async function onTerminateLab(labId, options = {}) {
-    if (!options.skipConfirm && !window.confirm("이 작업은 랩과 연결된 가상머신을 종료하고 삭제할 수 있습니다. 계속할까요?")) return;
-    try {
-      await api(`/api/admin/labs/${labId}/terminate`, { method: "POST" });
-      setAdminStatus("랩과 연결된 자원을 삭제했습니다.");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-    }
-  }
-  async function onTerminateCourseLabs(courseId) {
-    const selectedCourseId = Number(courseId || 0);
-    const course = (adminCourses || []).find((item) => Number(item.id) === selectedCourseId);
-    if (!selectedCourseId || !course) {
-      setAdminStatus("일괄 종료할 과정을 선택해 주세요.");
-      return;
-    }
-    const courseLabs = (adminLabs || []).filter((lab) => {
-      const status = String(lab.status || "").toLowerCase();
-      return Number(lab.courseId) === selectedCourseId && !["terminated", "deleted", "cleanup_done"].includes(status);
-    });
-    if (!courseLabs.length) {
-      setAdminStatus("해당 과정에서 종료할 랩이 없습니다.");
-      return;
-    }
-    const confirmed = window.confirm(`${course.title || "선택한 과정"}의 랩 ${courseLabs.length}건을 종료하고 연결 자원을 정리할까요?`);
-    if (!confirmed) return;
-    try {
-      const result = await api("/api/admin/labs/bulk-terminate-course", {
-        method: "POST",
-        body: { courseId: selectedCourseId },
-      });
-      setSelectedLabIds([]);
-      const failedText = Number(result.failed || 0) > 0 ? ` 실패 ${result.failed}건은 로그를 확인해 주세요.` : "";
-      const message = result.message ? `${result.message}${failedText}` : `과정 랩 ${result.terminated || 0}건을 종료했습니다.${failedText}`;
-      setAdminStatus(message);
-      pushToast(message, Number(result.failed || 0) > 0 ? "error" : "success");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "과정 랩 일괄 종료 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onResizeLab(labId, flavor) {
-    const nextFlavor = String(flavor || "").trim();
-    if (!nextFlavor) {
-      setAdminStatus("변경할 Flavor를 선택해 주세요.");
-      return;
-    }
-    if (!window.confirm(`랩 Flavor를 ${nextFlavor}(으)로 변경할까요? 리사이즈 중에는 잠시 접속이 불안정할 수 있습니다.`)) return;
-    try {
-      const result = await api(`/api/admin/labs/${labId}/resize`, {
-        method: "POST",
-        body: { flavor: nextFlavor },
-      });
-      setLabResizeFlavorDrafts((current) => ({ ...current, [labId]: nextFlavor }));
-      setAdminStatus(result.message || "랩 Flavor를 변경했습니다.");
-      pushToast(result.message || "랩 Flavor를 변경했습니다.", "success");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "랩 Flavor 변경 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onRequestLabResize(flavor) {
-    const nextFlavor = String(flavor || "").trim();
-    if (!activeLab) return;
-    if (!nextFlavor) {
-      setTerminalRequest({ tone: "error", message: "변경할 Flavor를 선택해 주세요." });
-      return;
-    }
-    try {
-      const result = await api(`/api/labs/${activeLab.id}/resize-request`, {
-        method: "POST",
-        body: { flavor: nextFlavor },
-      });
-      setLabs((current) => current.map((lab) => (lab.id === activeLab.id ? result.lab : lab)));
-      setTerminalRequest({ tone: "success", message: result.message || "랩 사양 변경 요청이 접수되었습니다." });
-      pushToast(result.message || "랩 사양 변경 요청이 접수되었습니다.", "success");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || "랩 사양 변경 요청 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onCancelLabResizeRequest() {
-    if (!activeLab) return;
-    try {
-      const result = await api(`/api/labs/${activeLab.id}/resize-request`, { method: "DELETE" });
-      setLabs((current) => current.map((lab) => (lab.id === activeLab.id ? result.lab : lab)));
-      setTerminalRequest({ tone: "success", message: result.message || "랩 사양 변경 요청을 취소했습니다." });
-      pushToast(result.message || "랩 사양 변경 요청을 취소했습니다.", "success");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setTerminalRequest({ tone: "error", message: error.message });
-      pushToast(error.message || "랩 사양 변경 요청 취소 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onApproveLabResize(labId, reviewNote = "") {
-    try {
-      const result = await api(`/api/admin/labs/${labId}/approve-resize`, {
-        method: "POST",
-        body: { reviewNote },
-      });
-      setAdminStatus(result.message || "랩 사양 변경 요청을 승인했습니다.");
-      pushToast(result.message || "랩 사양 변경 요청을 승인했습니다.", "success");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "랩 사양 변경 승인 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onRejectLabResize(labId, reviewNote = "") {
-    try {
-      const result = await api(`/api/admin/labs/${labId}/reject-resize`, {
-        method: "POST",
-        body: { reviewNote },
-      });
-      setAdminStatus(result.message || "랩 사양 변경 요청을 반려했습니다.");
-      pushToast(result.message || "랩 사양 변경 요청을 반려했습니다.", "success");
-      await runSafeRefreshTasks([loadAdmin(), loadLabs()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "랩 사양 변경 반려 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onApproveCourseAccessRequest(requestId) {
-    try {
-      const result = await api(`/api/admin/course-access-requests/${requestId}/approve`, { method: "POST" });
-      setAdminStatus(result.message);
-      setCourseAccessReviewNotes((current) => {
-        if (!(requestId in current)) return current;
-        const next = { ...current };
-        delete next[requestId];
-        return next;
-      });
-      pushToast(result.message || "과정 요청을 승인했습니다.", "success");
-      await runSafeRefreshTasks([loadAdmin(), loadCourses()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "과정 요청 승인 중 오류가 발생했습니다.", "error");
-    }
-  }
-  async function onRejectCourseAccessRequest(requestId, reviewNote = "") {
-    try {
-      const result = await api(`/api/admin/course-access-requests/${requestId}/reject`, {
-        method: "POST",
-        body: { reviewNote },
-      });
-      setAdminStatus(result.message);
-      setCourseAccessReviewNotes((current) => {
-        if (!(requestId in current)) return current;
-        const next = { ...current };
-        delete next[requestId];
-        return next;
-      });
-      pushToast(result.message || "과정 요청을 거절했습니다.", "success");
-      await runSafeRefreshTasks([loadAdmin(), loadCourses()]);
-    } catch (error) {
-      setAdminStatus(error.message);
-      pushToast(error.message || "과정 요청 거절 중 오류가 발생했습니다.", "error");
-    }
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   async function onCreateConsultingRequest(event) {
     event.preventDefault();
     if (!consultingForm.title.trim() || !consultingForm.contactName.trim() || !consultingForm.contactEmail.trim() || !consultingForm.requirements.trim()) {
@@ -9791,11 +6031,11 @@ async function onCheckLabDomain(labOverride = null) {
           recipientEmail: inviteForm.recipientEmail,
           maxUses: Number(inviteForm.maxUses || 1),
           expiresAt: inviteForm.expiresAt || null,
-          courseId: inviteForm.courseId ? Number(inviteForm.courseId) : null,
+
         },
       });
       setAdminInvites((current) => upsertByKey(current, result.invite, "id"));
-      setInviteForm({ code: "", label: "", recipientEmail: "", maxUses: "1", expiresAt: "", courseId: "" });
+      setInviteForm({ code: "", label: "", recipientEmail: "", maxUses: "1", expiresAt: "",  });
       setAdminStatus("초대장 코드를 등록했습니다.");
       void loadAdminInvites();
     } catch (error) {
@@ -10134,29 +6374,7 @@ async function onCheckLabDomain(labOverride = null) {
       pushToast(error.message || `${label} 실행 중 오류가 발생했습니다.`, "error");
     }
   }
-  async function onPowerActionLab(labId, action, options = {}) {
-    const label = getVmPowerActionLabel(action);
-    if (!options.skipConfirm && !window.confirm(`랩 VM에 ${label}을 실행할까요?`)) return;
-    try {
-      const result = await api(`/api/labs/${labId}/power-action`, {
-        method: "POST",
-        body: { action },
-      });
-      if (result.lab) {
-        setLabs((current) => current.map((item) => (Number(item.id) === Number(result.lab.id) ? result.lab : item)));
-        if (isAdmin) {
-          setAdminLabs((current) => current.map((item) => (Number(item.id) === Number(result.lab.id) ? result.lab : item)));
-        }
-      }
-      if (action === "stop") setTerminalSession(null);
-      setAuthStatus({ tone: "success", message: result.message });
-      pushToast(result.message || `${label}을 실행했습니다.`, "success");
-      await runSafeRefreshTasks([loadLabs(), isAdmin ? loadAdmin() : Promise.resolve()]);
-    } catch (error) {
-      setAuthStatus({ tone: "error", message: error.message });
-      pushToast(error.message || `${label} 실행 중 오류가 발생했습니다.`, "error");
-    }
-  }
+
   async function onDeleteSelfServiceProjectRecords(ids, options = {}) {
     const targetIds = Array.isArray(ids) ? ids.map((id) => Number(id)).filter(Boolean) : [];
     if (!targetIds.length) {
@@ -10552,17 +6770,17 @@ async function onCheckLabDomain(labOverride = null) {
   }
 
   return {
-    route, popupMode, navigate, section, setSection, loading, session, isAdmin, courses, courseQuotes, courseQuoteStatus, notices, notifications, notificationStatus, notificationUnreadCount, luckyDrawOverview, luckyDrawStatus, messages, messageRecipients, messageForm, setMessageForm, messageStatus, messageUnreadCount, selectedCourseId, setSelectedCourseId, openSelectedCourseDetail, setOpenSelectedCourseDetail, preferredSurveyPhase, setPreferredSurveyPhase, selectedCourse, selectedCourseLab, labs, applyingLabCourseIds, startingLabIds, activeLab, activeLabCourse, qnaPosts, qnaForm, setQnaForm, qnaCommentDrafts, setQnaCommentDrafts, qnaUnreadCount,
-    authTab, setAuthTab, authStatus, signupCheck, loginForm, setLoginForm, pendingOtpEnrollment, setPendingOtpEnrollment, signupForm, setSignupForm, activeTerms, activeRequiredTerms, missingRequiredTerms, termsConsentRequired, marketingConsentDecisionRequired, resetPinForm, setResetPinForm, adminUsers, adminUserForm, setAdminUserForm, adminBatchUserForm, setAdminBatchUserForm, adminCourseAssignForm, setAdminCourseAssignForm, adminCourses, adminTextbooks, textbookForm, setTextbookForm, adminLabs, adminLabPrecreateReport, adminCourseCinderSmokeReport, labResizeFlavorDrafts, setLabResizeFlavorDrafts, labResizeReviewNotes, setLabResizeReviewNotes, adminCourseAccessRequests, adminSurveyResponses, adminSurveySummary, courseAccessReviewNotes, setCourseAccessReviewNotes, adminHeatTemplates, adminApplicationYamls, applicationYamlUploadState, adminCloudInitTemplates, adminLabDomains, adminCustomLabRequests, adminConsultingRequests, adminPublicQuoteInquiries, adminLuckyDrawEvents, adminStatus, setAdminStatus, adminSaveDialog, closeAdminSaveDialog, courseForm, setCourseForm, courseFormInvalidFields, setCourseFormInvalidFields, courseSubmissionNotice, setCourseSubmissionNotice, noticeForm, setNoticeForm, luckyDrawEventForm, setLuckyDrawEventForm, luckyDrawRewardForm, setLuckyDrawRewardForm, adminCouponForm, setAdminCouponForm, heatTemplateForm, setHeatTemplateForm, applicationYamlForm, setApplicationYamlForm, cloudInitTemplateForm, setCloudInitTemplateForm, userSearch, setUserSearch, selectedUserIds, setSelectedUserIds, selectedLabIds, setSelectedLabIds, filteredUsers, filteredUnapprovedUserIds, platformStatus, platformStatusDirty, setPlatformStatus, paymentGatewayKeyVisibility, setPaymentGatewayKeyVisibility, profileForm, setProfileForm, materialUploadStatus, exampleUploadStatus, serviceValidationStatus, mailTestAddress, setMailTestAddress, adminMailForm, setAdminMailForm, marketingMailForm, setMarketingMailForm, mailCampaignForm, setMailCampaignForm, mailCampaignPreview, adminMailCampaigns, selectedMailCampaign, mailCampaignStatus, adminMailLogs, adminMessages, adminMailLogsStatus, adminAccessLogs, adminAccessLogsStatus, adminAccessStats, myAccessLogs, issuedResetPinInfo, adminPasswordResetPins,
-    terminalRequest, terminalForm, setTerminalForm, terminalSession, terminalSessionBusy, terminalNonce, terminalUploadState, publicRouteForm, setPublicRouteForm: updatePublicRouteForm, publicTcpRouteForm, setPublicTcpRouteForm: updatePublicTcpRouteForm, publicRouteOptions, domainAvailability, setDomainAvailability, labParameterOverridePrompt, onClearTerminalSession, onCloseZunContainerConsole,
-    customLabRequests, customLabForm, setCustomLabForm, customLabReviewDrafts, setCustomLabReviewDrafts, consultingRequests, consultingForm, setConsultingForm, consultingReviewDrafts, setConsultingReviewDrafts, selfServiceVms, selfServiceProjectRequests, selfServiceProjectRequestForm, setSelfServiceProjectRequestForm, selfServiceProjectReviewBusyIds, selfServiceProjectPreflightStatus, selfServiceVmForm, setSelfServiceVmForm, selfServiceVmPreflight, cloudConsoleSnapshot, cloudConsoleStatus, cloudConsoleActions, loadCloudConsoleSnapshot, loadCloudConsoleActions, loadCloudConsoleProject, createCloudConsoleProject, deleteCloudConsoleProject, runCloudConsoleAction, openCloudConsole, createCloudConsoleTerminalSession, closeCloudConsoleTerminalSession, reviewCloudConsoleAction, zunContainers, zunForm, setZunForm, zunStatus, magnumClusters, magnumTemplates, magnumForm, setMagnumForm, magnumStatus, troveInstances, troveDatastores, troveForm, setTroveForm, troveStatus, troveCredentials, writtenExams, writtenExamForm, setWrittenExamForm, selectedWrittenExam, writtenExamAnswers, setWrittenExamAnswers, writtenExamStatus, setWrittenExamStatus, onClaimExamEntitlement, onClaimCourseAcquisition, labExams, labExamSessions, adminLabExamAttempts, adminLabExamSessions, labExamForm, setLabExamForm, selectedLabExam, labExamSshPassword, setLabExamSshPassword, labExamStatus, setLabExamStatus, labExamTestStatus, payments, coupons, adminCoupons, certificates, certificateLeaderboard, eligibleCertificates, certificateStatus, myCertificateTier, adminPayments, adminCourseQuotes, adminCertificates, adminInvites, inviteForm, setInviteForm, adminLogs, adminAuditLogs, adminB2bReport, apiMonitor, adminInstanceMonitor, trafficDebugCapture, trafficDebugStatus, adminArenaOverview, quotaStatus, llmQuotaStatus, llmQuestion, setLlmQuestion, llmMessages, llmStreaming, llmStatus, toasts, dismissToast,
-    onLogin, onSignup, onAcceptActiveTerms, onDecideMarketingConsent, onResetPasswordWithPin, checkUsername, onLogout, onApplyLab, onStartLab, onSubmitLabParameterOverrides, onCancelLabParameterOverrides, onPurchaseCourse, onPrepareCoursePayment, onCreateCourseQuote, onCreateAdminCourseQuote, onUpdateCourseQuoteStatus, onConfirmPayment, onCancelPayment, onRevokeMyCourseAccess, onRequestCourseExtension, onRefundPayment, onCreateAdminCoupon, onToggleAdminCoupon, onProfileSubmit, onDeleteMyAccount, onStartOtpSetup, onConfirmOtpSetup, onConfirmPendingOtpEnrollment, onDisableOtp, onRedeemCourseCode, onSelectTerminalCourse, onCreateTerminalSession, onCreateCustomLabTerminalSession, onUploadLabFile, onOpenTerminalPopup, onOpenVncConsole, onSendVncClipboard, onExtendLab, onPauseLab, onResetLab, onRebuildLabWithVolume, onRemoveLab, onResetLabSshHostKey, onRebootLabNode, onRebuildLabNode, onCheckLabDomain, onPublishLabDomain, onUnpublishLabDomain, onRequestLabPublicPort, onReleaseLabPublicPort, onApproveLabDomain, onRejectLabDomain, onApprovePublicPort, onRejectPublicPort, onCreateQna, onCreateQnaComment, onMarkQnaHelpful, onSetQnaStatus, onAcceptQnaComment, onDeleteQnaPost, onDeleteQnaComment, onNoticeEdit, onCancelNoticeEdit, onNoticeSubmit, onNoticeDelete, onAttemptLuckyDraw, onSaveLuckyDrawEvent, onCancelLuckyDrawEventEdit, onEditLuckyDrawEvent, onDeleteLuckyDrawEvent, onStartLuckyDrawRewardCreate, onEditLuckyDrawReward, onCancelLuckyDrawRewardCreate, onSaveLuckyDrawReward, onCreateAdminUser, onCreateAdminBatchUsers, onAssignCoursesToUsers, onAdminRevokeUserCourseAccess, onAdminForceRevokeUserCourseAccess, onUserPatch, onBulkSetSelfServiceVmAccess, onBulkSetPocFreeAccess, onBulkSetSupportMessageAccess, onDeleteUser, onBulkDeleteUsers, onResetPassword, onIssueResetPin, onClearAccountSharingRestriction, onBulkApprove, onSelectUnapprovedUsers, onBulkApproveUnapprovedUsers, onCourseSubmit, onCourseEdit, onCloneCourse, onCloneCourseAsOnlineDraft, onCloneCourseAsIlt, onCourseDelete, onTextbookSubmit, onTextbookEdit, onCancelTextbookEdit, onTextbookDelete, onWrittenExamEdit, onCancelWrittenExamEdit, onWrittenExamSave, onLabExamEdit, onCancelLabExamEdit, onLabExamSave, onHeatTemplateEdit, onCancelHeatTemplateEdit, onHeatTemplateSave, onUploadHeatTemplate, onDeleteHeatTemplate, onCheckHeatTemplateCapacity, onRunHeatTemplateWorkloadTest, onGetHeatTemplateWorkloadTest, onListHeatTemplateWorkloadTests, onApplicationYamlEdit, onCancelApplicationYamlEdit, onApplicationYamlSave, onUploadApplicationYaml, onDeleteApplicationYaml, onCloudInitTemplateEdit, onCancelCloudInitTemplateEdit, onCloudInitTemplateSave, onUploadCloudInitTemplate, onDeleteCloudInitTemplate, onUploadMaterial, onUploadExampleFile, onUploadLandingMedia, onApproveLab, onBulkApproveLabs, onPrecreateCourseLabs, onArchiveOldLabRequests, onBulkPowerCourseLabs, onRunCourseCinderBootSmoke, onDeleteLabRecords, onTerminateLab, onTerminateCourseLabs, onResizeLab, onRequestLabResize, onCancelLabResizeRequest, onApproveLabResize, onRejectLabResize, onApproveCourseAccessRequest, onRejectCourseAccessRequest, onToggleCircuitBreaker, onSaveCircuitBreakerMessage, onCreateConsultingRequest, onReviewConsultingRequest, onReviewPublicQuoteInquiry, onCreateCustomLabRequest, onReviewCustomLabRequest, onTerminateAdminCustomLabRequest, onDeleteAdminCustomLabQuote, onPrepareCustomLabPayment, onConfirmCustomLabRequest, onCreateCustomLabKeypair, onCancelCustomLabRequest, onTerminateCustomLabRequest, onRequestSelfServiceVmAccess, onCancelSelfServiceProjectRequest, onReviewSelfServiceProjectRequest, onDeleteSelfServiceProjectRecords, onRefreshNotifications, onMarkNotificationRead, onMarkAllNotificationsRead, onDeleteNotification, onClearNotifications, onRefreshMessages, onStartMessageReply, onCancelMessageReply, onSendDirectMessage, onSendMessage, onMarkMessageRead, onArchiveMessage, onDeleteMessage, onUpdateMessageCleanupStatus, loadAdmin, loadAdminLabs, loadCourses, loadLabExams, loadNotices, loadNotifications, loadLuckyDraw, loadMessages, loadMessageRecipients, loadPlatformStatus, loadLabs, loadCourseQuotes, loadCustomLabRequests, loadConsultingRequests, loadQna, loadAdminTextbooks,
+    route, popupMode, navigate, section, setSection, loading, session, isAdmin,    notices, notifications, notificationStatus, notificationUnreadCount, luckyDrawOverview, luckyDrawStatus, messages, messageRecipients, messageForm, setMessageForm, messageStatus, messageUnreadCount,              qnaPosts, qnaForm, setQnaForm, qnaCommentDrafts, setQnaCommentDrafts, qnaUnreadCount,
+    authTab, setAuthTab, authStatus, signupCheck, loginForm, setLoginForm, pendingOtpEnrollment, setPendingOtpEnrollment, signupForm, setSignupForm, activeTerms, activeRequiredTerms, missingRequiredTerms, termsConsentRequired, marketingConsentDecisionRequired, resetPinForm, setResetPinForm, adminUsers, adminUserForm, setAdminUserForm, adminBatchUserForm, setAdminBatchUserForm,                   adminHeatTemplates, adminApplicationYamls, applicationYamlUploadState, adminCloudInitTemplates,  adminCustomLabRequests, adminConsultingRequests, adminPublicQuoteInquiries, adminLuckyDrawEvents, adminStatus, setAdminStatus, adminSaveDialog, closeAdminSaveDialog,       noticeForm, setNoticeForm, luckyDrawEventForm, setLuckyDrawEventForm, luckyDrawRewardForm, setLuckyDrawRewardForm, adminCouponForm, setAdminCouponForm, heatTemplateForm, setHeatTemplateForm, applicationYamlForm, setApplicationYamlForm, cloudInitTemplateForm, setCloudInitTemplateForm, userSearch, setUserSearch, selectedUserIds, setSelectedUserIds,   filteredUsers, filteredUnapprovedUserIds, platformStatus, platformStatusDirty, setPlatformStatus, paymentGatewayKeyVisibility, setPaymentGatewayKeyVisibility, profileForm, setProfileForm, materialUploadStatus, exampleUploadStatus, serviceValidationStatus, mailTestAddress, setMailTestAddress, adminMailForm, setAdminMailForm, marketingMailForm, setMarketingMailForm, mailCampaignForm, setMailCampaignForm, mailCampaignPreview, adminMailCampaigns, selectedMailCampaign, mailCampaignStatus, adminMailLogs, adminMessages, adminMailLogsStatus, adminAccessLogs, adminAccessLogsStatus, adminAccessStats, myAccessLogs, issuedResetPinInfo, adminPasswordResetPins,
+    terminalRequest, terminalForm, setTerminalForm, terminalSession, terminalSessionBusy, terminalNonce, terminalUploadState, publicRouteForm, setPublicRouteForm: updatePublicRouteForm, publicTcpRouteForm, setPublicTcpRouteForm: updatePublicTcpRouteForm, publicRouteOptions, domainAvailability, setDomainAvailability,  onClearTerminalSession, onCloseZunContainerConsole,
+    customLabRequests, customLabForm, setCustomLabForm, customLabReviewDrafts, setCustomLabReviewDrafts, consultingRequests, consultingForm, setConsultingForm, consultingReviewDrafts, setConsultingReviewDrafts, selfServiceVms, selfServiceProjectRequests, selfServiceProjectRequestForm, setSelfServiceProjectRequestForm, selfServiceProjectReviewBusyIds, selfServiceProjectPreflightStatus, selfServiceVmForm, setSelfServiceVmForm, selfServiceVmPreflight, cloudConsoleSnapshot, cloudConsoleStatus, cloudConsoleActions, loadCloudConsoleSnapshot, loadCloudConsoleActions, loadCloudConsoleProject, createCloudConsoleProject, deleteCloudConsoleProject, runCloudConsoleAction, openCloudConsole, createCloudConsoleTerminalSession, closeCloudConsoleTerminalSession, reviewCloudConsoleAction, zunContainers, zunForm, setZunForm, zunStatus, magnumClusters, magnumTemplates, magnumForm, setMagnumForm, magnumStatus, troveInstances, troveDatastores, troveForm, setTroveForm, troveStatus, troveCredentials,                        coupons, adminCoupons,         adminInvites, inviteForm, setInviteForm, adminLogs, adminAuditLogs,  apiMonitor, adminInstanceMonitor, trafficDebugCapture, trafficDebugStatus,  quotaStatus, llmQuotaStatus, llmQuestion, setLlmQuestion, llmMessages, llmStreaming, llmStatus, toasts, dismissToast,
+    onLogin, onSignup, onAcceptActiveTerms, onDecideMarketingConsent, onResetPasswordWithPin, checkUsername, onLogout,               onCreateAdminCoupon, onToggleAdminCoupon, onProfileSubmit, onDeleteMyAccount, onStartOtpSetup, onConfirmOtpSetup, onConfirmPendingOtpEnrollment, onDisableOtp,    onCreateCustomLabTerminalSession,             onCheckLabDomain, onPublishLabDomain, onUnpublishLabDomain,       onCreateQna, onCreateQnaComment, onMarkQnaHelpful, onSetQnaStatus, onAcceptQnaComment, onDeleteQnaPost, onDeleteQnaComment, onNoticeEdit, onCancelNoticeEdit, onNoticeSubmit, onNoticeDelete, onAttemptLuckyDraw, onSaveLuckyDrawEvent, onCancelLuckyDrawEventEdit, onEditLuckyDrawEvent, onDeleteLuckyDrawEvent, onStartLuckyDrawRewardCreate, onEditLuckyDrawReward, onCancelLuckyDrawRewardCreate, onSaveLuckyDrawReward, onCreateAdminUser, onCreateAdminBatchUsers,    onUserPatch, onBulkSetSelfServiceVmAccess, onBulkSetPocFreeAccess, onBulkSetSupportMessageAccess, onDeleteUser, onBulkDeleteUsers, onResetPassword, onIssueResetPin, onClearAccountSharingRestriction, onBulkApprove, onSelectUnapprovedUsers, onBulkApproveUnapprovedUsers,                 onHeatTemplateEdit, onCancelHeatTemplateEdit, onHeatTemplateSave, onUploadHeatTemplate, onDeleteHeatTemplate, onCheckHeatTemplateCapacity, onRunHeatTemplateWorkloadTest, onGetHeatTemplateWorkloadTest, onListHeatTemplateWorkloadTests, onApplicationYamlEdit, onCancelApplicationYamlEdit, onApplicationYamlSave, onUploadApplicationYaml, onDeleteApplicationYaml, onCloudInitTemplateEdit, onCancelCloudInitTemplateEdit, onCloudInitTemplateSave, onUploadCloudInitTemplate, onDeleteCloudInitTemplate,   onUploadLandingMedia,                 onToggleCircuitBreaker, onSaveCircuitBreakerMessage, onCreateConsultingRequest, onReviewConsultingRequest, onReviewPublicQuoteInquiry, onCreateCustomLabRequest, onReviewCustomLabRequest, onTerminateAdminCustomLabRequest, onDeleteAdminCustomLabQuote, onPrepareCustomLabPayment, onConfirmCustomLabRequest, onCreateCustomLabKeypair, onCancelCustomLabRequest, onTerminateCustomLabRequest, onRequestSelfServiceVmAccess, onCancelSelfServiceProjectRequest, onReviewSelfServiceProjectRequest, onDeleteSelfServiceProjectRecords, onRefreshNotifications, onMarkNotificationRead, onMarkAllNotificationsRead, onDeleteNotification, onClearNotifications, onRefreshMessages, onStartMessageReply, onCancelMessageReply, onSendDirectMessage, onSendMessage, onMarkMessageRead, onArchiveMessage, onDeleteMessage, onUpdateMessageCleanupStatus, loadAdmin,    loadNotices, loadNotifications, loadLuckyDraw, loadMessages, loadMessageRecipients, loadPlatformStatus,   loadCustomLabRequests, loadConsultingRequests, loadQna,
     onDeleteCustomLabRequest,
-    loadAdminCourses, loadAdminHeatTemplates,
-    onSavePlatformSettings, onSaveLlmSettings, onTestLlm, onTestMail, onVerifyMailConnection, onSendAdminMail, onSendMarketingMail, onPreviewMailCampaign, onCreateMailCampaign, onRecordMailCampaignEvent, loadAdminMailCampaigns, loadMailCampaignDetail, onRefreshAdminMailLogs, onRefreshAdminAccessLogs, onCreateServiceValidationResources, onCleanupServiceValidationResources, onRunOpenstackLifecycleTest, onTestSelfServiceProjectAutomation, onWrittenExamEdit, onWrittenExamSave, onWrittenExamDelete, onSubmitWrittenExam, onLabExamEdit, onLabExamSave, onLabExamDelete, onSubmitLabExam, onStartLabExam, onFinishLabExamSession, onReviewLabExamAttempt, onResendLabExamResultMail, onUpdateLabExamAttemptManualResult, onGenerateLabExamAttemptLlmReport, onRegradeLabExamAttempt, onCreateManualLabExamResult, onForceEndLabExamSession, onBulkRemoveLabExamItems, onAdminLabPowerAction, onWarnInstanceUsage, onSendAutoInstanceWarnings, onDeleteLabExamAttempt, onValidateLabExamScript, onTestLabExamScript, onIssueCertificate, onRefreshApiMonitor, onStartTrafficDebugCapture, onAskLlm, onResetLlmConversation, onCreateInvite, onGenerateInviteCode, onToggleInvite, onDeleteInvite, onCreateSelfServiceVm, onCheckSelfServiceVmPreflight, onReviewSelfServiceVm, onRequestSelfServiceVmExternalSsh, onReleaseSelfServiceVmExternalSsh, onApproveSelfServiceVmExternalSsh, onRejectSelfServiceVmExternalSsh, onTerminateSelfServiceVm, onPowerActionSelfServiceVm, onPowerActionLab, onDeleteSelfServiceVmRecords, onCreateZunContainer, onCreateZunContainerTerminalSession, onStartZunContainer, onStopZunContainer, onRefreshZunContainer, onDeleteZunContainer, onPublishZunContainerDomain, onUnpublishZunContainerDomain, onCreateMagnumCluster, onReviewMagnumCluster, onRefreshMagnumCluster, onDownloadMagnumKubeconfig, onDeleteMagnumCluster, onCreateTroveInstance, onRefreshTroveInstance, onDeleteTroveInstance, onRevealTroveCredentials, onGenerateCourseAccessCode, onUpdateCourseAccessCode, loadCoupons, loadAdminCoupons, loadAdminArenaOverview,
-    onPreflightLabExam, onLabExamConsoleReady, onRebuildLabExamSession,
-    labDomainReviewNotes, setLabDomainReviewNotes, labTcpReviewNotes, setLabTcpReviewNotes, labSshReviewNotes, setLabSshReviewNotes,
-    onRequestExternalSsh, onReleaseExternalSsh, onRequestExternalRdp, onReleaseExternalRdp, onApproveExternalSsh, onRejectExternalSsh, onApproveExternalRdp, onRejectExternalRdp, landingMediaUploadState, onUploadBrandAsset, onExportBackup, onImportBackup,
+     loadAdminHeatTemplates,
+    onSavePlatformSettings, onSaveLlmSettings, onTestLlm, onTestMail, onVerifyMailConnection, onSendAdminMail, onSendMarketingMail, onPreviewMailCampaign, onCreateMailCampaign, onRecordMailCampaignEvent, loadAdminMailCampaigns, loadMailCampaignDetail, onRefreshAdminMailLogs, onRefreshAdminAccessLogs, onCreateServiceValidationResources, onCleanupServiceValidationResources, onRunOpenstackLifecycleTest, onTestSelfServiceProjectAutomation,                    onWarnInstanceUsage, onSendAutoInstanceWarnings,     onRefreshApiMonitor, onStartTrafficDebugCapture, onAskLlm, onResetLlmConversation, onCreateInvite, onGenerateInviteCode, onToggleInvite, onDeleteInvite, onCreateSelfServiceVm, onCheckSelfServiceVmPreflight, onReviewSelfServiceVm, onRequestSelfServiceVmExternalSsh, onReleaseSelfServiceVmExternalSsh, onApproveSelfServiceVmExternalSsh, onRejectSelfServiceVmExternalSsh, onTerminateSelfServiceVm, onPowerActionSelfServiceVm,  onDeleteSelfServiceVmRecords, onCreateZunContainer, onCreateZunContainerTerminalSession, onStartZunContainer, onStopZunContainer, onRefreshZunContainer, onDeleteZunContainer, onPublishZunContainerDomain, onUnpublishZunContainerDomain, onCreateMagnumCluster, onReviewMagnumCluster, onRefreshMagnumCluster, onDownloadMagnumKubeconfig, onDeleteMagnumCluster, onCreateTroveInstance, onRefreshTroveInstance, onDeleteTroveInstance, onRevealTroveCredentials,   loadCoupons, loadAdminCoupons,
+
+      labTcpReviewNotes, setLabTcpReviewNotes, labSshReviewNotes, setLabSshReviewNotes,
+            landingMediaUploadState, onUploadBrandAsset, onExportBackup, onImportBackup,
   };
 }
 
@@ -10580,27 +6798,11 @@ function originalGetInitialSection() {
   return "notices";
 }
 
-function getInitialSelectedCourseId() {
-  const courseId = Number(new URLSearchParams(window.location.search).get("courseId") || 0);
-  return courseId > 0 ? courseId : null;
-}
 
-function getInitialSelectedLabId() {
-  const labId = Number(new URLSearchParams(window.location.search).get("labId") || 0);
-  return labId > 0 ? labId : null;
-}
 
-function getInitialTerminalReplayMetadata() {
-  const params = new URLSearchParams(window.location.search);
-  const metadata = {
-    purpose: String(params.get("replayPurpose") || "").trim(),
-    labExamCourseId: String(params.get("labExamCourseId") || "").trim(),
-    labExamTitle: String(params.get("labExamTitle") || "").trim(),
-    labExamKind: String(params.get("labExamKind") || "").trim(),
-    labRequestId: String(params.get("replayLabRequestId") || "").trim(),
-  };
-  return Object.fromEntries(Object.entries(metadata).filter(([, value]) => value));
-}
+
+
+
 
 export function navigate(pathname) {
   if (window.location.pathname !== pathname) window.history.pushState({}, "", pathname);
@@ -10653,9 +6855,7 @@ function clearPaymentQuery() {
   window.history.replaceState({}, "", nextUrl);
 }
 
-export function lines(value) {
-  return String(value || "").split("\n").map((item) => item.trim()).filter(Boolean);
-}
+
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -10670,9 +6870,7 @@ function fileToBase64(file) {
   });
 }
 
-function waitForMs(ms) {
-  return new Promise((resolve) => window.setTimeout(resolve, Math.max(0, Number(ms || 0))));
-}
+
 
 const API_READ_CONCURRENCY = 6;
 let activeApiReadRequests = 0;
@@ -10710,7 +6908,7 @@ function scheduleApiReadRequest(run) {
 }
 
 export async function api(path, options = {}) {
-if (isEducationApi(path)) { if (options.method && options.method !== "GET") throw new Error("교육 기능은 Community에 포함되지 않습니다."); return emptyEducationResponse(); }
+if (isEducationApi(path)) throw new Error("This feature is not included in Community.");
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers = isFormData ? { ...(options.headers || {}) } : { "Content-Type": "application/json", ...(options.headers || {}) };
   const request = () => fetch(path, {
@@ -10819,7 +7017,7 @@ async function streamApi(path, { body = null, onEvent = null } = {}) {
   }
 }
 
-export { EMPTY_COURSE };
-export { DEFAULT_BASIC_APPLICATION_YAML, DEFAULT_EXCEPTION_APPLICATION_YAML };
+
+
 
 function getInitialSection(){return communitySection(originalGetInitialSection());}

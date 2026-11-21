@@ -1,128 +1,24 @@
-import { useRef, useState } from "react";
-import {
-  AdminField,
-  FlavorBadges,
-  PanelStatusMessage,
-  formatCurrency,
-  renderZunStatus,
-} from "./portal-views.jsx";
+import {useState} from "react";
+import {AdminField,PanelStatusMessage,renderZunStatus} from "./portal-views.jsx";
 import KubectlDownloadMenu from "./kubectl-download-menu.jsx";
 
-function toPositiveInteger(value, fallback = 1) {
-  const number = Number.parseInt(value, 10);
-  return Number.isInteger(number) && number > 0 ? number : fallback;
-}
+
 
 const INTERNAL_IMAGE_REQUEST_MESSAGE = "필요한 이미지가 있으시면 커뮤니티에 요청하세요.";
-const MAX_SELF_SERVICE_NETWORK_REQUESTS = 3;
-const SELF_SERVICE_VLAN_MIN = 4000;
-const SELF_SERVICE_VLAN_MAX = 4094;
-const DEFAULT_SELF_SERVICE_ADVANCED_DAILY_PRICES = {
-  volumeGb: 30,
-  floatingIp: 1500,
-  network: 1200,
-  router: 800,
-  trunk: 800,
-  manualPort: 300,
-  qos: 300,
-  firewallGroup: 500,
-};
 
-function createEmptyNetworkRequest() {
-  return {
-    networkName: "",
-    subnetCidr: "",
-    vlanMode: "none",
-    vlanId: "",
-    routerEnabled: true,
-    trunkEnabled: false,
-    manualPortEnabled: false,
-    portName: "",
-    qosPolicyName: "",
-    firewallGroupName: "",
-  };
-}
 
-function getNetworkRequestRows(form = {}) {
-  const rows = Array.isArray(form.networkRequests) ? form.networkRequests : [];
-  const normalized = rows
-    .slice(0, MAX_SELF_SERVICE_NETWORK_REQUESTS)
-    .map((item) => ({
-      ...createEmptyNetworkRequest(),
-      ...item,
-      routerEnabled: item?.routerEnabled !== false,
-      trunkEnabled: Boolean(item?.trunkEnabled),
-      manualPortEnabled: Boolean(item?.manualPortEnabled || item?.trunkEnabled),
-    }));
-  if (normalized.length) return normalized;
-  if (form.networkName || form.subnetCidr) {
-    return [{ ...createEmptyNetworkRequest(), networkName: form.networkName || "", subnetCidr: form.subnetCidr || "" }];
-  }
-  return [createEmptyNetworkRequest()];
-}
 
-function buildNetworkRequestNote(form = {}) {
-  const rows = getNetworkRequestRows(form)
-    .map((item) => ({
-      networkName: String(item.networkName || "").trim(),
-      subnetCidr: String(item.subnetCidr || "").trim(),
-      vlanMode: String(item.vlanMode || "none").trim(),
-      vlanId: String(item.vlanId || "").trim(),
-      routerEnabled: item.routerEnabled !== false,
-      trunkEnabled: Boolean(item.trunkEnabled),
-      manualPortEnabled: Boolean(item.manualPortEnabled || item.trunkEnabled),
-      portName: String(item.portName || "").trim(),
-      qosPolicyName: String(item.qosPolicyName || "").trim(),
-      firewallGroupName: String(item.firewallGroupName || "").trim(),
-    }))
-    .filter((item) => item.networkName || item.subnetCidr || item.vlanId || item.qosPolicyName || item.firewallGroupName || item.trunkEnabled || item.manualPortEnabled || item.portName);
-  if (!rows.length) return "";
-  const lines = ["[전용 네트워크 요청]"];
-  rows.forEach((item, index) => {
-    lines.push(`${index + 1}. ${item.networkName || "이름 미정"} / ${item.subnetCidr || "CIDR 미정"}`);
-    lines.push(`   - Router: ${item.routerEnabled ? "요청" : "미요청"}`);
-    lines.push(`   - Port: ${item.manualPortEnabled ? `${item.portName || "자동 이름"}${item.trunkEnabled ? " (Trunk parent)" : ""}` : "자동 생성"}`);
-    lines.push(`   - VLAN: ${item.vlanMode === "vlan" ? item.vlanId || "자동 할당" : "미사용"}`);
-    lines.push(`   - Trunk: ${item.trunkEnabled ? "요청" : "미요청"}`);
-    if (item.qosPolicyName) lines.push(`   - Network QoS: ${item.qosPolicyName}`);
-    if (item.firewallGroupName) lines.push(`   - 방화벽 그룹: ${item.firewallGroupName}`);
-  });
-  lines.push(`※ VLAN ID는 ${SELF_SERVICE_VLAN_MIN}~${SELF_SERVICE_VLAN_MAX} 범위에서 신청 및 사용 가능하며, 비워두면 자동 할당됩니다.`);
-  lines.push("※ Router/VLAN Trunk/수동 포트/QoS/방화벽 그룹은 OpenStack Neutron 확장 기능과 관리자 정책 확인 후 적용됩니다.");
-  return lines.join("\n");
-}
 
-function getNetworkRequestValidationMessage(form = {}) {
-  const rows = getNetworkRequestRows(form);
-  const invalidNetwork = rows.find((item) => {
-    const hasNetworkOption = item.networkName || item.subnetCidr || item.vlanMode === "vlan" || item.trunkEnabled || item.manualPortEnabled || item.portName || item.qosPolicyName || item.firewallGroupName;
-    return hasNetworkOption && (!String(item.networkName || "").trim() || !String(item.subnetCidr || "").trim());
-  });
-  if (invalidNetwork) {
-    return "전용 네트워크 옵션을 요청하려면 네트워크 이름과 CIDR 대역을 함께 입력해 주세요.";
-  }
-  const invalidVlan = rows.find((item) => {
-    if (String(item.vlanMode || "none") !== "vlan") return false;
-    const vlanRaw = String(item.vlanId || "").trim();
-    if (!vlanRaw) return false;
-    const vlanId = Number.parseInt(vlanRaw, 10);
-    return !Number.isInteger(vlanId) || vlanId < SELF_SERVICE_VLAN_MIN || vlanId > SELF_SERVICE_VLAN_MAX;
-  });
-  if (invalidVlan) {
-    return `VLAN ID는 ${SELF_SERVICE_VLAN_MIN}~${SELF_SERVICE_VLAN_MAX} 사이 숫자로 입력하거나 비워두세요.`;
-  }
-  return "";
-}
 
-function renderSelfServiceVmStatus(status) {
-  if (status === "requested") return "승인 대기";
-  if (status === "approved") return "승인됨";
-  if (status === "provisioning") return "생성 중";
-  if (status === "running") return "실행 중";
-  if (status === "terminating") return "종료 중";
-  if (status === "terminated") return "종료됨";
-  return "실패";
-}
+
+
+
+
+
+
+
+
+
 
 function renderMagnumStatus(status) {
   const normalized = String(status || "").trim().toLowerCase();
@@ -136,338 +32,27 @@ function renderMagnumStatus(status) {
   return status || "상태 확인 중";
 }
 
-function formatTopologyDetail(value, maxLength = 16) {
-  const text = String(value || "-");
-  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}...` : text;
-}
 
-function formatSelfServiceQuotaAmount(value, unit = "") {
-  const number = Math.max(0, Number(value || 0) || 0);
-  if (unit === "MB") return number >= 1024 ? `${Math.round(number / 1024)}GB` : `${Math.round(number)}MB`;
-  if (unit === "GB") return `${Math.round(number)}GB`;
-  return `${Math.round(number)}`;
-}
 
-function getSelfServiceFlavorSpec(flavor, platformStatus = {}) {
-  const normalized = String(flavor || "").toLowerCase();
-  const spec = platformStatus?.pocFlavorSpecs?.[flavor] || {};
-  if (Number(spec.vcpu) > 0 && Number(spec.ramGb) > 0) {
-    return {
-      vcpu: Number(spec.vcpu),
-      ramGb: Number(spec.ramGb),
-      diskGb: Number(spec.diskGb || 0) || (normalized.includes("tiny") ? 20 : normalized.includes("medium") ? 80 : normalized.includes("large") ? 160 : 50),
-    };
-  }
-  if (normalized.includes("tiny")) return { vcpu: 1, ramGb: 2, diskGb: 20 };
-  if (normalized.includes("small")) return { vcpu: 2, ramGb: 4, diskGb: 50 };
-  if (normalized.includes("medium")) return { vcpu: 4, ramGb: 8, diskGb: 80 };
-  if (normalized.includes("large")) return { vcpu: 8, ramGb: 16, diskGb: 160 };
-  return { vcpu: 1, ramGb: 2, diskGb: 20 };
-}
 
-function resolveSelfServiceDailyPrice(flavor, platformStatus = {}) {
-  const priceMap = platformStatus?.pocFlavorDailyPrices || {};
-  return Math.max(0, Number(priceMap?.[flavor] || 0));
-}
 
-function resolveSelfServiceAdvancedDailyPrices(platformStatus = {}) {
-  const source = platformStatus?.pocAdvancedDailyPrices && typeof platformStatus.pocAdvancedDailyPrices === "object"
-    ? platformStatus.pocAdvancedDailyPrices
-    : {};
-  return Object.entries(DEFAULT_SELF_SERVICE_ADVANCED_DAILY_PRICES).reduce((prices, [key, fallback]) => ({
-    ...prices,
-    [key]: Math.max(0, Number(source[key] ?? fallback) || 0),
-  }), {});
-}
 
-function calculateSelfServiceCostEstimate({
-  form = {},
-  projectRequestForm = {},
-  platformStatus = {},
-  volumeBootEnabled = false,
-  dataVolumeFeatureEnabled = false,
-  floatingIpFeatureEnabled = false,
-  usageDays = 30,
-  billable = false,
-}) {
-  const instanceCount = toPositiveInteger(form.instanceCount, 1);
-  const safeUsageDays = toPositiveInteger(usageDays, 30);
-  const flavor = form.flavor || platformStatus?.selfServiceVmAllowedFlavors?.[0] || "m1.tiny";
-  const dailyPrice = resolveSelfServiceDailyPrice(flavor, platformStatus);
-  const advancedPrices = resolveSelfServiceAdvancedDailyPrices(platformStatus);
-  const items = [];
-  const addItem = ({ key, label, quantity = 1, unitDailyPrice = 0, detail = "" }) => {
-    const safeQuantity = Math.max(0, Number(quantity) || 0);
-    const safeUnitDailyPrice = Math.max(0, Number(unitDailyPrice) || 0);
-    if (!safeQuantity || !safeUnitDailyPrice) return;
-    const daily = Math.floor(safeQuantity * safeUnitDailyPrice);
-    items.push({
-      key,
-      label,
-      quantity: safeQuantity,
-      unitDailyPrice: safeUnitDailyPrice,
-      daily,
-      amount: daily * safeUsageDays,
-      detail,
-    });
-  };
 
-  addItem({
-    key: "compute",
-    label: "가상머신",
-    quantity: instanceCount,
-    unitDailyPrice: dailyPrice,
-    detail: `${flavor} x ${instanceCount}대`,
-  });
 
-  if (volumeBootEnabled && form.bootFromVolume) {
-    const bootVolumeSizeGb = Math.max(1, Number(form.bootVolumeSizeGb || 20) || 20);
-    addItem({
-      key: "boot-volume",
-      label: "OS 볼륨",
-      quantity: bootVolumeSizeGb * instanceCount,
-      unitDailyPrice: advancedPrices.volumeGb,
-      detail: `${bootVolumeSizeGb}GB x ${instanceCount}대`,
-    });
-  }
 
-  if (dataVolumeFeatureEnabled && form.dataVolumeEnabled) {
-    const dataVolumeCount = toPositiveInteger(form.dataVolumeCount, 1);
-    const dataVolumeSizeGb = Math.max(1, Number(form.dataVolumeSizeGb || 20) || 20);
-    addItem({
-      key: "data-volume",
-      label: "데이터 볼륨",
-      quantity: dataVolumeCount * dataVolumeSizeGb,
-      unitDailyPrice: advancedPrices.volumeGb,
-      detail: `${dataVolumeSizeGb}GB x ${dataVolumeCount}개`,
-    });
-  }
 
-  if (floatingIpFeatureEnabled && form.floatingIpRequested) {
-    addItem({
-      key: "floating-ip",
-      label: "Floating IP",
-      quantity: instanceCount,
-      unitDailyPrice: advancedPrices.floatingIp,
-      detail: `${instanceCount}개`,
-    });
-  }
 
-  const networkRows = getNetworkRequestRows(projectRequestForm).filter((item) => (
-    String(item.networkName || "").trim()
-    || String(item.subnetCidr || "").trim()
-    || String(item.vlanMode || "none") === "vlan"
-    || Boolean(item.trunkEnabled)
-    || Boolean(item.manualPortEnabled)
-    || String(item.qosPolicyName || "").trim()
-    || String(item.firewallGroupName || "").trim()
-  ));
-  const networkCount = networkRows.filter((item) => item.networkName || item.subnetCidr).length;
-  const routerCount = networkRows.filter((item) => item.routerEnabled !== false && (item.networkName || item.subnetCidr)).length;
-  const trunkCount = networkRows.filter((item) => item.trunkEnabled).length;
-  const manualPortCount = networkRows.filter((item) => item.manualPortEnabled || item.trunkEnabled).length;
-  const qosCount = networkRows.filter((item) => item.qosPolicyName).length;
-  const firewallCount = networkRows.filter((item) => item.firewallGroupName).length;
-  addItem({ key: "network", label: "전용 네트워크", quantity: networkCount, unitDailyPrice: advancedPrices.network, detail: networkCount ? `${networkCount}개` : "" });
-  addItem({ key: "router", label: "라우터", quantity: routerCount, unitDailyPrice: advancedPrices.router, detail: routerCount ? `${routerCount}개` : "" });
-  addItem({ key: "trunk", label: "Trunk", quantity: trunkCount, unitDailyPrice: advancedPrices.trunk, detail: trunkCount ? `${trunkCount}개` : "" });
-  addItem({ key: "manual-port", label: "수동 포트", quantity: manualPortCount, unitDailyPrice: advancedPrices.manualPort, detail: manualPortCount ? `${manualPortCount}개` : "" });
-  addItem({ key: "qos", label: "네트워크 QoS", quantity: qosCount, unitDailyPrice: advancedPrices.qos, detail: qosCount ? `${qosCount}개` : "" });
-  addItem({ key: "firewall", label: "방화벽 그룹", quantity: firewallCount, unitDailyPrice: advancedPrices.firewallGroup, detail: firewallCount ? `${firewallCount}개` : "" });
 
-  const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
-  const discounts = [];
-  const addDiscount = (type, label, rate) => {
-    if (subtotal <= 0 || rate <= 0) return;
-    discounts.push({ type, label, rate, amount: Math.floor(subtotal * rate) });
-  };
-  if (safeUsageDays >= 14) addDiscount("period", "14일 이상 기간 할인", 0.2);
-  else if (safeUsageDays >= 7) addDiscount("period", "7일 이상 기간 할인", 0.1);
-  if (instanceCount >= 5) addDiscount("volume", "5대 이상 수량 할인", 0.1);
-  else if (instanceCount >= 3) addDiscount("volume", "3대 이상 수량 할인", 0.05);
-  const discountAmount = Math.min(subtotal, discounts.reduce((sum, discount) => sum + discount.amount, 0));
-  const estimatedAmount = Math.max(0, subtotal - discountAmount);
 
-  return {
-    billable,
-    dailyPrice,
-    instanceCount,
-    usageDays: safeUsageDays,
-    subtotal,
-    discounts,
-    discountAmount,
-    amount: billable ? estimatedAmount : 0,
-    paidEstimateAmount: estimatedAmount,
-    items,
-  };
-}
 
-function SelfServiceImpactPreview({ form = {}, platformStatus = {}, volumeBootEnabled = false, dataVolumeFeatureEnabled = false, floatingIpFeatureEnabled = false }) {
-  const instanceCount = toPositiveInteger(form.instanceCount, 1);
-  const spec = getSelfServiceFlavorSpec(form.flavor, platformStatus);
-  const bootFromVolume = Boolean(volumeBootEnabled && form.bootFromVolume);
-  const bootVolumeSizeGb = Math.max(1, Number(form.bootVolumeSizeGb || 20) || 20);
-  const dataVolumeEnabled = Boolean(dataVolumeFeatureEnabled && form.dataVolumeEnabled);
-  const dataVolumeCount = dataVolumeEnabled ? toPositiveInteger(form.dataVolumeCount, 1) : 0;
-  const dataVolumeSizeGb = dataVolumeEnabled ? Math.max(1, Number(form.dataVolumeSizeGb || 20) || 20) : 0;
-  const floatingIpCount = floatingIpFeatureEnabled && form.floatingIpRequested ? instanceCount : 0;
-  const bootVolumeCount = bootFromVolume ? instanceCount : 0;
-  const bootVolumeGb = bootVolumeCount * bootVolumeSizeGb;
-  const dataVolumeGb = dataVolumeCount * dataVolumeSizeGb;
-  const volumeCount = bootVolumeCount + dataVolumeCount;
-  const volumeGb = bootVolumeGb + dataVolumeGb;
-  const billableItems = [
-    bootFromVolume ? `OS 볼륨 ${bootVolumeCount}개` : "",
-    dataVolumeEnabled ? `데이터 볼륨 ${dataVolumeCount}개` : "",
-    floatingIpCount ? `Floating IP ${floatingIpCount}개` : "",
-  ].filter(Boolean);
 
-  return (
-    <section className="self-service-impact-preview">
-      <div className="self-service-impact-head">
-        <div>
-          <strong>예상 Quota 영향</strong>
-          <p>현재 선택값으로 생성 전에 차감될 자원을 미리 확인합니다.</p>
-        </div>
-        <span>{form.flavor || "Flavor 선택"}</span>
-      </div>
-      <div className="self-service-impact-grid">
-        <span><b>VM</b><em>{`${instanceCount}대`}</em></span>
-        <span><b>vCPU</b><em>{`${spec.vcpu * instanceCount}`}</em></span>
-        <span><b>RAM</b><em>{`${spec.ramGb * instanceCount}GB`}</em></span>
-        <span><b>Port</b><em>{`${instanceCount}개`}</em></span>
-        <span><b>Volume</b><em>{volumeCount ? `${volumeCount}개 / ${volumeGb}GB` : "사용 안 함"}</em></span>
-        <span><b>Floating IP</b><em>{floatingIpCount ? `${floatingIpCount}개` : "사용 안 함"}</em></span>
-      </div>
-      <div className="self-service-impact-notes">
-        <span>{`기본 디스크: ${bootFromVolume ? `Cinder volume ${bootVolumeSizeGb}GB x ${instanceCount}` : `이미지/ephemeral 약 ${spec.diskGb}GB 기준`}`}</span>
-        {dataVolumeEnabled ? <span>{`추가 데이터 볼륨: ${dataVolumeSizeGb}GB x ${dataVolumeCount}, 첫 번째 VM에 연결`}</span> : null}
-        <span>{billableItems.length ? `비용 확인 필요 항목: ${billableItems.join(", ")}` : "추가 과금 가능 항목은 선택되지 않았습니다."}</span>
-      </div>
-    </section>
-  );
-}
 
-function getSelfServicePreflightTone(preflight = {}) {
-  if (preflight.checking) return "info";
-  if (preflight.canCreate === false) return "error";
-  if (preflight.ok === false && preflight.message) return "warning";
-  return "success";
-}
 
-function renderSelfServiceVmProgress(vm = {}) {
-  const note = String(vm.reviewNote || "");
-  const matched = note.match(/진행 상태:\s*(.+)$/m);
-  if (matched?.[1]) return matched[1].trim();
-  if (vm.status === "requested") return "관리자 승인 대기";
-  if (vm.status === "approved") return "생성 승인 완료";
-  if (vm.status === "provisioning") return "HeatStack 생성 중";
-  if (vm.status === "running") return "사용 가능";
-  if (vm.status === "terminating") return "삭제 중";
-  if (vm.status === "terminated") return "삭제 완료";
-  return "생성 실패";
-}
 
-function SelfServiceVmPreflightPanel({ preflight = {} }) {
-  if (!preflight?.message && !preflight?.checking) return null;
-  const tone = getSelfServicePreflightTone(preflight);
-  const checks = Array.isArray(preflight.checks) ? preflight.checks : [];
-  return (
-    <div className={`self-service-preflight is-${tone}`}>
-      <div className="self-service-preflight-head">
-        <strong>{preflight.checking ? "프로젝트 자원 확인 중" : preflight.canCreate === false ? "생성 전 확인 필요" : "프로젝트 자원 점검"}</strong>
-        <span>{preflight.projectName || "-"}</span>
-      </div>
-      <p>{preflight.message}</p>
-      {preflight.detailMessage ? <p className="hint">{preflight.detailMessage}</p> : null}
-      {checks.length ? (
-        <div className="self-service-quota-grid">
-          {checks.map((item) => (
-            <span className={`self-service-quota-pill ${item.pass ? "is-pass" : "is-fail"}`} key={item.key}>
-              <b>{item.label}</b>
-              <span>{`필요 ${formatSelfServiceQuotaAmount(item.required, item.unit)} / 남음 ${item.remaining == null ? "무제한" : formatSelfServiceQuotaAmount(item.remaining, item.unit)}`}</span>
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
-function SelfServiceVmTopology({ vm = null, form = {}, title = "예상 자원 구성도" }) {
-  const instanceCount = toPositiveInteger(vm?.instanceCount ?? form.instanceCount, 1);
-  const flavor = vm?.flavor || form.flavor || "-";
-  const networkName = vm?.networkName || form.networkName || "net-infra";
-  const bootFromVolume = Boolean(vm?.bootFromVolume ?? form.bootFromVolume);
-  const bootVolumeDetail = bootFromVolume ? `${vm?.bootVolumeSizeGb || form.bootVolumeSizeGb || 20}GB` : "ephemeral";
-  const formCloudInitMode = form.cloudInitMode || (form.cloudInitCustomContent ? "custom" : form.cloudInitTemplateName ? "template" : "none");
-  const cloudInit = vm?.cloudInitCustomContentAvailable
-    ? vm.cloudInitCustomFileName ? `직접 입력 / ${vm.cloudInitCustomFileName}` : "직접 입력"
-    : vm?.cloudInitTemplateName || (formCloudInitMode === "custom" ? form.cloudInitCustomFileName || "직접 입력" : form.cloudInitTemplateName) || "선택 안 함";
-  const status = String(vm?.status || "requested").toLowerCase();
-  const detail = vm?.instanceIp || `${instanceCount}대 / ${flavor}`;
-  const firstNetworkRequest = getNetworkRequestRows(form).find((item) => item.networkName || item.subnetCidr || item.trunkEnabled || item.manualPortEnabled || item.vlanMode === "vlan") || {};
-  const effectiveNetworkName = firstNetworkRequest.networkName || networkName;
-  const portDetail = firstNetworkRequest.manualPortEnabled || firstNetworkRequest.trunkEnabled
-    ? firstNetworkRequest.portName || "manual port"
-    : firstNetworkRequest.vlanMode === "vlan"
-      ? `VLAN ${firstNetworkRequest.vlanId || "auto"}`
-      : "auto port";
-  const nicDetail = `${instanceCount} NIC`;
-  const nodes = [
-    { id: "public", label: "Public", detail: "접속", type: "network", x: 18, y: 38 },
-    { id: "network", label: "Network", detail: formatTopologyDetail(effectiveNetworkName), type: "network", x: 138, y: 38 },
-    { id: "port", label: "Port", detail: formatTopologyDetail(portDetail), type: "port", x: 258, y: 38 },
-    { id: "nic", label: "NIC", detail: formatTopologyDetail(nicDetail), type: "nic", x: 378, y: 38 },
-    { id: "compute", label: "Compute", detail: formatTopologyDetail(detail), type: status === "running" ? "running" : status === "provisioning" ? "provisioning" : status === "failed" ? "failed" : "core", x: 498, y: 38 },
-    { id: "security", label: "Security", detail: "example.com", type: "storage", x: 258, y: 132 },
-    { id: "config", label: "cloud-init", detail: formatTopologyDetail(cloudInit), type: "data", x: 498, y: 132 },
-    { id: "bootVolume", label: "Boot disk", detail: formatTopologyDetail(bootVolumeDetail), type: "storage", x: 408, y: 176 },
-  ];
-  const edges = [
-    ["public", "network"],
-    ["network", "port"],
-    ["port", "nic"],
-    ["nic", "compute"],
-    ["security", "port"],
-    ["config", "compute"],
-    ["bootVolume", "compute"],
-  ];
-  const nodeMap = new Map(nodes.map((node) => [node.id, node]));
-  const center = (node) => ({ x: node.x + 45, y: node.y + 22 });
 
-  return (
-    <details className="poc-resource-disclosure" open={!vm}>
-      <summary>
-        <span>{title}</span>
-        <b>{vm ? renderSelfServiceVmStatus(status) : "미리보기"}</b>
-      </summary>
-      <figure className="poc-resource-graph self-service-vm-graph">
-        <div className="poc-resource-legend" aria-label="자원 유형 범례">
-          <span><i className="is-core" />Compute</span>
-          <span><i className="is-network" />Network</span>
-          <span><i className="is-port" />Port/NIC</span>
-          <span><i className="is-storage" />Security</span>
-          <span><i className="is-data" />Config</span>
-        </div>
-        <svg aria-label={title} role="img" viewBox="0 0 606 242">
-          {edges.map(([from, to]) => {
-            const fromCenter = center(nodeMap.get(from));
-            const toCenter = center(nodeMap.get(to));
-            return <line className="poc-resource-edge" key={`${from}-${to}`} x1={fromCenter.x} x2={toCenter.x} y1={fromCenter.y} y2={toCenter.y} />;
-          })}
-          {nodes.map((node) => (
-            <g className={`poc-resource-node is-${node.type}`} key={node.id} transform={`translate(${node.x} ${node.y})`}>
-              <rect height="44" rx="8" width="90" />
-              <text className="poc-resource-label" x="45" y="18">{node.label}</text>
-              <text className="poc-resource-detail" x="45" y="31">{node.detail}</text>
-            </g>
-          ))}
-        </svg>
-      </figure>
-    </details>
-  );
-}
+
+
 
 export function InternalImageServerView(props = {}) {
   const [search, setSearch] = useState({ query: "", loading: false, message: "", images: [] });

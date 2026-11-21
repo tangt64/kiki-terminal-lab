@@ -118,7 +118,7 @@ test('full platform: SSO, OTP, notices, community posts and excluded features',{
       async function upgrade(endpoint){return new Promise((resolve,reject)=>{const req=http.request(origin+endpoint,{headers:{Cookie:cookie,Origin:origin,Connection:'Upgrade',Upgrade:'websocket','Sec-WebSocket-Version':'13','Sec-WebSocket-Key':randomBytes(16).toString('base64')}});req.on('upgrade',(res,socket)=>{resolve(res.statusCode);socket.destroy();});req.on('response',res=>{resolve(res.statusCode);res.resume();});req.on('error',reject);req.setTimeout(5000,()=>req.destroy(Error('upgrade timeout')));req.end();});}
       for(const endpoint of ['/ws/instructor-share/view/demo','/ws/instructor-share/publish/demo','/ws/%69nstructor-share/view/demo'])assert.equal(await upgrade(endpoint),404,endpoint);
       assert.equal(await upgrade('/ws/terminal/nonexistent-general-session'),401,'General terminal ownership guard must remain');
-      const db=new pg.Client({connectionString:target});await db.connect();try{assert.equal(Number((await db.query('SELECT count(*) AS count FROM courses')).rows[0].count),0,'Blocked seeding must leave education tables empty');}finally{await db.end();}
+      const db=new pg.Client({connectionString:target});await db.connect();try{assert.equal((await db.query("SELECT to_regclass('public.courses') AS name")).rows[0].name,null,'Education tables must not exist');}finally{await db.end();}
       assert.equal((await admin('/api/admin/service-validation/openstack-lifecycle-test',{method:'POST',body:{}})).status,400,'Unconfigured general validation must refuse before infrastructure calls');
     });
     await t.test('general LLM questions retain answers without education context',async()=>{
@@ -141,6 +141,20 @@ test('full platform: SSO, OTP, notices, community posts and excluded features',{
         const session=await oauth('/api/auth/session');assert.equal(session.data.authenticated,true,JSON.stringify(session.data));assert.equal(session.data.user.email,provider+'@sso.example.test');
         const invalid=agent();const rejected=await invalid(`/api/auth/oauth/${provider}/callback?state=wrong&code=test-code`);assert.ok(rejected.location.includes('oauth=error'));
       }
+    });
+    await t.test('general administrator queries work without any education schema',async()=>{
+      for(const endpoint of ['/api/admin/invites','/api/admin/coupons','/api/admin/instance-monitor?force=1','/api/admin/openstack-cleanup','/api/admin/heat-templates','/api/admin/application-yamls','/api/admin/cloud-init-templates']){
+        const result=await admin(endpoint);assert.equal(result.status,200,endpoint+': '+JSON.stringify(result.data));
+      }
+    });
+    await t.test('CI/CD project queries work without education tables',async()=>{
+      for(const actor of [admin,member]){const result=await actor('/api/cicd/projects');assert.equal(result.status,200,JSON.stringify(result.data));assert.ok(Array.isArray(result.data.projects));}
+    });
+    await t.test('general domain availability is separate from education routes and checks resource ownership',async()=>{
+      assert.equal((await agent()('/api/domain-availability?subdomain=')).status,401);
+      const available=await member('/api/domain-availability?subdomain=');assert.equal(available.status,200);assert.equal(typeof available.data.available,'boolean');
+      assert.equal((await member('/api/domain-availability?customLabRequestId=999999')).status,404);
+      assert.equal((await member('/api/lab-domains/check?subdomain=')).status,404);
     });
     await t.test('OTP enrollment, bad-code rejection and authenticated OTP login work',async()=>{
       await settings({otpUserEnabled:true});

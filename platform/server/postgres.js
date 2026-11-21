@@ -5,10 +5,6 @@ const { Client } = pg;
 const REQUIRED_TABLES = [
   "users",
   "platform_settings",
-  "courses",
-  "exam_entitlements",
-  "course_package_grants",
-  "lab_requests",
   "terminal_replay_sessions",
   "terminal_replay_events",
   "custom_lab_requests",

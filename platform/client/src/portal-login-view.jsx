@@ -221,11 +221,8 @@ export default function PortalLogin(props) {
                 <Field label="가입 사유" value={props.signupForm.signupReason} onChange={value => props.setSignupForm(current => ({
           ...current,
           signupReason: value
-        }))} placeholder="예: 교육 실습 참여, 개인 학습, 팀 테스트" multiline />
-                <Field label="과정 코드" value={props.signupForm.courseCode} onChange={value => props.setSignupForm(current => ({
-          ...current,
-          courseCode: value
-        }))} placeholder="선택 입력" />
+        }))} placeholder="예: 개인 클라우드 운영, 팀 테스트" multiline />
+
                 {props.platformStatus?.inviteOnlyMode ? <Field label="초대 코드" value={props.signupForm.inviteCode} onChange={value => props.setSignupForm(current => ({
           ...current,
           inviteCode: value
@@ -249,7 +246,7 @@ export default function PortalLogin(props) {
           }))} type="checkbox" />
                   <span>
                     <strong>마케팅 정보 이메일 수신 동의 (선택)</strong>
-                    <small>쿠폰, 이벤트, 신규 과정 안내를 이메일로 받을 수 있으며 동의하지 않아도 회원가입과 서비스 이용에는 제한이 없습니다.</small>
+                    <small>쿠폰, 이벤트, 서비스 업데이트 안내를 이메일로 받을 수 있으며 동의하지 않아도 회원가입과 서비스 이용에는 제한이 없습니다.</small>
                   </span>
                 </label>
                 <button className="primary-btn" type="submit">회원가입</button>

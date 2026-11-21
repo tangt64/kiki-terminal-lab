@@ -18,7 +18,6 @@ export function isEducationWebSocketPath(value) {
   try { pathname = decodeURIComponent(pathname); } catch { return true; }
   return /^\/ws\/instructor-share(?:\/|$)/i.test(pathname);
 }
-export function emptyEducationResponse(){return {courses:[],labs:[],textbooks:[],exams:[],writtenExams:[],labExams:[],certificates:[],requests:[],responses:[],summary:[],quotes:[],payments:[],events:[],items:[],categories:[],levels:[],codes:[],programTypes:[],curricula:[],attempts:[],total:0};}
 export function isLabBoardPath(value){
   const path=String(value||'').split('?')[0];
   return /^\/(?:api\/board-rooms|board(?:-(?:fonts|icons|libraries|pdf))?)(?:\/|$)/i.test(path)||/^\/board-sandbox\.html(?:\/|$)/i.test(path);

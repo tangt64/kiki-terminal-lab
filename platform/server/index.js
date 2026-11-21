@@ -416,7 +416,7 @@ async function loadCachedPlatformStatusContext() {
   if (platformStatusCache && platformStatusCache.expiresAt > now) {
     return platformStatusCache;
   }
-  const [status, courses] = await Promise.all([runtimeGetPlatformStatus(), runtimeListCourses()]);
+  const [status, courses] = await Promise.all([runtimeGetPlatformStatus(), []]);
   platformStatusCache = {
     status,
     courses,
@@ -468,7 +468,7 @@ function serveGzippedClientAsset(req, res, next) {
   gzipStream.on("error", next);
   source.pipe(gzipStream).pipe(res);
 }
-import { runtimeConsumeInviteCode, runtimeConsumeRequestRateLimit, runtimeCreateConsultingRequest, runtimeCreatePublicQuoteInquiry, runtimeCreateDiscountCoupon, runtimeCreateCustomLabRequest, runtimeCreateTerminalReplaySession, runtimeAppendTerminalReplayEvent, runtimeDeleteZunContainer, runtimeDeleteMagnumCluster, runtimeDeleteTroveInstance, runtimeDeleteExpiredRequestRateLimits, runtimeCreateAdminAuditLog, runtimeCreateUserAccessLog, runtimeCreateUserAccessRestriction, runtimeRecordOpenstackResourceUsageSnapshot, runtimeCreateInviteCode, runtimeCreatePasswordResetPin, runtimeCreateNotice, runtimeCreateQnaComment, runtimeCreateQnaPost, runtimeCreateUserMessage, runtimeCreateSelfServiceVm, runtimeCreateSelfServiceProjectRequest, runtimeCreateCloudConsoleAction, runtimeCreateResourceDeletionJob, runtimeCreateUserTermsAgreements, runtimeRecordUserMarketingConsent, runtimeCreateUserNotification, runtimeCreateUser, runtimeCreateOauthAccount, runtimeCreateMagnumCluster, runtimeCreateTroveInstance, runtimeCreateZunContainer, runtimeArchiveOldLabRequests, runtimeDeleteCustomLabRequest, runtimeDeleteInviteCode, runtimeDeleteQnaComment, runtimeDeleteQnaPost, runtimeDeleteSelfServiceProjectRequests, runtimeDeleteSelfServiceVmRecords, runtimeDeleteUser, runtimeEnsureSchema, runtimeFindAvailableInviteCode, runtimeFindCourseByAccessCode, runtimeFindDiscountCouponByCode, runtimeListDiscountCoupons, runtimeCreateTermsVersion, runtimeFindTermsVersionById, runtimeListActiveTermsVersions, runtimeListTermsVersions, runtimeListOpenstackResourceUsageTrend, runtimeListCloudConsoleActions, runtimeListResourceDeletionJobs, runtimeUpdateCloudConsoleAction, runtimeUpdateResourceDeletionJob, runtimeUpdateTermsVersion, runtimeFindCourseById, runtimeFindConsultingRequestById, runtimeFindCustomLabRequestById, runtimeFindActiveSelfServiceVmByUserId, runtimeFindSelfServiceProjectRequestById, runtimeFindCloudConsoleActionById, runtimeFindInviteCodeById, runtimeFindLabExamSessionById, runtimeFindLabRequestById, runtimeFindLabRequestByPublicSubdomain, runtimeFindNoticeById, runtimeFindQnaPostById, runtimeFindActivePasswordResetPinByUserId, runtimeFindPublicQuoteInquiryById, runtimeFindSelfServiceVmById, runtimeFindUserById, runtimeFindUserByEmail, runtimeFindUserByUsername, runtimeFindOauthAccount, runtimeGetActiveUserAccessRestriction, runtimeResolveActiveAccountSharingRestriction, runtimeFindMagnumClusterById, runtimeFindTroveInstanceById, runtimeFindTerminalReplaySessionById, runtimeFindTerminalSessionRegistryById, runtimeFindZunContainerById, runtimeGetInternalImageCacheStatus, runtimeGetDatabasePoolStats, runtimeProbeDatabase, runtimeCloseDatabasePool, runtimeGetPlatformStatus, runtimeGetLlmQuotaStatus, runtimeGrantUserCourseAccess, runtimeGrantCoursePackageItems, runtimeGrantExamEntitlement, runtimeListInternalImageCache, runtimeListLabRequests, runtimeListTerminalReplayEvents, runtimeLoadLabExamConfig, runtimeSaveLabExamConfig, runtimeListMailLogs, runtimeListMailCampaigns, runtimeFindMailCampaignById, runtimeClaimNextMailCampaign, runtimeListQueuedMailCampaignDeliveries, runtimeListUserMessages, runtimeListAllUserMessages, runtimeListPublishedLabRoutes, runtimeListCourses, runtimeListConsultingRequests, runtimeListConsultingRequestsByUser, runtimeListDiscountCouponsByUser, runtimeListCustomLabRequests, runtimeListCustomLabRequestsByUser, runtimeListMarketingSurveys, runtimeFindMarketingSurveyById, runtimeCreateMarketingSurvey, runtimeUpdateMarketingSurvey, runtimeDeleteMarketingSurvey, runtimeSubmitMarketingSurveyVote, runtimeListMarketingSurveySubmissions, runtimeListInviteCodes, runtimeListSelfServiceVms, runtimeListSelfServiceVmsByUser, runtimeListSelfServiceProjectRequests, runtimeListSelfServiceProjectRequestsByUser, runtimeListNotices, runtimeListUserNotifications, runtimeListPasswordResetPins, runtimeListPublicQuoteInquiries, runtimeGetUserAccessStats, runtimeConsumeLlmQuota, runtimeListQnaPosts, runtimeListUsers, runtimeListMagnumClusters, runtimeListMagnumClustersByUser, runtimeListHeatWorkloadTestJobs, runtimeListTroveInstances, runtimeListTroveInstancesByUser, runtimeListUserAccessLogs, runtimeListAdminAuditLogs, runtimeListActiveUserSessionDevices, runtimeListZunContainers, runtimeListZunContainersByUser, runtimeMarkApprovalMailSent, runtimeMarkAllUserNotificationsRead, runtimeMarkUserMessageRead, runtimeClearUserNotifications, runtimeArchiveUserMessage, runtimeDeleteUserMessage, runtimeDeleteUserMessageById, runtimeDeleteUserNotification, runtimeUpdateUserMessageCleanupStatus, runtimeMarkUserNotificationRead, runtimeAnswerQnaPost, runtimeDeleteNotice, runtimeUpdateNotice, runtimeUpdateConsultingRequest, runtimeUpdatePublicQuoteInquiry, runtimeUpdateDiscountCoupon, runtimeUpdateCustomLabRequest, runtimeUpdateCustomLabRequestStatus, runtimeUpdateInviteCode, runtimeUpdateLabRequest, runtimeTouchLabRequest, runtimeFinishTerminalReplaySession, runtimeUpdatePlatformStatus, runtimeUpdateSelfServiceVm, runtimeUpdateSelfServiceProjectRequest, runtimeWithExternalPortLock, runtimeUpdateUserAccess, runtimeIncrementPasswordResetPinAttempt, runtimeConsumePasswordResetPin, runtimeUpdateUserPassword, runtimeUpdateUserProfile, runtimeUpdateUserQnaLastReadAt, runtimeUpdateQnaPostStatus, runtimeAcceptQnaComment, runtimeMarkQnaHelpful, runtimeUpdateUserOtp, runtimeUpdateUsername, runtimeUpdateMagnumCluster, runtimeUpdateTroveInstance, runtimeUpdateZunContainer, runtimeUserHasCourseAccess, runtimeCreateMailLog, runtimeCreateMailCampaign, runtimeUpdateMailCampaignDelivery, runtimeRefreshMailCampaign, runtimeRecordMailCampaignEvent, runtimeCreateLuckyDrawEvent, runtimeCreateLuckyDrawReward, runtimeDeleteLuckyDrawEvent, runtimeCreateCicdCredential, runtimeCreateCicdProject, runtimeCreateCicdRun, runtimeCreateCicdRunEvent, runtimeReplaceInternalImageCache, runtimeExportBackupData, runtimeFindCicdProjectById, runtimeFindCicdCredentialById, runtimeFindCicdRunById, runtimeFindHeatWorkloadTestJob, runtimeFindLuckyDrawEventById, runtimeGetLuckyDrawEventOverview, runtimeGetLuckyDrawStats, runtimeImportBackupData, runtimeAttemptLuckyDraw, runtimeListArenaScenarios, runtimeListCicdProjects, runtimeListCicdProjectsByUser, runtimeListCicdCredentialsByUser, runtimeListCicdRuns, runtimeListCicdRunsByUser, runtimeListLuckyDrawAttempts, runtimeListLuckyDrawEvents, runtimeListLuckyDrawRewardsByEvent, runtimeUpdateLuckyDrawEvent, runtimeUpdateLuckyDrawReward, runtimeUpdateCicdProject, runtimeUpdateCicdRun, runtimeDeleteCicdCredential, runtimeDeleteTerminalSessionRegistry, runtimeDeleteExpiredTerminalSessionRegistry, runtimeUpsertTerminalSessionRegistry, runtimeUpsertHeatWorkloadTestJob, runtimeMarkUserSessionDeviceWarned, runtimeUpsertUserSessionDevice } from "./db-runtime.js";
+import { runtimeConsumeInviteCode, runtimeConsumeRequestRateLimit, runtimeCreateConsultingRequest, runtimeCreatePublicQuoteInquiry, runtimeCreateDiscountCoupon, runtimeCreateCustomLabRequest, runtimeCreateTerminalReplaySession, runtimeAppendTerminalReplayEvent, runtimeDeleteZunContainer, runtimeDeleteMagnumCluster, runtimeDeleteTroveInstance, runtimeDeleteExpiredRequestRateLimits, runtimeCreateAdminAuditLog, runtimeCreateUserAccessLog, runtimeCreateUserAccessRestriction, runtimeRecordOpenstackResourceUsageSnapshot, runtimeCreateInviteCode, runtimeCreatePasswordResetPin, runtimeCreateNotice, runtimeCreateQnaComment, runtimeCreateQnaPost, runtimeCreateUserMessage, runtimeCreateSelfServiceVm, runtimeCreateSelfServiceProjectRequest, runtimeCreateCloudConsoleAction, runtimeCreateResourceDeletionJob, runtimeCreateUserTermsAgreements, runtimeRecordUserMarketingConsent, runtimeCreateUserNotification, runtimeCreateUser, runtimeCreateOauthAccount, runtimeCreateMagnumCluster, runtimeCreateTroveInstance, runtimeCreateZunContainer, runtimeDeleteCustomLabRequest, runtimeDeleteInviteCode, runtimeDeleteQnaComment, runtimeDeleteQnaPost, runtimeDeleteSelfServiceProjectRequests, runtimeDeleteSelfServiceVmRecords, runtimeDeleteUser, runtimeEnsureSchema, runtimeFindAvailableInviteCode, runtimeFindDiscountCouponByCode, runtimeListDiscountCoupons, runtimeCreateTermsVersion, runtimeFindTermsVersionById, runtimeListActiveTermsVersions, runtimeListTermsVersions, runtimeListOpenstackResourceUsageTrend, runtimeListCloudConsoleActions, runtimeListResourceDeletionJobs, runtimeUpdateCloudConsoleAction, runtimeUpdateResourceDeletionJob, runtimeUpdateTermsVersion, runtimeFindConsultingRequestById, runtimeFindCustomLabRequestById, runtimeFindActiveSelfServiceVmByUserId, runtimeFindSelfServiceProjectRequestById, runtimeFindCloudConsoleActionById, runtimeFindInviteCodeById, runtimeFindNoticeById, runtimeFindQnaPostById, runtimeFindActivePasswordResetPinByUserId, runtimeFindPublicQuoteInquiryById, runtimeFindSelfServiceVmById, runtimeFindUserById, runtimeFindUserByEmail, runtimeFindUserByUsername, runtimeFindOauthAccount, runtimeGetActiveUserAccessRestriction, runtimeResolveActiveAccountSharingRestriction, runtimeFindMagnumClusterById, runtimeFindTroveInstanceById, runtimeFindTerminalReplaySessionById, runtimeFindTerminalSessionRegistryById, runtimeFindZunContainerById, runtimeGetInternalImageCacheStatus, runtimeGetDatabasePoolStats, runtimeProbeDatabase, runtimeCloseDatabasePool, runtimeGetPlatformStatus, runtimeGetLlmQuotaStatus, runtimeListInternalImageCache, runtimeListTerminalReplayEvents, runtimeListMailLogs, runtimeListMailCampaigns, runtimeFindMailCampaignById, runtimeClaimNextMailCampaign, runtimeListQueuedMailCampaignDeliveries, runtimeListUserMessages, runtimeListAllUserMessages, runtimeListPublishedLabRoutes, runtimeListConsultingRequests, runtimeListConsultingRequestsByUser, runtimeListDiscountCouponsByUser, runtimeListCustomLabRequests, runtimeListCustomLabRequestsByUser, runtimeListMarketingSurveys, runtimeFindMarketingSurveyById, runtimeCreateMarketingSurvey, runtimeUpdateMarketingSurvey, runtimeDeleteMarketingSurvey, runtimeSubmitMarketingSurveyVote, runtimeListMarketingSurveySubmissions, runtimeListInviteCodes, runtimeListSelfServiceVms, runtimeListSelfServiceVmsByUser, runtimeListSelfServiceProjectRequests, runtimeListSelfServiceProjectRequestsByUser, runtimeListNotices, runtimeListUserNotifications, runtimeListPasswordResetPins, runtimeListPublicQuoteInquiries, runtimeGetUserAccessStats, runtimeConsumeLlmQuota, runtimeListQnaPosts, runtimeListUsers, runtimeListMagnumClusters, runtimeListMagnumClustersByUser, runtimeListHeatWorkloadTestJobs, runtimeListTroveInstances, runtimeListTroveInstancesByUser, runtimeListUserAccessLogs, runtimeListAdminAuditLogs, runtimeListActiveUserSessionDevices, runtimeListZunContainers, runtimeListZunContainersByUser, runtimeMarkApprovalMailSent, runtimeMarkAllUserNotificationsRead, runtimeMarkUserMessageRead, runtimeClearUserNotifications, runtimeArchiveUserMessage, runtimeDeleteUserMessage, runtimeDeleteUserMessageById, runtimeDeleteUserNotification, runtimeUpdateUserMessageCleanupStatus, runtimeMarkUserNotificationRead, runtimeAnswerQnaPost, runtimeDeleteNotice, runtimeUpdateNotice, runtimeUpdateConsultingRequest, runtimeUpdatePublicQuoteInquiry, runtimeUpdateDiscountCoupon, runtimeUpdateCustomLabRequest, runtimeUpdateCustomLabRequestStatus, runtimeUpdateInviteCode, runtimeFinishTerminalReplaySession, runtimeUpdatePlatformStatus, runtimeUpdateSelfServiceVm, runtimeUpdateSelfServiceProjectRequest, runtimeWithExternalPortLock, runtimeUpdateUserAccess, runtimeIncrementPasswordResetPinAttempt, runtimeConsumePasswordResetPin, runtimeUpdateUserPassword, runtimeUpdateUserProfile, runtimeUpdateUserQnaLastReadAt, runtimeUpdateQnaPostStatus, runtimeAcceptQnaComment, runtimeMarkQnaHelpful, runtimeUpdateUserOtp, runtimeUpdateUsername, runtimeUpdateMagnumCluster, runtimeUpdateTroveInstance, runtimeUpdateZunContainer, runtimeCreateMailLog, runtimeCreateMailCampaign, runtimeUpdateMailCampaignDelivery, runtimeRefreshMailCampaign, runtimeRecordMailCampaignEvent, runtimeCreateLuckyDrawEvent, runtimeCreateLuckyDrawReward, runtimeDeleteLuckyDrawEvent, runtimeCreateCicdCredential, runtimeCreateCicdProject, runtimeCreateCicdRun, runtimeCreateCicdRunEvent, runtimeReplaceInternalImageCache, runtimeExportBackupData, runtimeFindCicdProjectById, runtimeFindCicdCredentialById, runtimeFindCicdRunById, runtimeFindHeatWorkloadTestJob, runtimeFindLuckyDrawEventById, runtimeGetLuckyDrawEventOverview, runtimeGetLuckyDrawStats, runtimeImportBackupData, runtimeAttemptLuckyDraw, runtimeListCicdProjects, runtimeListCicdProjectsByUser, runtimeListCicdCredentialsByUser, runtimeListCicdRuns, runtimeListCicdRunsByUser, runtimeListLuckyDrawAttempts, runtimeListLuckyDrawEvents, runtimeListLuckyDrawRewardsByEvent, runtimeUpdateLuckyDrawEvent, runtimeUpdateLuckyDrawReward, runtimeUpdateCicdProject, runtimeUpdateCicdRun, runtimeDeleteCicdCredential, runtimeDeleteTerminalSessionRegistry, runtimeDeleteExpiredTerminalSessionRegistry, runtimeUpsertTerminalSessionRegistry, runtimeUpsertHeatWorkloadTestJob, runtimeMarkUserSessionDeviceWarned, runtimeUpsertUserSessionDevice } from "./db-runtime.js";
 import { configureOpenstackCloudTargets, createHeatStack, createOpenstackKeypair, deleteHeatStack, deleteOpenstackServer, deleteOpenstackKeypair, listHeatStacks, cleanupPocAdvancedResources, ensureSelfServiceOpenstackProject, cleanupSelfServiceOpenstackProject, cleanupUnusedCinderVolumes, validateSelfServiceOpenstackProjectAutomation, probeOpenstackQuota, getOpenstackProjectSnapshot, createOpenstackServerDirect, canUseManagedIso, uploadOpenstackIso, completeOpenstackIsoInstall, ensureCloudConsoleSshSecurityGroup, attachOpenstackServerNetwork, detachOpenstackServerNetwork, addOpenstackServerSecurityGroup, removeOpenstackServerSecurityGroup, createOpenstackVolume, deleteOpenstackVolume, attachOpenstackVolume, detachOpenstackVolume, createOpenstackNetwork, deleteOpenstackNetwork, createOpenstackSubnet, deleteOpenstackSubnet, createOpenstackRouter, deleteOpenstackRouter, connectOpenstackRouterSubnet, disconnectOpenstackRouterSubnet, allocateOpenstackFloatingIp, updateOpenstackFloatingIpPort, releaseOpenstackFloatingIp, createOpenstackSecurityGroup, deleteOpenstackSecurityGroup, createOpenstackSecurityGroupRule, deleteOpenstackSecurityGroupRule, createOpenstackLoadBalancer, deleteOpenstackLoadBalancer, createOpenstackLoadBalancerListener, deleteOpenstackLoadBalancerListener, createOpenstackLoadBalancerPool, deleteOpenstackLoadBalancerPool, createOpenstackLoadBalancerMember, deleteOpenstackLoadBalancerMember, createOpenstackLoadBalancerHealthMonitor, deleteOpenstackLoadBalancerHealthMonitor, createOpenstackAlarm, deleteOpenstackAlarm, createOpenstackReservation, deleteOpenstackReservation, createOpenstackShare, deleteOpenstackShare, rebootOpenstackServer, resolveHeatStack, listOpenstackHypervisorUsage, resolveOpenstackServer, listOpenstackServersByNamePrefix, startOpenstackServer, stopOpenstackServer, createOpenstackRemoteConsole, probeOpenstackApiEndpoints, resolveMetricResourceForInstance, resolveInstanceMetricResource, resolveInstanceDiskMetricResources, resolveFlavorByName, listFlavorDetails, fetchMetricMeasures } from "./heat.js";
 import { createMagnumCluster as createMagnumRemoteCluster, configureMagnumOpenstackCloud, deleteMagnumCluster as deleteMagnumRemoteCluster, fetchMagnumCluster, getMagnumClusterKubeconfig, listMagnumClusterTemplates, listMagnumRemoteClusters, probeMagnumApi } from "./magnum.js";
 import { configureTroveOpenstackCloud, createTroveInstance as createTroveRemoteInstance, deleteTroveInstance as deleteTroveRemoteInstance, fetchTroveInstance, listTroveDatastores, probeTroveApi } from "./trove.js";
@@ -540,10 +540,7 @@ function normalizeSshPublicHost(value, fallback = "") {
   if (!normalized || normalized === "example.com") return String(fallback || "").trim();
   return raw;
 }
-function isWindowsLabProfile(courseOrLab) {
-  const text = [courseOrLab?.osType, courseOrLab?.guestOs, courseOrLab?.platform, courseOrLab?.consoleType, courseOrLab?.shellType, courseOrLab?.imageName, courseOrLab?.heatTemplateName, courseOrLab?.courseHeatTemplateName, courseOrLab?.title, courseOrLab?.courseTitle, courseOrLab?.summary, courseOrLab?.courseSummary, courseOrLab?.category, courseOrLab?.courseCategory].filter(Boolean).join(" ").toLowerCase();
-  return /\bwindows\b|\bwinrm\b|\brdp\b|윈도우|윈도/.test(text);
-}
+
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 function encodeBase32(buffer) {
   let bits = 0;
@@ -905,34 +902,29 @@ const TOTP_TIME_STEP_SECONDS = 30;
 const TOTP_WINDOW_STEPS = 3;
 const TOTP_DIGITS = 6;
 const LAB_BASE_DOMAIN = process.env.LAB_BASE_DOMAIN || "apps.example.com";
-const LAB_IDLE_TIMEOUT_MS = 1000 * 60 * 60 * 3;
 
-const LAB_CLEANUP_INTERVAL_MS = 1000 * 60 * 5;
-const LAB_TRAFFIC_SYNC_INTERVAL_MS = 1000 * 60 * 5;
-const LAB_TRAFFIC_SYNC_ENABLED = parseEnvFlag(process.env.LAB_TRAFFIC_SYNC_ENABLED, true);
-const LAB_TRAFFIC_SYNC_FAILURE_BACKOFF_MS = Math.max(LAB_TRAFFIC_SYNC_INTERVAL_MS, Number(process.env.LAB_TRAFFIC_SYNC_FAILURE_BACKOFF_MS || 0) || Number(process.env.LAB_TRAFFIC_SYNC_FAILURE_BACKOFF_SECONDS || 15 * 60) * 1000);
+
+
+
+
+
 const LAB_PROVISIONING_MISSING_STACK_GRACE_MS = Math.max(1000 * 60, Number(process.env.LAB_PROVISIONING_MISSING_STACK_GRACE_MS || 0) || Number(process.env.LAB_PROVISIONING_MISSING_STACK_GRACE_SECONDS || 300) * 1000);
 
 const LAB_UNUSED_VM_RETENTION_MS = Math.max(1000 * 60 * 60 * 24, Number(process.env.LAB_UNUSED_VM_RETENTION_MS || 0) || Number(process.env.LAB_UNUSED_VM_RETENTION_DAYS || 7) * 24 * 60 * 60 * 1000);
 const LAB_UNUSED_VM_RETENTION_MINUTES = Math.round(LAB_UNUSED_VM_RETENTION_MS / 60000);
-const LAB_REQUEST_ARCHIVE_RETENTION_DAYS = Math.max(1, Math.min(3650, Math.round(Number(process.env.LAB_REQUEST_ARCHIVE_RETENTION_DAYS || 30) || 30)));
-const LAB_REQUEST_ARCHIVE_INTERVAL_MS = Math.max(1000 * 60 * 60, Number(process.env.LAB_REQUEST_ARCHIVE_INTERVAL_MS || 0) || Number(process.env.LAB_REQUEST_ARCHIVE_INTERVAL_HOURS || 24) * 60 * 60 * 1000);
+
+
 const LAB_UNUSED_VM_AUTO_PAUSE_MS = Math.max(1000 * 60 * 60 * 24, Number(process.env.LAB_UNUSED_VM_AUTO_PAUSE_MS || 0) || Number(process.env.LAB_UNUSED_VM_AUTO_PAUSE_DAYS || 1) * 24 * 60 * 60 * 1000);
 const LAB_UNUSED_VM_AUTO_PAUSE_MINUTES = Math.round(LAB_UNUSED_VM_AUTO_PAUSE_MS / 60000);
-const LAB_TERMINATION_RECONCILE_WINDOW_MS = Math.max(1000 * 60 * 10, Number(process.env.LAB_TERMINATION_RECONCILE_WINDOW_MS || 0) || Number(process.env.LAB_TERMINATION_RECONCILE_HOURS || 24) * 60 * 60 * 1000);
-const LAB_ORPHAN_HEAT_CLEANUP_INTERVAL_MS = Math.max(1000 * 60 * 60, Number(process.env.LAB_ORPHAN_HEAT_CLEANUP_INTERVAL_MS || 0) || Number(process.env.LAB_ORPHAN_HEAT_CLEANUP_INTERVAL_HOURS || 24) * 60 * 60 * 1000);
-const LAB_ORPHAN_HEAT_MIN_AGE_MS = Math.max(1000 * 60 * 60, Number(process.env.LAB_ORPHAN_HEAT_MIN_AGE_MS || 0) || Number(process.env.LAB_ORPHAN_HEAT_MIN_AGE_HOURS || 24) * 60 * 60 * 1000);
+
+
+
 const CINDER_UNUSED_VOLUME_CLEANUP_INTERVAL_MS = Math.max(1000 * 60 * 60, Number(process.env.CINDER_UNUSED_VOLUME_CLEANUP_INTERVAL_MS || 0) || Number(process.env.CINDER_UNUSED_VOLUME_CLEANUP_INTERVAL_HOURS || 24) * 60 * 60 * 1000);
 const CINDER_UNUSED_VOLUME_CLEANUP_TICK_MS = Math.min(CINDER_UNUSED_VOLUME_CLEANUP_INTERVAL_MS, 1000 * 60 * 30);
 const CINDER_UNUSED_VOLUME_MIN_AGE_HOURS = Math.max(1, Number(process.env.CINDER_UNUSED_VOLUME_MIN_AGE_HOURS || 24) || 24);
 const CINDER_UNUSED_VOLUME_CLEANUP_ENABLED = parseEnvFlag(process.env.CINDER_UNUSED_VOLUME_CLEANUP_ENABLED, true);
 const CINDER_UNUSED_VOLUME_CLEANUP_DRY_RUN = parseEnvFlag(process.env.CINDER_UNUSED_VOLUME_CLEANUP_DRY_RUN, false);
-const labTrafficSyncCircuit = {
-  failureCount: 0,
-  suppressedUntil: 0,
-  lastMessage: "",
-  lastLoggedAt: 0
-};
+
 const DEFAULT_TERMINAL_SESSION_IDLE_TIMEOUT_MS = 1000 * 60 * 10;
 const TERMINAL_SESSION_IDLE_TIMEOUT_MS = Math.max(1000 * 60, Number(process.env.TERMINAL_SESSION_IDLE_TIMEOUT_MS || 0) || Number(process.env.TERMINAL_SESSION_IDLE_MINUTES || 0) * 60 * 1000 || Number(process.env.TERMINAL_SESSION_TTL_MS || 0) || Number(process.env.TERMINAL_SESSION_TTL_MINUTES || 0) * 60 * 1000 || DEFAULT_TERMINAL_SESSION_IDLE_TIMEOUT_MS);
 const TERMINAL_WEBSOCKET_HEARTBEAT_INTERVAL_MS = Math.max(5000, Number(process.env.TERMINAL_WEBSOCKET_HEARTBEAT_INTERVAL_MS || 25000) || 25000);
@@ -954,7 +946,7 @@ function attachTerminalWebSocketHeartbeat(ws, terminalSession) {
   ws.on("pong", () => {
     ws.isAlive = true;
     markTerminalSessionActivity(terminalSession);
-    void touchTerminalSessionResource(terminalSession);
+
   });
 }
 const terminalWebSocketHeartbeatTimer = setInterval(() => {
@@ -992,7 +984,7 @@ function sanitizeTerminalReplayMetadata(value) {
 async function startTerminalReplayRecording(terminalSession, metadata = {}) {
   if (!TERMINAL_REPLAY_ENABLED || terminalSession?.replaySessionId) return;
   try {
-    const [platformStatus, course] = await Promise.all([runtimeGetPlatformStatus(), terminalSession.courseId ? runtimeFindCourseById(terminalSession.courseId) : Promise.resolve(null)]);
+    const [platformStatus, course] = await Promise.all([runtimeGetPlatformStatus(), terminalSession.courseId ? null : Promise.resolve(null)]);
     const courseMode = String(course?.terminalReplayMode || "inherit").trim();
     const enabled = courseMode === "enabled" ? true : courseMode === "disabled" ? false : platformStatus?.terminalReplayEnabled !== false;
     if (!enabled) {
@@ -1441,8 +1433,8 @@ const SELF_SERVICE_VM_PROJECT_QUOTA_DEFAULTS = {
 };
 const ZUN_DEFAULT_NETWORK = process.env.ZUN_DEFAULT_NETWORK || "net-infra";
 const ZUN_DEFAULT_SECURITY_GROUP = process.env.ZUN_DEFAULT_SECURITY_GROUP || "default";
-const ZUN_DEFAULT_SSH_USER = process.env.ZUN_DEFAULT_SSH_USER || "student";
-const ZUN_DEFAULT_SSH_PASSWORD = process.env.ZUN_DEFAULT_SSH_PASSWORD || "";
+
+
 const ZUN_STALE_CONTAINER_CLEANUP_ENABLED = parseEnvFlag(process.env.ZUN_STALE_CONTAINER_CLEANUP_ENABLED, true);
 const ZUN_STALE_CONTAINER_RETENTION_DAYS = Math.max(7, Number(process.env.ZUN_STALE_CONTAINER_RETENTION_DAYS || 30) || 30);
 const ZUN_STALE_CONTAINER_CLEANUP_INTERVAL_MS = Math.max(60 * 60 * 1000, Number(process.env.ZUN_STALE_CONTAINER_CLEANUP_INTERVAL_MS || 6 * 60 * 60 * 1000) || 6 * 60 * 60 * 1000);
@@ -1512,7 +1504,7 @@ const BACKUP_DIRECTORY_TARGETS = [{
   key: "labExamSnapshots",
   path: LAB_EXAM_SNAPSHOTS_DIR
 }];
-const BACKUP_FILE_TARGETS = [];
+
 
 const BUNDLED_HEAT_TEMPLATE_NAMES = ["cka-exam.yaml", "kubernetes-cluster-build-exam.yaml", "example-lab.yaml", "kubeflow.yaml", "linux-shell-lab.yaml", "linux-shell-lab-2node.yaml", "openshift-install-lab.yaml", "openshift-upi-physical-lab.yaml", "self-service-vm-dynamic.yaml", "windows-rdp-lab.yaml"];
 function heatTemplateUsesYamlMergeKeys(content) {
@@ -1680,23 +1672,7 @@ async function readBackupDirectoryEntries(rootPath, budget = null) {
     skippedEntries
   };
 }
-async function readBackupFileEntry(filePath, budget = null) {
-  try {
-    const stats = await fs.stat(filePath);
-    if (!stats.isFile()) return null;
-    assertBackupFileBudget(budget, stats.size, path.basename(filePath));
-    const buffer = await fs.readFile(filePath);
-    return {
-      relativePath: path.relative(path.resolve(__dirname, ".."), filePath).replaceAll("\\", "/"),
-      size: stats.size,
-      modifiedAt: stats.mtime.toISOString(),
-      encoding: "base64",
-      contentBase64: buffer.toString("base64")
-    };
-  } catch {
-    return null;
-  }
-}
+
 function normalizeBackupRelativePath(relativePath) {
   const normalized = String(relativePath || "").replaceAll("\\", "/").trim();
   if (!normalized || normalized.startsWith("/") || normalized.includes("\0")) {
@@ -1741,18 +1717,7 @@ async function writeBackupDirectoryEntries(rootPath, snapshot, budget = null) {
     await fs.writeFile(destinationPath, Buffer.from(String(entry?.contentBase64 || ""), "base64"));
   }
 }
-async function writeBackupFileEntry(filePath, snapshot, budget = null) {
-  await fs.mkdir(path.dirname(filePath), {
-    recursive: true
-  });
-  if (!snapshot?.contentBase64) {
-    await deleteIfExists(filePath);
-    return;
-  }
-  const decodedBytes = estimateBase64DecodedBytes(snapshot.contentBase64);
-  assertBackupFileBudget(budget, decodedBytes, path.basename(filePath));
-  await fs.writeFile(filePath, Buffer.from(String(snapshot.contentBase64 || ""), "base64"));
-}
+
 function validateBackupFileSnapshots(bundle) {
   const budget = createBackupFileBudget();
   for (const target of BACKUP_DIRECTORY_TARGETS) {
@@ -1763,12 +1728,7 @@ function validateBackupFileSnapshots(bundle) {
       assertBackupFileBudget(budget, estimateBase64DecodedBytes(entry?.contentBase64 || ""), relativePath);
     }
   }
-  for (const target of BACKUP_FILE_TARGETS) {
-    const snapshot = bundle?.files?.[target.key];
-    if (snapshot?.contentBase64) {
-      assertBackupFileBudget(budget, estimateBase64DecodedBytes(snapshot.contentBase64), path.basename(target.path));
-    }
-  }
+
 }
 async function restoreBackupBundle(bundle) {
   if (bundle?.meta?.format !== "terminal-lab-backup-v1") {
@@ -1780,9 +1740,7 @@ async function restoreBackupBundle(bundle) {
   for (const target of BACKUP_DIRECTORY_TARGETS) {
     await writeBackupDirectoryEntries(target.path, bundle?.files?.[target.key], budget);
   }
-  for (const target of BACKUP_FILE_TARGETS) {
-    await writeBackupFileEntry(target.path, bundle?.files?.[target.key], budget);
-  }
+
   await syncPublishedLabRoutes();
 }
 async function buildBackupBundle(requestUser) {
@@ -1792,9 +1750,7 @@ async function buildBackupBundle(requestUser) {
   for (const target of BACKUP_DIRECTORY_TARGETS) {
     files[target.key] = await readBackupDirectoryEntries(target.path, budget);
   }
-  for (const target of BACKUP_FILE_TARGETS) {
-    files[target.key] = await readBackupFileEntry(target.path, budget);
-  }
+
   const skippedFileEntries = Object.entries(files).flatMap(([key, snapshot]) => Array.isArray(snapshot?.skippedEntries) ? snapshot.skippedEntries.map(entry => ({
     key,
     ...entry
@@ -1952,40 +1908,7 @@ async function recoverTerminalSessionFromRegistry(sessionId, requestUserId) {
     await persistTerminalSessionRegistry(terminalSession);
     return terminalSession;
   }
-  const lab = await runtimeFindLabRequestById(saved.labRequestId || saved.labId).catch(() => null);
-  if (!lab || Number(lab.userId || 0) !== Number(requestUserId || 0) || String(lab.status || "").toLowerCase() !== "running") {
-    return null;
-  }
-  if (!labHasTerminalHost(lab, saved.host)) return null;
-  const course = await runtimeFindCourseById(lab.courseId).catch(() => null);
-  if (!course) return null;
-  const {
-    resolvedUsername,
-    resolvedPassword
-  } = resolveLabTerminalCredentials(lab, course, saved.username, "");
-  if (!resolvedUsername || !resolvedPassword) return null;
-  const terminalSession = {
-    id: saved.id,
-    userId: requestUserId,
-    labId: lab.id,
-    courseId: lab.courseId || saved.courseId,
-    host: saved.host,
-    hostType: saved.hostType || "fixed",
-    nodeId: saved.nodeId || "",
-    nodeName: saved.nodeName || "",
-    username: resolvedUsername,
-    password: resolvedPassword,
-    port: Math.max(1, Number(saved.port || course.terminalSshPort || 22) || 22),
-    jumpHost: saved.jumpHost || String(course.terminalJumpHost || "").trim(),
-    jumpUser: saved.jumpUser || String(course.terminalJumpUser || "").trim(),
-    examSessionId: String(saved.examSessionId || lab.examSessionId || "").trim(),
-    replayMetadata: saved.replayMetadata || {},
-    createdAt: Date.now(),
-    lastActivityAt: Date.now()
-  };
-  terminalSessions.set(saved.id, terminalSession);
-  await persistTerminalSessionRegistry(terminalSession);
-  return terminalSession;
+  return null;
 }
 function findReusableSshTerminalSession({
   userId,
@@ -2052,73 +1975,10 @@ function getTerminalSessionClosePayload(reason = "idle-timeout") {
     message: "랩 상태가 변경되어 터미널 세션이 종료되었습니다."
   };
 }
-function closeTerminalSessionsForLab(labId, reason = "lab-updated") {
-  const normalizedLabId = Number(labId || 0);
-  if (!normalizedLabId) return;
-  for (const [sessionId, terminalSession] of terminalSessions.entries()) {
-    if (Number(terminalSession?.labId || 0) !== normalizedLabId) continue;
-    try {
-      if (typeof terminalSession.closeForIdle === "function") {
-        terminalSession.closeForIdle(reason);
-      } else if (terminalSession.ws && terminalSession.ws.readyState === WebSocket.OPEN) {
-        terminalSession.ws.send(JSON.stringify({
-          type: "exit",
-          exitCode: 0,
-          signal: reason
-        }));
-        terminalSession.ws.close();
-      }
-    } catch {}
-    forgetTerminalSession(sessionId);
-  }
-}
 
-async function closeExamTerminalSessionIfUnavailable(terminalSession, fallbackReason = "exam-closed") {
-  if (String(terminalSession?.resourceType || "lab") !== "lab") return false;
-  const examSessionId = String(terminalSession?.examSessionId || "").trim();
-  if (!examSessionId) return false;
-  const examSession = await runtimeFindLabExamSessionById(examSessionId).catch(() => null);
-  const status = String(examSession?.status || "").toLowerCase();
-  const expiresAtMs = examSession?.expiresAt && !Number.isNaN(Date.parse(examSession.expiresAt)) ? Date.parse(examSession.expiresAt) : 0;
-  const expired = Boolean(expiresAtMs && expiresAtMs <= Date.now());
-  // A terminal may connect just before console-ready promotes an exam from
-  // ready to running. Creation authorization is checked by the API route, so
-  // keeping an already-authorized session alive during setup is safe and
-  // avoids closing CKA terminals in that short transition window.
-  if (examSession && ["preparing", "ready", "running"].includes(status) && !expired) return false;
-  const reason = expired ? "exam-timeout" : fallbackReason;
-  try {
-    if (typeof terminalSession.closeForIdle === "function") {
-      terminalSession.closeForIdle(reason);
-    } else if (terminalSession.ws && terminalSession.ws.readyState === WebSocket.OPEN) {
-      terminalSession.ws.send(JSON.stringify({
-        type: "exit",
-        exitCode: 0,
-        signal: reason
-      }));
-      terminalSession.ws.close();
-    }
-  } catch {}
-  forgetTerminalSession(terminalSession.id);
-  if (terminalSession?.labId) closeTerminalSessionsForLab(terminalSession.labId, reason);
-  return true;
-}
-function touchTerminalSessionResource(terminalSession) {
-  if (String(terminalSession?.resourceType || "lab") !== "lab") return Promise.resolve(null);
-  const now = Date.now();
-  if (terminalSession.resourceTouchPending) return terminalSession.resourceTouchPending;
-  if (terminalSession.lastResourceTouchedAt && now - Number(terminalSession.lastResourceTouchedAt || 0) < TERMINAL_RESOURCE_TOUCH_INTERVAL_MS) {
-    return Promise.resolve(null);
-  }
-  terminalSession.lastResourceTouchedAt = now;
-  terminalSession.resourceTouchPending = touchLab(terminalSession.labId).catch(error => {
-    console.warn("[terminal-session] failed to touch lab resource", error?.message || error);
-    return null;
-  }).finally(() => {
-    terminalSession.resourceTouchPending = null;
-  });
-  return terminalSession.resourceTouchPending;
-}
+
+
+
 const appLogBuffer = [];
 const apiStatusCache = {
   checkedAt: 0,
@@ -2135,7 +1995,7 @@ function invalidateOpenstackStatusCaches() {
 const accessActivityCache = new Map();
 const ACCESS_ACTIVE_WITHIN_MINUTES = Math.max(1, Number(process.env.ACCESS_ACTIVE_WITHIN_MINUTES || 2) || 2);
 const ACCESS_ACTIVITY_INTERVAL_MS = Math.max(30_000, Math.min(ACCESS_ACTIVE_WITHIN_MINUTES * 60_000, Number(process.env.ACCESS_ACTIVITY_INTERVAL_MS || 60_000) || 60_000));
-const TERMINAL_RESOURCE_TOUCH_INTERVAL_MS = 1000 * 60;
+
 const TERMINAL_REPLAY_PENDING_EVENT_LIMIT = 1000;
 const ACCOUNT_SHARING_ACTIVE_WINDOW_MS = 1000 * 60 * 15;
 const ACCOUNT_SHARING_WARNING_GRACE_MS = 1000 * 60 * 5;
@@ -3592,6 +3452,7 @@ app.post("/api/admin/lucky-draw/events/:id/rewards", requireAdmin, async (req, r
     });
     return;
   }
+  if (!["message","discount_coupon"].includes(String(req.body?.rewardType||"message"))) return res.status(400).json({message:"지원하지 않는 보상 유형입니다."});
   const reward = await runtimeCreateLuckyDrawReward({
     eventId: event.id,
     rewardType: req.body?.rewardType,
@@ -3623,6 +3484,7 @@ app.post("/api/admin/lucky-draw/events/:id/rewards", requireAdmin, async (req, r
   });
 });
 app.patch("/api/admin/lucky-draw/rewards/:id", requireAdmin, async (req, res) => {
+  if (req.body?.rewardType && !["message","discount_coupon"].includes(String(req.body.rewardType))) return res.status(400).json({message:"지원하지 않는 보상 유형입니다."});
   const reward = await runtimeUpdateLuckyDrawReward(req.params.id, {
     rewardType: req.body?.rewardType,
     label: req.body?.label,
@@ -5015,17 +4877,7 @@ app.post("/api/auth/signup", signupRateLimiter, async (req, res) => {
       return;
     }
   }
-  let targetCourse = null;
-  const normalizedCourseCode = String(courseCode || "").trim();
-  if (normalizedCourseCode) {
-    targetCourse = await runtimeFindCourseByAccessCode(normalizedCourseCode);
-    if (!targetCourse || targetCourse.accessScope !== "code") {
-      res.status(400).json({
-        message: "유효하지 않은 과정 코드입니다."
-      });
-      return;
-    }
-  }
+  if(String(req.body?.courseCode||" ").trim())return res.status(400).json({code:"EDUCATION_NOT_INCLUDED",message:"교육 기능은 포함되지 않습니다."});
   const passwordHash = await bcrypt.hash(password, 10);
   const signupAutoApproved = Boolean(platformStatus?.signupAutoApproveEnabled);
   const user = await runtimeCreateUser({
@@ -5052,39 +4904,8 @@ app.post("/api/auth/signup", signupRateLimiter, async (req, res) => {
     ipAddress: req.ip || "",
     userAgent: req.get("user-agent") || ""
   });
-  if (targetCourse) {
-    await runtimeGrantUserCourseAccess(user.id, targetCourse.id, "signup_code");
-    await runtimeGrantExamEntitlement({
-      userId: user.id,
-      examCourseId: targetCourse.id,
-      source: "promotion",
-      metadata: {
-        grantedVia: "signup_code"
-      }
-    });
-    await grantPackageContents({
-      userId: user.id,
-      packageCourse: targetCourse,
-      source: "promotion"
-    });
-  }
-  if (matchedInvite?.courseId) {
-    await runtimeGrantUserCourseAccess(user.id, matchedInvite.courseId, "invite_code");
-    await runtimeGrantExamEntitlement({
-      userId: user.id,
-      examCourseId: matchedInvite.courseId,
-      source: "promotion",
-      metadata: {
-        grantedVia: "invite_code"
-      }
-    });
-    const inviteCourse = await runtimeFindCourseById(matchedInvite.courseId);
-    await grantPackageContents({
-      userId: user.id,
-      packageCourse: inviteCourse,
-      source: "promotion"
-    });
-  }
+
+
   if (matchedInvite) {
     await runtimeConsumeInviteCode(matchedInvite.id);
   }
@@ -5095,10 +4916,7 @@ app.post("/api/auth/signup", signupRateLimiter, async (req, res) => {
   }) : buildSignupPendingMail({
     name: name.trim(),
     username: username.trim(),
-    signupReason: normalizedSignupReason,
-    targetCourseTitle: targetCourse?.title || "",
-    inviteCourseTitle: matchedInvite?.courseTitle || "",
-    welcomeCouponCode: welcomeCoupon?.code || "",
+    signupReason: normalizedSignupReason,    welcomeCouponCode: welcomeCoupon?.code || "",
     welcomeCouponBenefitLabel: welcomeCoupon ? renderCouponBenefitLabel(welcomeCoupon.discountType, welcomeCoupon.discountValue) : ""
   });
   await sendMailNotification({
@@ -6425,26 +6243,8 @@ app.post("/api/admin/cicd/projects/:id/runs", requireAdmin, async (req, res) => 
   }
 });
 
-function normalizeExamAccessPolicy(raw = {}) {
-  const source = raw && typeof raw === "object" ? raw : {};
-  const mode = ["course_access", "entitlement", "required_courses"].includes(String(source.mode || "").trim()) ? String(source.mode).trim() : "course_access";
-  const requiredCourseIds = Array.from(new Set((Array.isArray(source.requiredCourseIds) ? source.requiredCourseIds : []).map(value => Number(value)).filter(value => Number.isInteger(value) && value > 0)));
-  return {
-    mode,
-    requiredCourseIds,
-    requiredCourseMatch: source.requiredCourseMatch === "any" ? "any" : "all",
-    allowFree: source.allowFree !== false,
-    allowPromotion: source.allowPromotion !== false,
-    entitlementDays: Math.max(0, Math.min(3650, Number(source.entitlementDays || 0) || 0)),
-    refundBlocksNewAttempts: source.refundBlocksNewAttempts !== false,
-    guidance: String(source.guidance || "").trim().slice(0, 500)
-  };
-}
-async function resolvePurchasedExamEntitlementExpiry(courseId) {
-  const [writtenExam, labExam] = await Promise.all([loadWrittenExam(courseId), loadLabExam(courseId)]);
-  const days = Math.max(0, ...[writtenExam, labExam].filter(Boolean).map(exam => normalizeExamAccessPolicy(exam.accessPolicy).entitlementDays));
-  return days > 0 ? new Date(Date.now() + days * 86400000).toISOString() : null;
-}
+
+
 
 app.patch("/api/auth/profile", requireAuth, async (req, res) => {
   const name = String(req.body?.name || "").trim();
@@ -6656,37 +6456,7 @@ app.get("/api/notices", async (_req, res) => {
     notices: await runtimeListNotices()
   });
 });
-async function grantPackageContents({
-  userId,
-  packageCourse,
-  sourcePaymentId = null,
-  source = "admin",
-  grantedBy = null
-} = {}) {
-  if (String(packageCourse?.courseType || "") !== "package") return [];
-  const items = await runtimeGrantCoursePackageItems({
-    userId,
-    packageCourseId: packageCourse.id,
-    sourcePaymentId
-  });
-  for (const item of items.filter(entry => entry.courseType === "exam")) {
-    const expiresAt = await resolvePurchasedExamEntitlementExpiry(item.id);
-    await runtimeGrantExamEntitlement({
-      userId,
-      examCourseId: item.id,
-      source,
-      sourcePaymentId,
-      requiredCourseId: packageCourse.id,
-      expiresAt,
-      grantedBy,
-      metadata: {
-        grantedVia: "course_package",
-        packageCourseId: packageCourse.id
-      }
-    });
-  }
-  return items;
-}
+
 
 async function generateAdminCouponCode(prefix = "ADMIN") {
   for (let index = 0; index < 5; index += 1) {
@@ -6827,15 +6597,7 @@ app.post("/api/admin/coupons", requireAdmin, async (req, res) => {
     });
     return;
   }
-  if (courseId != null) {
-    const course = await runtimeFindCourseById(courseId);
-    if (!course) {
-      res.status(404).json({
-        message: "과정을 찾을 수 없습니다."
-      });
-      return;
-    }
-  }
+  if (courseId != null) return res.status(400).json({code:"EDUCATION_NOT_INCLUDED",message:"교육 연결 정보는 지원하지 않습니다."});
   if (!["percent", "fixed", "free"].includes(discountType)) {
     res.status(400).json({
       message: "지원하지 않는 할인 방식입니다."
@@ -14992,59 +14754,10 @@ async function resolveLabOpenstackServerIds(lab, platformStatus) {
       pushCandidate(`${stackName}-node-${index}`);
     }
   }
-  for (const candidate of candidates) {
-    if (!candidate.serverName) continue;
-    const resolved = await resolveOpenstackServer({
-      serverName: candidate.serverName,
-      fixedIp: candidate.fixedIp,
-      projectName
-    });
-    if (resolved?.id) {
-      serverIds.add(String(resolved.id).trim());
-    }
-  }
+
   return [...serverIds].filter(Boolean);
 }
-async function pauseLabResource(lab, course) {
-  const platformStatus = await runtimeGetPlatformStatus();
-  if (isContainerLabCourse(course)) {
-    const containerUuid = String(lab?.containerUuid || "").trim();
-    if (!containerUuid) {
-      throw new Error("일시 중지할 컨테이너 ID가 아직 준비되지 않았습니다.");
-    }
-    const stopped = await stopZunRemoteContainer({
-      apiUrl: platformStatus.zunApiUrl,
-      projectName: getZunProjectName(platformStatus),
-      containerUuid
-    });
-    const normalizedStatus = normalizeZunStatus(stopped?.status, "stopped");
-    return {
-      instanceIp: String(stopped?.addresses?.[0]?.address || lab.instanceIp || "").trim(),
-      instanceIps: Array.isArray(stopped?.addresses) && stopped.addresses.length ? stopped.addresses : lab.instanceIps || [],
-      vmNodes: Array.isArray(lab.vmNodes) ? lab.vmNodes.map(node => ({
-        ...node,
-        status: normalizedStatus
-      })) : [],
-      errorMessage: ""
-    };
-  }
-  const serverIds = await resolveLabOpenstackServerIds(lab, platformStatus);
-  if (!serverIds.length) {
-    throw new Error("일시 중지할 OpenStack 서버를 찾지 못했습니다.");
-  }
-  await Promise.all(serverIds.map(serverId => stopOpenstackServer({
-    serverId,
-    projectName: getServiceProjectName(platformStatus)
-  })));
-  return {
-    instanceUuid: serverIds[0],
-    vmNodes: Array.isArray(lab.vmNodes) ? lab.vmNodes.map(node => ({
-      ...node,
-      status: "stopped"
-    })) : [],
-    errorMessage: ""
-  };
-}
+
 
 app.get("/api/qna", requireAuth, async (_req, res) => {
   const posts = await runtimeListQnaPosts();
@@ -15054,6 +14767,19 @@ app.get("/api/qna", requireAuth, async (_req, res) => {
 });
 const ALLOWED_QNA_POST_TYPES = new Set(["question", "error", "tip", "resource", "project", "study", "free", "notice"]);
 const ALLOWED_QNA_STATUSES = new Set(["open", "in_progress", "solved", "closed"]);
+app.get("/api/domain-availability", requireAuth, async (req,res) => {
+  const id=Number(req.query.customLabRequestId||0);
+  let exclude=null;
+  if(id){
+    const resource=await runtimeFindCustomLabRequestById(id);
+    if(!resource||(Number(resource.userId)!==Number(req.user.id)&&!hasAdminPermission(req.user,"admin:labs")))return res.status(404).json({message:"자원을 찾을 수 없습니다."});
+    exclude={resourceType:"custom-lab",id};
+  }
+  const result=req.query.domainType==="custom"
+    ? await checkCustomDomainAvailability(req.query.customDomain||req.query.fqdn||"",exclude)
+    : await checkDomainAvailability(String(req.query.subdomain||""),exclude);
+  res.json(result);
+});
 app.post("/api/qna", requireAuth, async (req, res) => {
   const courseId = req.body?.courseId == null || req.body?.courseId === "" ? null : Number(req.body?.courseId);
   const labRequestId = req.body?.labRequestId == null || req.body?.labRequestId === "" ? null : Number(req.body?.labRequestId);
@@ -15074,48 +14800,8 @@ app.post("/api/qna", requireAuth, async (req, res) => {
     });
     return;
   }
-  if (courseId != null && Number.isFinite(courseId)) {
-    const course = await runtimeFindCourseById(courseId);
-    if (!course) {
-      res.status(404).json({
-        message: "과정 정보를 찾을 수 없습니다."
-      });
-      return;
-    }
-    if (!(await canAccessCourse(req.user, course))) {
-      res.status(403).json({
-        message: "이 과정에 접근할 권한이 없습니다."
-      });
-      return;
-    }
-  }
-  if (labRequestId != null) {
-    if (!Number.isFinite(labRequestId)) {
-      res.status(400).json({
-        message: "랩 정보가 올바르지 않습니다."
-      });
-      return;
-    }
-    lab = await runtimeFindLabRequestById(labRequestId);
-    if (!lab) {
-      res.status(404).json({
-        message: "연결할 랩 정보를 찾을 수 없습니다."
-      });
-      return;
-    }
-    if (req.user?.role !== "admin" && Number(lab.userId || 0) !== Number(req.user.id || 0)) {
-      res.status(403).json({
-        message: "본인 랩만 게시글에 연결할 수 있습니다."
-      });
-      return;
-    }
-    if (courseId != null && Number(lab.courseId || 0) !== Number(courseId)) {
-      res.status(400).json({
-        message: "선택한 과정과 랩 정보가 일치하지 않습니다."
-      });
-      return;
-    }
-  }
+  if (courseId != null) return res.status(400).json({code:"EDUCATION_NOT_INCLUDED",message:"교육 연결 정보는 지원하지 않습니다."});
+  if (labRequestId != null) return res.status(400).json({code:"EDUCATION_NOT_INCLUDED",message:"교육 연결 정보는 지원하지 않습니다."});
   const resolvedCourseId = courseId != null ? courseId : lab?.courseId ? Number(lab.courseId) : null;
   const post = await runtimeCreateQnaPost({
     userId: req.user.id,
@@ -15898,7 +15584,7 @@ app.get("/api/admin/openstack-cleanup/heat-stacks", requireAdmin, async (req, re
       projectName,
       limit,
       status: requestedStatus
-    }), runtimeListLabRequests(), runtimeListCustomLabRequests()]);
+    }), [], runtimeListCustomLabRequests()]);
     const referenceIndex = buildOpenstackHeatStackReferenceIndex({
       labs,
       customLabRequests,
@@ -15939,7 +15625,7 @@ app.post("/api/admin/openstack-cleanup/heat-stacks/delete", requireAdmin, async 
     const platformStatus = await runtimeGetPlatformStatus();
     const projectScope = normalizeOpenstackCleanupProjectScope(req.body?.projectScope);
     const projectName = getOpenstackCleanupProjectName(platformStatus, projectScope);
-    const [labs, customLabRequests] = await Promise.all([runtimeListLabRequests(), runtimeListCustomLabRequests()]);
+    const [labs, customLabRequests] = await Promise.all([[], runtimeListCustomLabRequests()]);
     const referenceIndex = buildOpenstackHeatStackReferenceIndex({
       labs,
       customLabRequests,
@@ -16027,44 +15713,14 @@ app.post("/api/admin/openstack-cleanup/heat-stacks/delete", requireAdmin, async 
 app.post("/api/admin/openstack-cleanup/retry", requireAdmin, async (req, res) => {
   const resourceType = String(req.body?.resourceType || "").trim();
   const resourceId = Number(req.body?.id || 0);
-  if (!resourceId || !["lab", "custom-lab"].includes(resourceType)) {
+  if (!resourceId || !["custom-lab"].includes(resourceType)) {
     res.status(400).json({
       message: "정리할 리소스 유형과 ID를 확인해 주세요."
     });
     return;
   }
   try {
-    if (resourceType === "lab") {
-      const lab = await runtimeFindLabRequestById(resourceId);
-      if (!lab) {
-        res.status(404).json({
-          message: "랩 요청을 찾을 수 없습니다."
-        });
-        return;
-      }
-      const updated = await terminateLab(lab);
-      await recordAdminAudit(req, {
-        action: "openstack.cleanup.retry",
-        targetType: "lab_request",
-        targetId: String(resourceId),
-        summary: "OpenStack 랩 자원 정리 재시도"
-      });
-      const report = await buildOpenstackCleanupReport();
-      if (String(updated.status || "").toLowerCase() === "terminating" && updated.errorMessage) {
-        res.status(500).json({
-          message: updated.errorMessage,
-          lab: updated,
-          report
-        });
-        return;
-      }
-      res.json({
-        message: "랩 자원 정리를 다시 실행했습니다.",
-        lab: updated,
-        report
-      });
-      return;
-    }
+
     const request = await runtimeFindCustomLabRequestById(resourceId);
     if (!request) {
       res.status(404).json({
@@ -16143,7 +15799,7 @@ app.post("/api/admin/openstack-cleanup/poc-advanced", requireAdmin, async (req, 
 app.post("/api/admin/openstack-cleanup/clear-exposure", requireAdmin, async (req, res) => {
   const resourceType = String(req.body?.resourceType || "").trim();
   const resourceId = Number(req.body?.id || 0);
-  if (!resourceId || !["lab", "custom-lab"].includes(resourceType)) {
+  if (!resourceId || !["custom-lab"].includes(resourceType)) {
     res.status(400).json({
       message: "노출값을 정리할 리소스 유형과 ID를 확인해 주세요."
     });
@@ -16177,7 +15833,7 @@ app.post("/api/admin/openstack-cleanup/clear-exposures", requireAdmin, async (re
   const targets = rawItems.map(item => ({
     resourceType: String(item?.resourceType || "").trim(),
     id: Number(item?.id || 0)
-  })).filter(item => item.id && ["lab", "custom-lab"].includes(item.resourceType));
+  })).filter(item => item.id && ["custom-lab"].includes(item.resourceType));
   if (!targets.length) {
     if (cleanupAll) {
       res.json({
@@ -18112,7 +17768,7 @@ app.delete("/api/admin/heat-templates/:name", requireAdmin, async (req, res) => 
     });
     return;
   }
-  const courses = await runtimeListCourses();
+  const courses = await [];
   const usedBy = courses.filter(course => String(course.heatTemplateName || "").trim() === name);
   if (usedBy.length) {
     res.status(400).json({
@@ -18712,7 +18368,7 @@ wss.on("connection", async (ws, _request, terminalSession) => {
       } catch {}
       forgetTerminalSession(terminalSession.id);
     };
-    void touchTerminalSessionResource(terminalSession);
+
     ws.send(JSON.stringify({
       type: "status",
       message: terminalSession.mode === "openstack-serial" ? `Serial console 연결: ${terminalSession.nodeName}` : terminalSession.mode === "zun-exec" ? `컨테이너 셸 연결: ${terminalSession.nodeName}${terminalSession.shellCommand ? ` (${terminalSession.shellCommand})` : ""}` : `컨테이너 콘솔 연결: ${terminalSession.nodeName}`
@@ -18808,7 +18464,7 @@ wss.on("connection", async (ws, _request, terminalSession) => {
     }, 30000);
     ws.on("message", async raw => {
       try {
-        if (await closeExamTerminalSessionIfUnavailable(terminalSession)) return;
+
         const payload = JSON.parse(String(raw || "{}"));
         if (payload.type === "ping") {
           markTerminalSessionActivity(terminalSession);
@@ -18818,7 +18474,7 @@ wss.on("connection", async (ws, _request, terminalSession) => {
               at: Date.now()
             }));
           }
-          void touchTerminalSessionResource(terminalSession);
+
           return;
         }
         if (payload.type === "input" && opened && upstream.readyState === WebSocket.OPEN) {
@@ -18827,7 +18483,7 @@ wss.on("connection", async (ws, _request, terminalSession) => {
           // Zun wsproxy와 Nova serialproxy는 텍스트 프레임을 거부하므로
           // exec/attach/serial 입력을 모두 binary frame으로 전달한다.
           upstream.send(Buffer.from(inputData, "utf8"));
-          void touchTerminalSessionResource(terminalSession);
+
         }
         if (payload.type === "resize") {
           markTerminalSessionActivity(terminalSession);
@@ -18966,7 +18622,7 @@ wss.on("connection", async (ws, _request, terminalSession) => {
       finishTerminalReplayRecording(terminalSession, closePayload.reason);
       forgetTerminalSession(terminalSession.id);
     };
-    void touchTerminalSessionResource(terminalSession);
+
     sendTerminalPayload(ws, {
       type: "status",
       message: `SSH 연결: ${terminalSession.username}@${terminalSession.host}:${terminalSession.port}`
@@ -19035,7 +18691,7 @@ wss.on("connection", async (ws, _request, terminalSession) => {
   }
   ws.on("message", async raw => {
     try {
-      if (await closeExamTerminalSessionIfUnavailable(terminalSession)) return;
+
       const payload = JSON.parse(String(raw || "{}"));
       if (payload.type === "ping") {
         markTerminalSessionActivity(terminalSession);
@@ -19043,13 +18699,13 @@ wss.on("connection", async (ws, _request, terminalSession) => {
           type: "pong",
           at: Date.now()
         });
-        void touchTerminalSessionResource(terminalSession);
+
         return;
       }
       if (payload.type === "input") {
         markTerminalSessionActivity(terminalSession);
         terminalSession.ptyProcess?.write(String(payload.data || ""));
-        void touchTerminalSessionResource(terminalSession);
+
       }
       if (payload.type === "resize") {
         markTerminalSessionActivity(terminalSession);
@@ -19135,8 +18791,8 @@ process.once("SIGINT", () => {
 
 let lastCinderUnusedVolumeCleanupAt = 0;
 let cinderUnusedVolumeCleanupRunning = false;
-let lastLabOrphanHeatCleanupAt = 0;
-let labOrphanHeatCleanupRunning = false;
+
+
 if (DATABASE_AVAILABLE && IS_PRIMARY_APP_INSTANCE) {
   const staleCloudActionStartupTimer = setTimeout(() => {
     recoverStaleCloudConsoleActions("startup").catch(error => {
@@ -19200,41 +18856,7 @@ if (DATABASE_AVAILABLE && IS_PRIMARY_APP_INSTANCE) {
     });
   }, CAPO_RECONCILE_SWEEP_MS);
 }
-if (DATABASE_AVAILABLE && IS_PRIMARY_APP_INSTANCE) {
-  const archiveOldLabRequests = async (trigger = "scheduled") => {
-    const result = await runtimeArchiveOldLabRequests({
-      retentionDays: LAB_REQUEST_ARCHIVE_RETENTION_DAYS,
-      limit: 2000,
-      reason: `${trigger}-old-lab-request-cleanup`
-    });
-    if (result.archivedCount > 0) {
-      console.info("[lab-cleanup] archived old lab requests", {
-        archivedCount: result.archivedCount,
-        retentionDays: result.retentionDays,
-        cutoff: result.cutoff
-      });
-      broadcastPortalEvent("labs-updated", {
-        reason: "old-lab-requests-archived",
-        archivedCount: result.archivedCount
-      });
-      await syncPublishedLabRoutes();
-    }
-  };
-  setTimeout(() => {
-    archiveOldLabRequests("startup").catch(error => {
-      console.warn("[lab-cleanup] old lab request startup archive failed", {
-        message: error?.message || String(error)
-      });
-    });
-  }, 1000 * 60 * 2);
-  setInterval(() => {
-    archiveOldLabRequests("scheduled").catch(error => {
-      console.warn("[lab-cleanup] old lab request archive failed", {
-        message: error?.message || String(error)
-      });
-    });
-  }, LAB_REQUEST_ARCHIVE_INTERVAL_MS);
-}
+
 if (DATABASE_AVAILABLE && IS_PRIMARY_APP_INSTANCE && ZUN_STALE_CONTAINER_CLEANUP_ENABLED) {
   const cleanupStaleManagedZunContainers = async (trigger = "scheduled") => {
     const platformStatus = await runtimeGetPlatformStatus();
@@ -19343,169 +18965,11 @@ if (DATABASE_AVAILABLE && IS_PRIMARY_APP_INSTANCE) {
     }
   }, CINDER_UNUSED_VOLUME_CLEANUP_TICK_MS);
 }
-function resolveManagedLabIdFromHeatStackName(stackName = "") {
-  const match = String(stackName || "").trim().match(/(?:^|-)lab-(\d+)-\d+$/i);
-  const labId = Number(match?.[1] || 0);
-  return Number.isSafeInteger(labId) && labId > 0 ? labId : null;
-}
-if (DATABASE_AVAILABLE && IS_PRIMARY_APP_INSTANCE) {
-  setInterval(async () => {
-    if (labOrphanHeatCleanupRunning) return;
-    const now = Date.now();
-    if (lastLabOrphanHeatCleanupAt && now - lastLabOrphanHeatCleanupAt < LAB_ORPHAN_HEAT_CLEANUP_INTERVAL_MS) return;
-    labOrphanHeatCleanupRunning = true;
-    lastLabOrphanHeatCleanupAt = now;
-    try {
-      const platformStatus = await runtimeGetPlatformStatus();
-      const projectName = getServiceProjectName(platformStatus);
-      const result = await listHeatStacks({
-        projectName,
-        limit: 500
-      });
-      for (const stack of result.stacks || []) {
-        const labId = resolveManagedLabIdFromHeatStackName(stack.stackName);
-        if (!labId || !stack.stackId) continue;
-        const status = String(stack.status || "").trim().toUpperCase();
-        if (status.startsWith("DELETE_")) continue;
-        const createdAtMs = new Date(stack.creationTime || 0).getTime();
-        if (!Number.isFinite(createdAtMs) || createdAtMs <= 0 || now - createdAtMs < LAB_ORPHAN_HEAT_MIN_AGE_MS) continue;
-        const lab = await runtimeFindLabRequestById(labId).catch(() => null);
-        const labStatus = String(lab?.status || "").trim().toLowerCase();
-        if (!lab || !["terminated", "failed"].includes(labStatus)) continue;
-        await deleteHeatStack({
-          stackId: stack.stackId,
-          stackName: stack.stackName,
-          projectName
-        });
-        await runtimeUpdateLabRequest(labId, {
-          ...buildClearedOpenstackLabResourcePatch(),
-          ...buildLabExposureClearPatch("비활성 랩의 고아 Heat 스택 정리에 맞춰 공개 노출값을 자동 정리했습니다.")
-        });
-        if (hasLabExposureResidue(lab)) await syncPublishedLabRoutes();
-        console.info("[lab-cleanup] removed orphan Heat stack for inactive lab", {
-          labId,
-          stackId: stack.stackId,
-          stackName: stack.stackName,
-          labStatus,
-          stackStatus: status
-        });
-      }
-    } catch (error) {
-      console.warn("[lab-cleanup] orphan Heat stack sweep failed", {
-        message: error?.message || String(error)
-      });
-    } finally {
-      labOrphanHeatCleanupRunning = false;
-    }
-  }, Math.min(LAB_ORPHAN_HEAT_CLEANUP_INTERVAL_MS, 30 * 60 * 1000));
-}
-if (DATABASE_AVAILABLE && IS_PRIMARY_APP_INSTANCE) {
-  setInterval(async () => {
-    try {
-      const platformStatus = await runtimeGetPlatformStatus();
-      const cutoffMs = Date.now() - LAB_TERMINATION_RECONCILE_WINDOW_MS;
-      const labs = await runtimeListLabRequests();
-      for (const lab of labs) {
-        const status = String(lab?.status || "").toLowerCase();
-        if (!["terminating", "terminated", "failed"].includes(status)) continue;
-        if (String(lab?.labBackendType || "vm").trim() !== "vm") continue;
-        const terminatedAtMs = lab.terminatedAt ? new Date(lab.terminatedAt).getTime() : 0;
-        if (status === "terminated" && hasLabExposureResidue(lab)) {
-          await runtimeUpdateLabRequest(lab.id, buildLabExposureClearPatch("종료된 랩에 남아 있던 공개 노출값을 자동 정리했습니다."));
-          await syncPublishedLabRoutes();
-        }
-        if (!lab?.stackId && !lab?.stackName && !lab?.instanceUuid && !lab?.instanceIp) continue;
-        if (status === "terminated" && Number.isFinite(terminatedAtMs) && terminatedAtMs > 0 && terminatedAtMs < cutoffMs) {
-          continue;
-        }
-        try {
-          await deleteRemoteVmLabResource(lab, platformStatus);
-          if (status === "terminated") {
-            await runtimeUpdateLabRequest(lab.id, buildClearedOpenstackLabResourcePatch());
-            continue;
-          }
-          if (status !== "terminated") {
-            await runtimeUpdateLabRequest(lab.id, {
-              status: "terminated",
-              terminatedAt: new Date().toISOString(),
-              expiresAt: new Date().toISOString(),
-              errorMessage: "",
-              ...buildClearedOpenstackLabResourcePatch(),
-              ...buildLabExposureClearPatch("랩 원격 자원 정리 완료에 맞춰 공개 노출값을 자동 정리했습니다.")
-            });
-            await syncPublishedLabRoutes();
-          }
-        } catch (error) {
-          console.error("[lab-cleanup] remote termination reconcile failed", {
-            labId: lab.id,
-            stackId: lab.stackId,
-            stackName: lab.stackName,
-            instanceUuid: lab.instanceUuid,
-            message: error?.message
-          });
-          if (status === "terminating") {
-            await runtimeUpdateLabRequest(lab.id, {
-              status: "terminating",
-              errorMessage: error?.message || "OpenStack 원격 랩 종료 확인에 실패했습니다."
-            });
-          } else if (status === "failed") {
-            await runtimeUpdateLabRequest(lab.id, {
-              errorMessage: error?.message || "OpenStack 원격 랩 종료 재시도에 실패했습니다."
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.error("lab termination reconcile failed", error);
-    }
-  }, LAB_CLEANUP_INTERVAL_MS);
-}
 
-if (DATABASE_AVAILABLE && IS_PRIMARY_APP_INSTANCE) {
-  setInterval(async () => {
-    try {
-      if (shouldSkipLabTrafficSync()) {
-        return;
-      }
-      const platformStatus = await runtimeGetPlatformStatus();
-      const labs = await runtimeListLabRequests();
-      let connectivityFailed = false;
-      for (const lab of labs) {
-        const status = String(lab?.status || "").toLowerCase();
-        if (!["running", "paused"].includes(status)) {
-          continue;
-        }
-        const course = await runtimeFindCourseById(lab.courseId);
-        if (!course?.labEnabled) {
-          continue;
-        }
-        try {
-          await syncLabTrafficUsage(lab, course, platformStatus);
-        } catch (error) {
-          if (isOpenstackConnectivityError(error)) {
-            recordLabTrafficSyncConnectivityFailure(error);
-            connectivityFailed = true;
-            break;
-          }
-          console.error("[traffic] lab traffic sync failed", {
-            labId: lab.id,
-            courseId: lab.courseId,
-            stackName: lab.stackName,
-            instanceUuid: lab.instanceUuid,
-            message: error?.message || "traffic sync failed"
-          });
-        }
-      }
-      if (!connectivityFailed) recordLabTrafficSyncSuccess();
-    } catch (error) {
-      if (isOpenstackConnectivityError(error)) {
-        recordLabTrafficSyncConnectivityFailure(error);
-      } else {
-        console.error("lab traffic sync failed", error);
-      }
-    }
-  }, LAB_TRAFFIC_SYNC_INTERVAL_MS);
-}
+
+
+
+
 async function requireAuth(req, res, next) {
   const recoveryUser = getDevRecoverySessionUser(req);
   if (recoveryUser) {
@@ -20691,66 +20155,14 @@ async function verifyMailEndpointAccess({
   }
 }
 
-function isTrafficMonitoringEnabledCourse(course) {
-  return Boolean(course?.labEnabled) && Boolean(course?.trafficMonitoringEnabled);
-}
-function resolveCourseTrafficPolicy(course) {
-  return {
-    enabled: isTrafficMonitoringEnabledCourse(course),
-    dailyLimitBytes: Math.max(0, Number(course?.trafficDailyLimitGb || 0) || 0) * 1024 * 1024 * 1024,
-    totalLimitBytes: Math.max(0, Number(course?.trafficTotalLimitGb || 0) || 0) * 1024 * 1024 * 1024,
-    action: ["warn", "pause", "terminate"].includes(String(course?.trafficExceededAction || "").trim().toLowerCase()) ? String(course?.trafficExceededAction || "").trim().toLowerCase() : "warn"
-  };
-}
-function collectErrorCodes(error, codes = new Set()) {
-  if (!error || typeof error !== "object") return codes;
-  if (error.code) codes.add(String(error.code));
-  if (error.cause && error.cause !== error) collectErrorCodes(error.cause, codes);
-  if (Array.isArray(error.errors)) {
-    for (const item of error.errors) collectErrorCodes(item, codes);
-  }
-  return codes;
-}
-function isOpenstackConnectivityError(error) {
-  const codes = collectErrorCodes(error);
-  if ([...codes].some(code => ["ETIMEDOUT", "ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH", "ENOTFOUND", "EAI_AGAIN"].includes(code))) {
-    return true;
-  }
-  return /(ETIMEDOUT|ECONNREFUSED|EHOSTUNREACH|ENETUNREACH|ENOTFOUND|EAI_AGAIN|fetch failed|network timeout|socket hang up)/i.test(String(error?.message || ""));
-}
-function summarizeOpenstackConnectivityError(error) {
-  const codes = [...collectErrorCodes(error)].filter(Boolean).join(",");
-  const message = String(error?.message || "OpenStack API 연결 실패").trim();
-  return codes ? `${message} [${codes}]` : message;
-}
-function shouldSkipLabTrafficSync(now = Date.now()) {
-  return !LAB_TRAFFIC_SYNC_ENABLED || labTrafficSyncCircuit.suppressedUntil > now;
-}
-function recordLabTrafficSyncConnectivityFailure(error) {
-  const now = Date.now();
-  const message = summarizeOpenstackConnectivityError(error);
-  labTrafficSyncCircuit.failureCount += 1;
-  labTrafficSyncCircuit.suppressedUntil = now + LAB_TRAFFIC_SYNC_FAILURE_BACKOFF_MS;
-  labTrafficSyncCircuit.lastMessage = message;
-  if (now - labTrafficSyncCircuit.lastLoggedAt >= LAB_TRAFFIC_SYNC_FAILURE_BACKOFF_MS) {
-    console.warn("[traffic] OpenStack connectivity unavailable; lab traffic sync paused", {
-      message,
-      backoffSeconds: Math.round(LAB_TRAFFIC_SYNC_FAILURE_BACKOFF_MS / 1000),
-      retryAfter: new Date(labTrafficSyncCircuit.suppressedUntil).toISOString(),
-      failureCount: labTrafficSyncCircuit.failureCount
-    });
-    labTrafficSyncCircuit.lastLoggedAt = now;
-  }
-}
-function recordLabTrafficSyncSuccess() {
-  if (!labTrafficSyncCircuit.failureCount && !labTrafficSyncCircuit.suppressedUntil) return;
-  console.info("[traffic] OpenStack connectivity restored; lab traffic sync resumed", {
-    previousFailureCount: labTrafficSyncCircuit.failureCount
-  });
-  labTrafficSyncCircuit.failureCount = 0;
-  labTrafficSyncCircuit.suppressedUntil = 0;
-  labTrafficSyncCircuit.lastMessage = "";
-}
+
+
+
+
+
+
+
+
 function toKstStartOfDayIso(baseTime = Date.now()) {
   const date = new Date(baseTime);
   const utc = new Date(date.getTime() + 9 * 60 * 60 * 1000);
@@ -20787,84 +20199,9 @@ function calculateCpuUsagePercent(cpuMeasures, vcpus) {
   if (!Number.isFinite(cpuSeconds) || cpuSeconds <= 0) return 0;
   return Math.max(0, Math.min(100, Math.round(cpuSeconds / (elapsedSeconds * cpuCount) * 100)));
 }
-function buildTrafficExceededMessage(course, dailyExceeded, totalExceeded) {
-  const scope = totalExceeded ? "총 트래픽" : dailyExceeded ? "일일 트래픽" : "트래픽";
-  return `${scope} 한도를 초과해 랩 사용이 제한되었습니다. 관리자에게 문의해 주세요.`;
-}
-async function ensureLabMetricMappings(lab, course, platformStatus) {
-  if (!lab || !course || !course.labEnabled) {
-    return lab;
-  }
-  if (lab.instanceUuid && lab.trafficIncomingMetricId && lab.trafficOutgoingMetricId) {
-    return lab;
-  }
-  const projectName = getServiceProjectName(platformStatus);
-  const resolvedServer = lab.instanceUuid ? {
-    id: lab.instanceUuid
-  } : await resolveOpenstackServer({
-    serverName: lab.stackName,
-    fixedIp: lab.instanceIp,
-    projectName
-  });
-  if (!resolvedServer?.id) {
-    return lab;
-  }
-  const metricResource = await resolveMetricResourceForInstance({
-    instanceId: resolvedServer.id,
-    projectName
-  });
-  let trafficPatch = {};
-  if (metricResource) {
-    trafficPatch = {
-      trafficResourceId: metricResource.resourceId || "",
-      trafficIncomingMetricId: metricResource.incomingMetricId || "",
-      trafficOutgoingMetricId: metricResource.outgoingMetricId || ""
-    };
-  }
-  return runtimeUpdateLabRequest(lab.id, {
-    instanceUuid: resolvedServer.id,
-    ...trafficPatch
-  });
-}
-async function applyLabTrafficExceededAction(lab, course, message) {
-  const action = resolveCourseTrafficPolicy(course).action;
-  const basePatch = {
-    trafficExceeded: true,
-    trafficExceededAt: new Date().toISOString(),
-    errorMessage: message
-  };
-  if (action === "warn") {
-    return runtimeUpdateLabRequest(lab.id, basePatch);
-  }
-  if (action === "pause") {
-    const resourcePatch = await pauseLabResource(lab, course);
-    const paused = await runtimeUpdateLabRequest(lab.id, {
-      ...basePatch,
-      ...resourcePatch,
-      status: "paused",
-      publicDomains: [],
-      requestedPublicDomains: [],
-      publicTcpRoutes: [],
-      requestedPublicTcpRoutes: [],
-      publicTcpEnabled: false,
-      publicTcpRequestPending: false,
-      publicEnabled: false,
-      publicRequestPending: false,
-      externalSshEnabled: false,
-      externalSshPort: null,
-      externalSshRequestPending: false
-    });
-    await syncPublishedLabRoutes();
-    return paused;
-  }
-  const marked = await runtimeUpdateLabRequest(lab.id, basePatch);
-  const terminated = await terminateLab(marked);
-  return runtimeUpdateLabRequest(marked.id, {
-    trafficExceeded: true,
-    trafficExceededAt: basePatch.trafficExceededAt,
-    errorMessage: message || terminated?.errorMessage || ""
-  });
-}
+
+
+
 async function collectOpenstackInstanceUsageMetrics(resource, platformStatus, {
   flavorName = ""
 } = {}) {
@@ -21027,180 +20364,7 @@ async function collectOpenstackInstanceUsageMetrics(resource, platformStatus, {
     trafficCheckedAt: checkedAt
   };
 }
-async function syncLabTrafficUsage(lab, course, platformStatus) {
-  const policy = resolveCourseTrafficPolicy(course);
-  let currentLab = await ensureLabMetricMappings(lab, course, platformStatus);
-  if (!currentLab?.instanceUuid) {
-    return currentLab;
-  }
-  const projectName = getServiceProjectName(platformStatus);
-  const fallbackFlavorName = String(currentLab.currentFlavor || course?.heatParameters?.flavor || "").trim();
-  const liveMetrics = await collectOpenstackInstanceUsageMetrics(currentLab, platformStatus, {
-    flavorName: fallbackFlavorName
-  }).catch(() => null);
-  if (liveMetrics) {
-    const checkedAt = liveMetrics.checkedAt || new Date().toISOString();
-    const hasDiskMetrics = Boolean(liveMetrics.diskSupported);
-    const hasNetworkMetrics = Boolean(liveMetrics.networkSupported);
-    const rxBytes = hasNetworkMetrics ? normalizeMonitorNumber(liveMetrics.networkRxBytes) : Number(currentLab.trafficRxBytes || 0) || 0;
-    const txBytes = hasNetworkMetrics ? normalizeMonitorNumber(liveMetrics.networkTxBytes) : Number(currentLab.trafficTxBytes || 0) || 0;
-    const totalBytes = hasNetworkMetrics ? rxBytes + txBytes : Number(currentLab.trafficTotalBytes || 0) || 0;
-    const dailyBytes = hasNetworkMetrics ? normalizeMonitorNumber(liveMetrics.networkDailyBytes) : Number(currentLab.trafficDailyBytes || 0) || 0;
-    const dailyExceeded = policy.enabled && policy.dailyLimitBytes > 0 && dailyBytes >= policy.dailyLimitBytes;
-    const totalExceeded = policy.enabled && policy.totalLimitBytes > 0 && totalBytes >= policy.totalLimitBytes;
-    const exceeded = policy.enabled && (dailyExceeded || totalExceeded);
-    const wasExceeded = Boolean(currentLab.trafficExceeded);
-    currentLab = await runtimeUpdateLabRequest(currentLab.id, {
-      trafficRxBytes: rxBytes,
-      trafficTxBytes: txBytes,
-      trafficTotalBytes: totalBytes,
-      trafficDailyBytes: dailyBytes,
-      trafficCheckedAt: hasNetworkMetrics ? checkedAt : currentLab.trafficCheckedAt,
-      trafficExceeded: exceeded,
-      trafficExceededAt: policy.enabled ? exceeded ? currentLab.trafficExceededAt || checkedAt : null : currentLab.trafficExceededAt,
-      cpuUsagePercent: normalizeMonitorNumber(liveMetrics.cpuUsagePercent),
-      memoryUsagePercent: normalizeMonitorNumber(liveMetrics.memoryUsagePercent),
-      diskReadBytes: hasDiskMetrics ? normalizeMonitorNumber(liveMetrics.diskReadBytes) : Number(currentLab.diskReadBytes || 0) || 0,
-      diskWriteBytes: hasDiskMetrics ? normalizeMonitorNumber(liveMetrics.diskWriteBytes) : Number(currentLab.diskWriteBytes || 0) || 0,
-      vmMetricsCheckedAt: checkedAt,
-      ...(!policy.enabled || exceeded ? {} : {
-        errorMessage: String(currentLab.errorMessage || "").includes("트래픽 한도") ? "" : currentLab.errorMessage || ""
-      })
-    });
-    currentLab.__monitorMetrics = liveMetrics;
-    if (policy.enabled && exceeded && !wasExceeded) {
-      return applyLabTrafficExceededAction(currentLab, course, buildTrafficExceededMessage(course, dailyExceeded, totalExceeded));
-    }
-    return currentLab;
-  }
-  const startOfDay = toKstStartOfDayIso();
-  const instanceMetrics = currentLab.instanceUuid ? await resolveInstanceMetricResource({
-    instanceId: currentLab.instanceUuid,
-    projectName
-  }).catch(() => null) : null;
-  const diskMetricResources = currentLab.instanceUuid ? await resolveInstanceDiskMetricResources({
-    instanceId: currentLab.instanceUuid,
-    projectName
-  }).catch(() => []) : [];
-  const hasNetworkMetrics = Boolean(currentLab?.trafficIncomingMetricId || currentLab?.trafficOutgoingMetricId);
-  const [incomingMeasures, outgoingMeasures, incomingDailyMeasures, outgoingDailyMeasures] = hasNetworkMetrics ? await Promise.all([currentLab.trafficIncomingMetricId ? fetchMetricMeasures({
-    metricId: currentLab.trafficIncomingMetricId,
-    projectName
-  }) : Promise.resolve([]), currentLab.trafficOutgoingMetricId ? fetchMetricMeasures({
-    metricId: currentLab.trafficOutgoingMetricId,
-    projectName
-  }) : Promise.resolve([]), currentLab.trafficIncomingMetricId ? fetchMetricMeasures({
-    metricId: currentLab.trafficIncomingMetricId,
-    start: startOfDay,
-    projectName
-  }) : Promise.resolve([]), currentLab.trafficOutgoingMetricId ? fetchMetricMeasures({
-    metricId: currentLab.trafficOutgoingMetricId,
-    start: startOfDay,
-    projectName
-  }) : Promise.resolve([])]) : [[], [], [], []];
-  let cpuUsagePercent = 0;
-  let memoryUsagePercent = Math.max(0, Number(currentLab.memoryUsagePercent || 0) || 0);
-  let diskReadBytes = Math.max(0, Number(currentLab.diskReadBytes || 0) || 0);
-  let diskWriteBytes = Math.max(0, Number(currentLab.diskWriteBytes || 0) || 0);
-  if (instanceMetrics) {
-    const [cpuMeasures, vcpusMeasures, memoryMeasures, memoryUsageMeasures] = await Promise.all([instanceMetrics.cpuMetricId ? fetchMetricMeasures({
-      metricId: instanceMetrics.cpuMetricId,
-      projectName
-    }) : Promise.resolve([]), instanceMetrics.vcpusMetricId ? fetchMetricMeasures({
-      metricId: instanceMetrics.vcpusMetricId,
-      projectName
-    }) : Promise.resolve([]), instanceMetrics.memoryMetricId ? fetchMetricMeasures({
-      metricId: instanceMetrics.memoryMetricId,
-      projectName
-    }) : Promise.resolve([]), instanceMetrics.memoryUsageMetricId ? fetchMetricMeasures({
-      metricId: instanceMetrics.memoryUsageMetricId,
-      projectName
-    }) : Promise.resolve([])]);
-    const vcpus = extractLatestMeasureValue(vcpusMeasures);
-    let memoryTotal = extractLatestMeasureValue(memoryMeasures);
-    const memoryUsed = extractLatestMeasureValue(memoryUsageMeasures);
-    cpuUsagePercent = calculateCpuUsagePercent(cpuMeasures, vcpus);
-    if (memoryTotal <= 0 && memoryUsed > 0) {
-      if (fallbackFlavorName) {
-        const flavor = await resolveFlavorByName({
-          flavorName: fallbackFlavorName,
-          projectName
-        }).catch(() => null);
-        memoryTotal = Math.max(0, Number(flavor?.ram || 0) || 0);
-      }
-    }
-    if (memoryTotal > 0 && memoryUsed > 0) {
-      memoryUsagePercent = Math.max(0, Math.min(100, Math.round(memoryUsed / memoryTotal * 100)));
-    }
-  }
-  if (diskMetricResources.length) {
-    const diskMeasures = await Promise.all(diskMetricResources.map(async resource => {
-      const [readMeasures, writeMeasures] = await Promise.all([resource.readBytesMetricId ? fetchMetricMeasures({
-        metricId: resource.readBytesMetricId,
-        projectName
-      }) : Promise.resolve([]), resource.writeBytesMetricId ? fetchMetricMeasures({
-        metricId: resource.writeBytesMetricId,
-        projectName
-      }) : Promise.resolve([])]);
-      return {
-        readBytes: extractLatestMeasureValue(readMeasures),
-        writeBytes: extractLatestMeasureValue(writeMeasures)
-      };
-    }));
-    const nextDiskReadBytes = diskMeasures.reduce((total, item) => total + Math.max(0, Number(item.readBytes || 0) || 0), 0);
-    const nextDiskWriteBytes = diskMeasures.reduce((total, item) => total + Math.max(0, Number(item.writeBytes || 0) || 0), 0);
-    if (nextDiskReadBytes > 0) {
-      diskReadBytes = nextDiskReadBytes;
-    }
-    if (nextDiskWriteBytes > 0) {
-      diskWriteBytes = nextDiskWriteBytes;
-    }
-  }
-  if (instanceMetrics && (!diskReadBytes || !diskWriteBytes) && (instanceMetrics.diskReadBytesMetricId || instanceMetrics.diskWriteBytesMetricId)) {
-    const [instanceDiskReadMeasures, instanceDiskWriteMeasures] = await Promise.all([instanceMetrics.diskReadBytesMetricId ? fetchMetricMeasures({
-      metricId: instanceMetrics.diskReadBytesMetricId,
-      projectName
-    }) : Promise.resolve([]), instanceMetrics.diskWriteBytesMetricId ? fetchMetricMeasures({
-      metricId: instanceMetrics.diskWriteBytesMetricId,
-      projectName
-    }) : Promise.resolve([])]);
-    if (!diskReadBytes) {
-      diskReadBytes = Math.max(0, extractLatestMeasureValue(instanceDiskReadMeasures));
-    }
-    if (!diskWriteBytes) {
-      diskWriteBytes = Math.max(0, extractLatestMeasureValue(instanceDiskWriteMeasures));
-    }
-  }
-  const rxBytes = hasNetworkMetrics ? extractLatestMeasureValue(incomingMeasures) : Number(currentLab.trafficRxBytes || 0) || 0;
-  const txBytes = hasNetworkMetrics ? extractLatestMeasureValue(outgoingMeasures) : Number(currentLab.trafficTxBytes || 0) || 0;
-  const totalBytes = hasNetworkMetrics ? rxBytes + txBytes : Number(currentLab.trafficTotalBytes || 0) || 0;
-  const dailyBytes = hasNetworkMetrics ? calculateMeasureDelta(incomingDailyMeasures) + calculateMeasureDelta(outgoingDailyMeasures) : Number(currentLab.trafficDailyBytes || 0) || 0;
-  const dailyExceeded = policy.enabled && policy.dailyLimitBytes > 0 && dailyBytes >= policy.dailyLimitBytes;
-  const totalExceeded = policy.enabled && policy.totalLimitBytes > 0 && totalBytes >= policy.totalLimitBytes;
-  const exceeded = policy.enabled && (dailyExceeded || totalExceeded);
-  const wasExceeded = Boolean(currentLab.trafficExceeded);
-  currentLab = await runtimeUpdateLabRequest(currentLab.id, {
-    trafficRxBytes: rxBytes,
-    trafficTxBytes: txBytes,
-    trafficTotalBytes: totalBytes,
-    trafficDailyBytes: dailyBytes,
-    trafficCheckedAt: hasNetworkMetrics ? new Date().toISOString() : currentLab.trafficCheckedAt,
-    trafficExceeded: exceeded,
-    trafficExceededAt: policy.enabled ? exceeded ? currentLab.trafficExceededAt || new Date().toISOString() : null : currentLab.trafficExceededAt,
-    cpuUsagePercent,
-    memoryUsagePercent,
-    diskReadBytes,
-    diskWriteBytes,
-    vmMetricsCheckedAt: new Date().toISOString(),
-    ...(!policy.enabled || exceeded ? {} : {
-      errorMessage: String(currentLab.errorMessage || "").includes("트래픽 한도") ? "" : currentLab.errorMessage || ""
-    })
-  });
-  if (policy.enabled && exceeded && !wasExceeded) {
-    return applyLabTrafficExceededAction(currentLab, course, buildTrafficExceededMessage(course, dailyExceeded, totalExceeded));
-  }
-  return currentLab;
-}
+
 async function ensureDefaultAdmin() {
   const existing = await runtimeFindUserByUsername(DEFAULT_ADMIN_USERNAME);
   if (existing) {
@@ -21318,234 +20482,23 @@ async function resolveSelfServiceVmBootVolumeParameters({
   }
 }
 
-async function deleteRemoteVmLabResource(lab, platformStatus) {
-  const serviceProjectName = getServiceProjectName(platformStatus);
-  const stackName = String(lab?.stackName || "").trim();
-  let stackId = String(lab?.stackId || "").trim();
-  let resolvedServerIds = [];
-  const cleanup = {
-    projectName: serviceProjectName,
-    stackName,
-    stackId,
-    heatResult: null,
-    serverResults: []
-  };
-  const rememberServerIds = ids => {
-    resolvedServerIds = Array.from(new Set([...resolvedServerIds, ...(Array.isArray(ids) ? ids : [])].map(id => String(id || "").trim()).filter(Boolean)));
-  };
-  const throwUnconfirmedCleanup = () => {
-    const details = [stackName ? `stackName=${stackName}` : "", stackId ? `stackId=${stackId}` : "", lab?.instanceUuid ? `instanceUuid=${lab.instanceUuid}` : "", lab?.instanceIp ? `instanceIp=${lab.instanceIp}` : "", serviceProjectName ? `project=${serviceProjectName}` : ""].filter(Boolean).join(", ");
-    throw new Error(`OpenStack 삭제 대상을 확인하지 못했습니다${details ? ` (${details})` : ""}. 관리자에서 실제 VM/스택 상태를 확인해 주세요.`);
-  };
-  try {
-    rememberServerIds(await resolveLabOpenstackServerIds(lab, platformStatus));
-  } catch (error) {
-    console.warn("[lab-cleanup] failed to resolve lab servers before delete", {
-      labId: lab?.id,
-      stackName: lab?.stackName,
-      instanceUuid: lab?.instanceUuid,
-      message: error?.message
-    });
-  }
-  const deleteResolvedServers = async () => {
-    const serverIds = Array.from(new Set([...resolvedServerIds, String(lab?.instanceUuid || "").trim()].filter(Boolean)));
-    const results = [];
-    for (const serverId of serverIds) {
-      results.push(await deleteOpenstackServer({
-        serverId,
-        projectName: serviceProjectName
-      }));
-    }
-    cleanup.serverResults.push(...results);
-    return results;
-  };
-  if (stackName && !stackId) {
-    try {
-      const resolvedStack = await resolveHeatStack({
-        stackName,
-        projectName: serviceProjectName
-      });
-      stackId = String(resolvedStack?.stackId || "").trim();
-      cleanup.stackId = stackId;
-    } catch (error) {
-      console.warn("[lab-cleanup] failed to resolve heat stack before delete", {
-        labId: lab?.id,
-        stackName,
-        message: error?.message
-      });
-    }
-  }
-  if (stackId && stackName) {
-    cleanup.heatResult = await deleteHeatStack({
-      stackId,
-      stackName,
-      projectName: serviceProjectName
-    });
-    try {
-      rememberServerIds(await resolveLabOpenstackServerIds(lab, platformStatus));
-    } catch (error) {
-      console.warn("[lab-cleanup] failed to resolve lab servers after stack delete", {
-        labId: lab?.id,
-        stackName,
-        instanceUuid: lab?.instanceUuid,
-        message: error?.message
-      });
-    }
-    await deleteResolvedServers();
-    invalidateOpenstackStatusCaches();
-    return cleanup;
-  }
-  if (resolvedServerIds.length || lab?.instanceUuid) {
-    await deleteResolvedServers();
-    invalidateOpenstackStatusCaches();
-    return cleanup;
-  }
-  if (lab?.stackName) {
-    const resolvedServer = await resolveOpenstackServer({
-      serverName: lab.stackName,
-      fixedIp: lab.instanceIp,
-      projectName: serviceProjectName
-    });
-    if (resolvedServer?.id) {
-      const deleteResult = await deleteOpenstackServer({
-        serverId: resolvedServer.id,
-        projectName: serviceProjectName
-      });
-      cleanup.serverResults.push(deleteResult);
-      invalidateOpenstackStatusCaches();
-      return cleanup;
-    }
-    if (stackName && !stackId && !String(lab?.instanceUuid || "").trim()) {
-      cleanup.heatResult = {
-        ok: true,
-        stackName,
-        stackId: "",
-        alreadyDeleted: true,
-        inferredFromMissingStackAndServer: true
-      };
-      invalidateOpenstackStatusCaches();
-      return cleanup;
-    }
-  }
-  throwUnconfirmedCleanup();
-}
-function buildClearedOpenstackLabResourcePatch() {
-  return {
-    stackName: "",
-    stackId: "",
-    instanceUuid: "",
-    instanceIp: "",
-    instanceIps: [],
-    vmNodes: [],
-    metallbVipCidr: ""
-  };
-}
-async function terminateLab(lab) {
-  const platformStatus = await runtimeGetPlatformStatus();
-  const normalizedBackendType = String(lab?.labBackendType || "vm").trim().toLowerCase();
-  const hasContainerResource = Boolean(String(lab?.containerUuid || "").trim());
-  const hasVmResource = Boolean(String(lab?.stackId || "").trim() || String(lab?.instanceUuid || "").trim() || normalizedBackendType === "vm" && (String(lab?.stackName || "").trim() || String(lab?.instanceIp || "").trim()) || !hasContainerResource && (String(lab?.stackName || "").trim() || String(lab?.instanceIp || "").trim()) || Array.isArray(lab?.vmNodes) && lab.vmNodes.some(node => String(node?.role || "").trim().toLowerCase() !== "container"));
-  const terminating = await runtimeUpdateLabRequest(lab.id, {
-    status: "terminating",
-    terminatedAt: new Date().toISOString(),
-    requestedPublicDomains: [],
-    publicDomains: [],
-    requestedPublicTcpRoutes: [],
-    publicTcpRoutes: [],
-    publicTcpEnabled: false,
-    publicTcpRequestPending: false,
-    publicEnabled: false,
-    publicRequestPending: false,
-    externalSshEnabled: false,
-    externalSshPort: null,
-    externalSshRequestPending: false,
-    externalRdpEnabled: false,
-    externalRdpPort: null,
-    externalRdpRequestPending: false
-  });
-  closeTerminalSessionsForLab(lab.id, "lab-terminated");
-  try {
-    if (hasContainerResource) {
-      await deleteZunRemoteContainer({
-        apiUrl: platformStatus.zunApiUrl,
-        containerUuid: terminating.containerUuid,
-        projectName: getZunProjectName(platformStatus)
-      });
-    }
-    if (hasVmResource) {
-      await deleteRemoteVmLabResource(terminating, platformStatus);
-    } else if (normalizedBackendType !== "container" && (terminating.stackName || terminating.instanceIp)) {
-      await deleteRemoteVmLabResource(terminating, platformStatus);
-    }
-    await clearLabSshHostKeyTrust(terminating, {
-      reason: "lab-terminated"
-    });
-    const terminated = await runtimeUpdateLabRequest(lab.id, {
-      status: "terminated",
-      terminatedAt: new Date().toISOString(),
-      expiresAt: new Date().toISOString(),
-      errorMessage: "",
-      ...buildClearedOpenstackLabResourcePatch()
-    });
-    await syncPublishedLabRoutes();
-    return terminated;
-  } catch (error) {
-    console.error("[heat] delete failed", {
-      labId: lab?.id,
-      stackId: terminating?.stackId,
-      stackName: terminating?.stackName,
-      message: error?.message
-    });
-    const failed = await runtimeUpdateLabRequest(lab.id, {
-      status: "terminating",
-      errorMessage: error.message
-    });
-    await syncPublishedLabRoutes();
-    return failed;
-  }
-}
+
+
+
 function hasCleanupListItems(value) {
   return Array.isArray(value) && value.length > 0;
 }
 function hasLabExposureResidue(lab = {}) {
   return hasCleanupListItems(lab.requestedPublicDomains) || hasCleanupListItems(lab.publicDomains) || hasCleanupListItems(lab.requestedPublicTcpRoutes) || hasCleanupListItems(lab.publicTcpRoutes) || Boolean(lab.publicEnabled) || Boolean(lab.publicRequestPending) || Boolean(lab.publicTcpEnabled) || Boolean(lab.publicTcpRequestPending) || Boolean(lab.externalSshEnabled) || Boolean(lab.externalSshRequestPending) || Number(lab.externalSshPort || 0) > 0 || Boolean(lab.externalRdpEnabled) || Boolean(lab.externalRdpRequestPending) || Number(lab.externalRdpPort || 0) > 0;
 }
-function buildLabExposureClearPatch(reviewNote = "랩 자원 종료에 맞춰 공개 노출값을 자동 정리했습니다.") {
-  const now = new Date().toISOString();
-  return {
-    requestedPublicDomains: [],
-    publicDomains: [],
-    requestedPublicTcpRoutes: [],
-    publicTcpRoutes: [],
-    publicEnabled: false,
-    publicRequestPending: false,
-    publicReviewedAt: now,
-    publicReviewNote: reviewNote,
-    publicTcpEnabled: false,
-    publicTcpRequestPending: false,
-    publicTcpReviewedAt: now,
-    publicTcpReviewNote: reviewNote,
-    externalSshEnabled: false,
-    externalSshPort: null,
-    externalSshRequestPending: false,
-    externalSshReviewedAt: now,
-    externalSshReviewNote: reviewNote,
-    externalRdpEnabled: false,
-    externalRdpPort: null,
-    externalRdpRequestPending: false,
-    externalRdpReviewedAt: now,
-    externalRdpReviewNote: reviewNote
-  };
-}
+
 function hasCustomLabExposureResidue(request = {}) {
   return hasCleanupListItems(request.requestedPublicDomains) || hasCleanupListItems(request.publicDomains) || Boolean(request.publicEnabled) || Boolean(request.publicRequestPending);
 }
 function hasOpenstackCleanupRemoteRefs(resource = {}) {
   return Boolean(resource.stackId || resource.stackName || resource.instanceUuid || resource.instanceIp || resource.containerUuid || hasCleanupListItems(resource.vmNodes));
 }
-function hasLabRuntimeResource(lab = {}) {
-  return Boolean(String(lab.stackId || "").trim() || String(lab.stackName || "").trim() || String(lab.instanceUuid || "").trim() || String(lab.instanceIp || "").trim() || String(lab.containerUuid || "").trim() || Array.isArray(lab.vmNodes) && lab.vmNodes.length > 0);
-}
+
 
 function getAdvancedCleanupCounts(advancedConfig = {}) {
   const createdResources = advancedConfig?.createdResources || {};
@@ -21743,7 +20696,7 @@ function normalizeOpenstackHeatStackDeleteTargets(body = {}) {
   return targets.slice(0, OPENSTACK_HEAT_STACK_DELETE_BATCH_LIMIT);
 }
 async function buildOpenstackCleanupReport() {
-  const [labs, customLabRequests] = await Promise.all([runtimeListLabRequests(), runtimeListCustomLabRequests()]);
+  const [labs, customLabRequests] = await Promise.all([[], runtimeListCustomLabRequests()]);
   const retryableLabs = labs.filter(shouldOfferLabCleanupRetry).map(lab => summarizeOpenstackCleanupTarget(lab, "lab"));
   const retryableCustomLabs = customLabRequests.filter(shouldOfferCustomLabCleanupRetry).map(request => summarizeOpenstackCleanupTarget(request, "custom-lab"));
   const advancedResourceResidues = customLabRequests.filter(shouldOfferCustomAdvancedCleanup).map(request => summarizeOpenstackCleanupTarget(request, "custom-lab"));
@@ -21880,20 +20833,7 @@ async function cleanupCustomLabAdvancedResources(request, options = {}) {
 }
 async function clearOpenstackCleanupExposure(resourceType, resourceId, options = {}) {
   const shouldSyncRoutes = options.syncRoutes !== false;
-  if (resourceType === "lab") {
-    const lab = await runtimeFindLabRequestById(resourceId);
-    if (!lab) {
-      const error = new Error("랩 요청을 찾을 수 없습니다.");
-      error.status = 404;
-      throw error;
-    }
-    const updated = await runtimeUpdateLabRequest(resourceId, buildLabExposureClearPatch("관리자가 공개 노출값 잔여 정리를 실행했습니다."));
-    if (shouldSyncRoutes) await syncPublishedLabRoutes();
-    return {
-      resource: updated,
-      residueRemaining: hasLabExposureResidue(updated)
-    };
-  }
+
   const request = await runtimeFindCustomLabRequestById(resourceId);
   if (!request) {
     const error = new Error("사용자 PoC랩 신청을 찾을 수 없습니다.");
@@ -24291,51 +23231,7 @@ async function listAllHarborRegistryProjectImages(registryBaseUrl, namespace, re
     if (payload.length < pageSize) break;
   }
   const images = [];
-  for (const item of repositories) {
-    const repository = normalizeHarborRepositoryName(item?.name || item?.repository_name || item, namespace);
-    if (!repository) continue;
-    const artifactsPayload = await fetchHarborArtifacts(registryBaseUrl, namespace, repository, registrySettings);
-    const tags = Array.isArray(artifactsPayload) ? artifactsPayload.flatMap(artifact => {
-      const digest = String(artifact?.digest || "").trim();
-      const pushedAt = String(artifact?.push_time || artifact?.pushTime || "").trim();
-      const artifactTags = Array.isArray(artifact?.tags) ? artifact.tags : [];
-      if (!artifactTags.length) {
-        return [{
-          tag: "latest",
-          artifactDigest: digest,
-          pushedAt,
-          metadata: {
-            artifactId: artifact?.id || null,
-            repositoryId: artifact?.repository_id || null,
-            inferredTag: true
-          }
-        }];
-      }
-      return artifactTags.map(tag => ({
-        tag: String(tag?.name || "").trim(),
-        artifactDigest: digest,
-        pushedAt,
-        metadata: {
-          artifactId: artifact?.id || null,
-          repositoryId: artifact?.repository_id || null
-        }
-      })).filter(entry => entry.tag);
-    }) : [];
-    const safeTags = tags.length ? tags : [{
-      tag: "latest",
-      metadata: {
-        inferredTag: true
-      }
-    }];
-    for (const entry of safeTags) {
-      images.push({
-        ...buildContainerRegistryImageResult(repository, entry.tag, registrySettings, platformStatus, "harbor-cache"),
-        artifactDigest: entry.artifactDigest || "",
-        pushedAt: entry.pushedAt || "",
-        metadata: entry.metadata || {}
-      });
-    }
-  }
+
   return images;
 }
 async function refreshInternalImageCache({
@@ -24466,28 +23362,13 @@ async function resolveTroveProjectForUser(user, settings, requestedProjectName =
   }
   return projectName;
 }
-function getCourseLabBackendType(course) {
-  const backendType = String(course?.labBackendType || "vm").trim().toLowerCase();
-  return backendType === "container" ? "container" : "vm";
-}
-function isContainerLabCourse(course) {
-  return getCourseLabBackendType(course) === "container";
-}
-function getCourseContainerAccessMode(course) {
-  const mode = String(course?.containerAccessMode || "console").trim();
-  return ["ssh", "console", "ssh_console"].includes(mode) ? mode : "console";
-}
-function getCourseContainerConsoleMode(course) {
-  const mode = String(course?.containerConsoleMode || "zun").trim().toLowerCase();
-  return ["zun", "ssh"].includes(mode) ? mode : "zun";
-}
 
-function courseAllowsContainerSsh(course) {
-  return ["ssh", "ssh_console"].includes(getCourseContainerAccessMode(course));
-}
-function courseUsesSshForContainerConsole(course) {
-  return getCourseContainerConsoleMode(course) === "ssh";
-}
+
+
+
+
+
+
 
 function sanitizeOpenstackResourceNamePart(value, fallback = "lab", maxLength = 24) {
   const normalized = String(value || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
@@ -24506,35 +23387,10 @@ function buildPocKeypairName(request) {
   return `poc-${safeUser}-${safeId}-key`.slice(0, 80).replace(/^-+|-+$/g, "");
 }
 
-const MANAGED_LAB_SSH_TEMPLATE_NAMES = new Set(["example-lab.yaml", "kubeflow.yaml"]);
-function getManagedLabSshProfileText(courseOrTemplateName) {
-  if (!courseOrTemplateName || typeof courseOrTemplateName === "string") {
-    return normalizeTemplateFileName(courseOrTemplateName || "");
-  }
-  return [normalizeTemplateFileName(courseOrTemplateName.heatTemplateName || ""), courseOrTemplateName.imageName, courseOrTemplateName.osType, courseOrTemplateName.guestOs, courseOrTemplateName.platform, courseOrTemplateName.shellType, courseOrTemplateName.title, courseOrTemplateName.summary, courseOrTemplateName.category, courseOrTemplateName.heatParameters?.image].filter(Boolean).join(" ");
-}
-function hasManagedLinuxSshSignal(courseOrTemplateName) {
-  const templateName = normalizeTemplateFileName(typeof courseOrTemplateName === "string" ? courseOrTemplateName : courseOrTemplateName?.heatTemplateName || "").toLowerCase();
-  if (templateName.startsWith("linux-shell-lab") || MANAGED_LAB_SSH_TEMPLATE_NAMES.has(templateName)) {
-    return true;
-  }
-  const profileText = getManagedLabSshProfileText(courseOrTemplateName).toLowerCase().replace(/[^a-z0-9]+/g, " ");
-  return /\b(linux|rocky|ubuntu|debian|centos|node|nodes|kubernetes|k8s|pacemaker|llm)\b/.test(profileText);
-}
-function supportsManagedLabSsh(courseOrTemplateName) {
-  if (courseOrTemplateName && typeof courseOrTemplateName === "object") {
-    if (isContainerLabCourse(courseOrTemplateName)) {
-      return false;
-    }
-    if (isWindowsLabProfile(courseOrTemplateName)) {
-      return true;
-    }
-    if (!String(courseOrTemplateName?.terminalSshUser || "").trim()) {
-      return true;
-    }
-  }
-  return hasManagedLinuxSshSignal(courseOrTemplateName);
-}
+
+
+
+
 function generateManagedLabLogin(user, {
   windows = false
 } = {}) {
@@ -25462,24 +24318,10 @@ function buildPocProvisioningNote({
   if (projectName) lines.push(`대상 프로젝트: ${projectName}`);
   return lines.filter(Boolean).join("\n");
 }
-function isCoursePromotionActive(course, nowMs = Date.now()) {
-  if (!course?.promoEnabled) return false;
-  const startsAt = Date.parse(course.promoStartsAt || "");
-  const endsAt = Date.parse(course.promoEndsAt || "");
-  if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt)) return false;
-  return startsAt <= nowMs && nowMs < endsAt;
-}
 
-function isCourseFreePromotionAccessActive(course) {
-  return Boolean(course?.isPublished && isCoursePromotionActive(course) && Math.max(0, Number(course.promoPrice || 0) || 0) <= 0);
-}
-async function canAccessCourse(user, course) {
-  if (!user || !course) return false;
-  if (user.role === "admin") return true;
-  if (course.isPublished && course.accessScope === "public" && Number(course.price || 0) <= 0) return true;
-  if (isCourseFreePromotionAccessActive(course)) return true;
-  return runtimeUserHasCourseAccess(user.id, course.id);
-}
+
+
+
 function isLikelyOpenstackUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || "").trim());
 }
@@ -25645,24 +24487,7 @@ function pickTerminalHost(lab, {
   };
 }
 
-function resolveLabTerminalCredentials(lab, course, requestedUsername = "", requestedPassword = "") {
-  if (isContainerLabCourse(course)) {
-    const sshEnabled = courseAllowsContainerSsh(course) || courseUsesSshForContainerConsole(course);
-    return {
-      managedLabCourse: false,
-      resolvedUsername: sshEnabled ? String(requestedUsername || "").trim() || String(lab?.terminalSshUser || course?.terminalSshUser || ZUN_DEFAULT_SSH_USER).trim() : "",
-      resolvedPassword: sshEnabled ? String(requestedPassword || "") || String(lab?.terminalSshPassword || ZUN_DEFAULT_SSH_PASSWORD || "") : ""
-    };
-  }
-  const managedLabCourse = supportsManagedLabSsh(course);
-  const resolvedUsername = managedLabCourse ? String(lab?.terminalSshUser || "").trim() : String(requestedUsername || "").trim() || lab?.terminalSshUser || course?.terminalSshUser || "";
-  const resolvedPassword = managedLabCourse ? String(lab?.terminalSshPassword || "") : String(requestedPassword || "") || lab?.terminalSshPassword || "";
-  return {
-    managedLabCourse,
-    resolvedUsername,
-    resolvedPassword
-  };
-}
+
 function pickRouteTargetHost(lab) {
   const nodes = deriveTerminalNodes(lab);
   const node = nodes.find(item => item.fixedIp) || nodes.find(item => item.floatingIp);
@@ -26064,13 +24889,6 @@ async function checkDomainAvailability(subdomain, excludeLabId = null) {
     };
   }
   const excludeKey = resolveRouteExcludeKey(excludeLabId);
-  const existing = await runtimeFindLabRequestByPublicSubdomain(normalizedSubdomain);
-  if (existing && normalizeRouteResourceKey("lab", existing.id) !== excludeKey) {
-    return {
-      available: false,
-      message: "이미 사용 중인 서브도메인입니다."
-    };
-  }
   const customExisting = (await runtimeListCustomLabRequests()).find(request => normalizeRouteResourceKey("custom-lab", request.id) !== excludeKey && [...(request.publicDomains || []), ...(request.requestedPublicDomains || [])].some(entry => String(entry.subdomain || "").trim().toLowerCase() === normalizedSubdomain));
   if (customExisting) {
     return {
@@ -26124,7 +24942,7 @@ async function checkCustomDomainAvailability(fqdn, excludeLabId = null) {
   }
   const excludeKey = resolveRouteExcludeKey(excludeLabId);
   const verification = buildCustomDomainVerification(normalizedFqdn);
-  const labs = await runtimeListLabRequests();
+  const labs = await [];
   const existing = labs.find(lab => normalizeRouteResourceKey("lab", lab.id) !== excludeKey && [...(lab.publicDomains || []), ...(lab.requestedPublicDomains || [])].some(entry => String(entry.fqdn || "").trim().toLowerCase() === normalizedFqdn));
   if (existing) {
     return {
@@ -26184,7 +25002,7 @@ function buildRandomizedPortCandidates(startPort, endPort) {
 
 // Keep allocation and the DB row update inside runtimeWithExternalPortLock.
 async function allocateExternalSshPorts(count = 1, excludeLabId = null, options = {}) {
-  const labs = await runtimeListLabRequests();
+  const labs = await [];
   const selfServiceVms = await runtimeListSelfServiceVms().catch(() => []);
   const cloudConsoleActions = await runtimeListCloudConsoleActions().catch(() => []);
   const platformStatus = await runtimeGetPlatformStatus();
@@ -26246,7 +25064,7 @@ async function allocateExternalSshPorts(count = 1, excludeLabId = null, options 
 }
 
 async function allocateExternalTcpPort(reservedPorts = new Set()) {
-  const labs = await runtimeListLabRequests();
+  const labs = await [];
   const selfServiceVms = await runtimeListSelfServiceVms().catch(() => []);
   const magnumClusters = await runtimeListMagnumClusters().catch(() => []);
   const cloudConsoleActions = await runtimeListCloudConsoleActions().catch(() => []);
@@ -26508,7 +25326,7 @@ async function listHeatTemplates() {
   const entries = await fs.readdir(HEAT_TEMPLATES_DIR, {
     withFileTypes: true
   });
-  const courses = await runtimeListCourses();
+  const courses = await [];
   const templates = [];
   for (const entry of entries) {
     if (!entry.isFile()) continue;
@@ -26552,7 +25370,7 @@ async function listApplicationYamls() {
   });
   const [entries, customLabRequests, arenaScenarios] = await Promise.all([fs.readdir(APPLICATION_YAMLS_DIR, {
     withFileTypes: true
-  }), runtimeListCustomLabRequests().catch(() => []), runtimeListArenaScenarios().catch(() => [])]);
+  }), runtimeListCustomLabRequests().catch(() => []), []]);
   const usageByName = new Map();
   const addUsage = (name, label) => {
     const normalizedName = normalizeTemplateFileName(name);
@@ -26738,37 +25556,13 @@ async function getServiceValidationStatus() {
   return { active: false, createdCount: 0, resources: {}, details: {}, summary: "일반 OpenStack 연결 및 VM 수명주기 검증", configured: Boolean(getServiceProjectName(status) && status.selfServiceVmAllowedImages?.length && status.selfServiceVmAllowedFlavors?.length) };
 }
 
-async function loadWrittenExam(courseId) {
-  const filePath = getWrittenExamFilePath(courseId);
-  try {
-    const raw = await fs.readFile(filePath, "utf8");
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
 
-function getWrittenExamFilePath(courseId) {
-  return path.join(WRITTEN_EXAMS_DIR, `course-${Number(courseId)}.json`);
-}
 
-async function loadLabExam(courseId) {
-  const stored = await runtimeLoadLabExamConfig(courseId);
-  if (stored) return stored;
-  try {
-    const raw = await fs.readFile(getLabExamMetaPath(courseId), "utf8");
-    const legacyExam = JSON.parse(raw);
-    await runtimeSaveLabExamConfig(courseId, legacyExam);
-    return legacyExam;
-  } catch (error) {
-    if (error?.code === "ENOENT") return null;
-    throw error;
-  }
-}
 
-function getLabExamMetaPath(courseId) {
-  return path.join(LAB_EXAMS_DIR, `course-${Number(courseId)}.json`);
-}
+
+
+
+
 
 function buildTossAuthorization(secretKey) {
   return `Basic ${Buffer.from(`${String(secretKey || "").trim()}:`).toString("base64")}`;
@@ -26838,13 +25632,7 @@ async function runOpenstackLifecycleValidationTest(adminUser = {}, options = {})
     await deleteHeatStack({ stackName: created?.stackId || created?.stackName || stackName, projectName });
   }
 }
-async function deleteIfExists(targetPath) {
-  try {
-    await fs.unlink(targetPath);
-  } catch (error) {
-    if (error?.code !== "ENOENT") throw error;
-  }
-}
+
 function validateSecurityConfiguration() {
   if (IS_PRODUCTION && SESSION_SECRET === "change-me-for-production") {
     throw new Error("SESSION_SECRET must be set in production.");
@@ -27415,51 +26203,13 @@ const instanceMonitorHistory = new Map();
 function hasSelfServiceVmRuntimeResource(vm = {}) {
   return Boolean(String(vm.stackId || "").trim() || String(vm.stackName || "").trim() || String(vm.instanceIp || "").trim() || Array.isArray(vm.instanceIps) && vm.instanceIps.some(item => String(item?.address || item?.ip || item || "").trim()) || Array.isArray(vm.vmNodes) && vm.vmNodes.length > 0);
 }
-function shouldIncludeLabInInstanceMonitor(lab = {}) {
-  const status = String(lab.status || "").trim().toLowerCase();
-  if (!INSTANCE_MONITOR_VISIBLE_STATUSES.has(status)) return false;
-  return hasLabRuntimeResource(lab);
-}
+
 function shouldIncludeSelfServiceVmInInstanceMonitor(vm = {}) {
   const status = String(vm.status || "").trim().toLowerCase();
   if (!INSTANCE_MONITOR_VISIBLE_STATUSES.has(status)) return false;
   return hasSelfServiceVmRuntimeResource(vm);
 }
-function buildStoredLabMonitorMetrics(lab = {}) {
-  const diskReadBytes = normalizeMonitorNumber(lab?.diskReadBytes);
-  const diskWriteBytes = normalizeMonitorNumber(lab?.diskWriteBytes);
-  const networkRxBytes = normalizeMonitorNumber(lab?.trafficRxBytes);
-  const networkTxBytes = normalizeMonitorNumber(lab?.trafficTxBytes);
-  const networkDailyBytes = normalizeMonitorNumber(lab?.trafficDailyBytes);
-  const networkTotalBytes = normalizeMonitorNumber(lab?.trafficTotalBytes);
-  const hasVmMetrics = Boolean(lab?.vmMetricsCheckedAt);
-  const hasTrafficMetrics = Boolean(lab?.trafficCheckedAt);
-  const networkMetricMapped = Boolean(lab?.trafficIncomingMetricId || lab?.trafficOutgoingMetricId || lab?.trafficResourceId);
-  const diskSupported = !hasVmMetrics ? false : diskReadBytes + diskWriteBytes > 0 ? true : null;
-  const networkSupported = networkMetricMapped ? hasTrafficMetrics ? true : null : hasTrafficMetrics ? networkRxBytes + networkTxBytes + networkDailyBytes + networkTotalBytes > 0 ? true : null : false;
-  return {
-    supported: true,
-    cpuUsagePercent: normalizeMonitorNumber(lab?.cpuUsagePercent),
-    memoryUsagePercent: normalizeMonitorNumber(lab?.memoryUsagePercent),
-    cpuSupported: hasVmMetrics,
-    memorySupported: hasVmMetrics,
-    diskReadBytes,
-    diskWriteBytes,
-    diskSupported,
-    diskSupportStatus: diskSupported === true ? "collected" : hasVmMetrics ? "unknown" : "waiting",
-    networkRxBytes,
-    networkTxBytes,
-    networkDailyBytes,
-    networkTotalBytes,
-    networkSupported,
-    networkMetricMapped,
-    networkSupportStatus: networkSupported === true ? "mapped" : hasTrafficMetrics || networkMetricMapped ? "unknown" : "waiting",
-    trafficExceeded: Boolean(lab?.trafficExceeded),
-    checkedAt: lab?.vmMetricsCheckedAt || lab?.trafficCheckedAt || "",
-    vmMetricsCheckedAt: lab?.vmMetricsCheckedAt || "",
-    trafficCheckedAt: lab?.trafficCheckedAt || ""
-  };
-}
+
 function buildInstanceUsageWarningContent(item = {}, user = {}) {
   const metrics = item.metrics || {};
   const diskReadBytes = normalizeMonitorNumber(metrics.diskReadBytes);
@@ -27692,58 +26442,7 @@ function buildMonitorRisk({
     reasons: []
   };
 }
-function buildLabMonitorItem(lab, {
-  course = null,
-  user = null,
-  recentlyActive = false,
-  liveMetrics = null
-} = {}) {
-  const status = String(lab?.status || "").trim().toLowerCase();
-  const metrics = liveMetrics || buildStoredLabMonitorMetrics(lab);
-  const hasExposure = Boolean(lab?.publicEnabled || lab?.publicTcpEnabled || lab?.externalSshEnabled || lab?.externalRdpEnabled || lab?.publicRequestPending || lab?.publicTcpRequestPending || lab?.externalSshRequestPending || lab?.externalRdpRequestPending || Array.isArray(lab?.publicDomains) && lab.publicDomains.length || Array.isArray(lab?.publicTcpRoutes) && lab.publicTcpRoutes.length || Array.isArray(lab?.requestedPublicDomains) && lab.requestedPublicDomains.length || Array.isArray(lab?.requestedPublicTcpRoutes) && lab.requestedPublicTcpRoutes.length);
-  return {
-    key: `lab:${lab.id}`,
-    type: "lab",
-    label: String(lab?.purpose || "learning") === "exam" ? "시험 랩" : "과정 랩",
-    id: lab.id,
-    userId: lab.userId,
-    username: lab.username || user?.username || "",
-    userName: lab.userName || user?.name || "",
-    userRole: user?.role || "",
-    userStatus: user?.status || "",
-    selfServiceVmEnabled: Boolean(user?.selfServiceVmEnabled),
-    courseId: lab.courseId,
-    courseTitle: lab.courseTitle || course?.title || "",
-    title: lab.stackName || lab.courseTitle || course?.title || `랩 #${lab.id}`,
-    status,
-    stackName: lab.stackName || "",
-    instanceIp: lab.instanceIp || "",
-    instanceCount: Math.max(1, Array.isArray(lab.vmNodes) && lab.vmNodes.length ? lab.vmNodes.length : 1),
-    flavor: lab.currentFlavor || course?.heatParameters?.flavor || "",
-    backendType: lab.labBackendType || course?.labBackendType || "vm",
-    createdAt: lab.createdAt || "",
-    startedAt: lab.startedAt || "",
-    lastActivityAt: lab.lastAccessedAt || "",
-    recentlyActive: Boolean(recentlyActive),
-    expiresAt: lab.expiresAt || "",
-    metrics,
-    risk: buildMonitorRisk({
-      status,
-      metrics,
-      lastActivityAt: lab.lastAccessedAt,
-      createdAt: lab.createdAt || lab.startedAt,
-      hasExposure,
-      recentlyActive
-    }),
-    actions: {
-      canWarn: Boolean(user?.id || lab.userId || lab.username),
-      canPause: status === "running",
-      canResume: ["approved", "provisioning", "paused", "stopped"].includes(status),
-      canTerminate: ["approved", "provisioning", "building", "running", "paused", "stopped", "failed"].includes(status),
-      canDisableVmAccess: Boolean(user?.selfServiceVmEnabled)
-    }
-  };
-}
+
 function buildSelfServiceMonitorItem(vm, {
   user = null,
   recentlyActive = false,
@@ -27919,33 +26618,12 @@ async function getAdminInstanceMonitorSnapshot({
   force = false
 } = {}) {
   const platformStatus = await runtimeGetPlatformStatus();
-  const [users, courses, accessStats, magnumClusters, troveInstances, cloudConsoleActions] = await Promise.all([runtimeListUsers(), runtimeListCourses(), runtimeGetUserAccessStats({
+  const [users, courses, accessStats, magnumClusters, troveInstances, cloudConsoleActions] = await Promise.all([runtimeListUsers(), [], runtimeGetUserAccessStats({
     activeWithinMinutes: ACCESS_ACTIVE_WITHIN_MINUTES
   }), runtimeListMagnumClusters().catch(() => []), runtimeListTroveInstances().catch(() => []), runtimeListCloudConsoleActions().catch(() => [])]);
   const userMap = new Map(users.map(user => [Number(user.id), user]));
-  const courseMap = new Map(courses.map(course => [Number(course.id), course]));
+
   const recentActiveUsernames = new Set([...(Array.isArray(accessStats?.recentUserSummaries) ? accessStats.recentUserSummaries : []), ...(Array.isArray(accessStats?.recentLogs) ? accessStats.recentLogs : [])].filter(item => item.lastEventType !== "logout" && item.eventType !== "logout").map(item => String(item.username || item.userName || "").trim().toLowerCase()).filter(Boolean));
-  let labs = await runtimeListLabRequests();
-  const labMetricMap = new Map();
-  if (force) {
-    const syncTargets = labs.filter(lab => ["running", "paused"].includes(String(lab?.status || "").toLowerCase())).slice(0, 30);
-    for (const lab of syncTargets) {
-      const course = courseMap.get(Number(lab.courseId));
-      if (!course?.labEnabled) continue;
-      const syncedLab = await syncLabTrafficUsage(lab, course, platformStatus).catch(error => {
-        console.warn("[instance-monitor] lab metric refresh failed", {
-          labId: lab.id,
-          message: error?.message
-        });
-        return null;
-      });
-      if (syncedLab) {
-        const liveMetrics = syncedLab.__monitorMetrics || {};
-        labMetricMap.set(Number(lab.id), liveMetrics.supported ? liveMetrics : buildStoredLabMonitorMetrics(syncedLab));
-      }
-    }
-    labs = await runtimeListLabRequests();
-  }
   const selfServiceVms = await runtimeListSelfServiceVms();
   const selfServiceMetricMap = new Map();
   if (force) {
@@ -27964,14 +26642,9 @@ async function getAdminInstanceMonitorSnapshot({
     }
   }
   const previousVisibleStatuses = new Set(["requested", "approved", "provisioning", "building", "running", "paused", "stopped", "terminating", "failed"]);
-  const hiddenLabNoResource = labs.filter(lab => previousVisibleStatuses.has(String(lab?.status || "").toLowerCase()) && !hasLabRuntimeResource(lab)).length;
+  const hiddenLabNoResource = 0;
   const hiddenSelfServiceNoResource = selfServiceVms.filter(vm => previousVisibleStatuses.has(String(vm?.status || "").toLowerCase()) && !hasSelfServiceVmRuntimeResource(vm)).length;
-  const labItems = labs.filter(lab => shouldIncludeLabInInstanceMonitor(lab)).map(lab => buildLabMonitorItem(lab, {
-    course: courseMap.get(Number(lab.courseId)),
-    user: userMap.get(Number(lab.userId)),
-    recentlyActive: recentActiveUsernames.has(String(lab.username || "").trim().toLowerCase()),
-    liveMetrics: labMetricMap.get(Number(lab.id)) || null
-  }));
+  const labItems = [];
   const selfServiceItems = selfServiceVms.filter(vm => shouldIncludeSelfServiceVmInInstanceMonitor(vm)).map(vm => buildSelfServiceMonitorItem(vm, {
     user: userMap.get(Number(vm.userId)),
     recentlyActive: recentActiveUsernames.has(String(vm.username || "").trim().toLowerCase()),
@@ -28478,13 +27151,7 @@ function sanitizeOpenstackErrorMessage(error) {
   }
   return "현재 OpenStack 자원 상태를 확인하지 못했습니다. 관리자에게 문의해 주세요.";
 }
-async function touchLab(labId) {
-  const now = Date.now();
-  await runtimeTouchLabRequest(labId, {
-    lastAccessedAt: new Date(now).toISOString(),
-    expiresAt: new Date(now + LAB_IDLE_TIMEOUT_MS).toISOString()
-  });
-}
+
 
 const internalImageCacheWarmupTimer = setTimeout(() => {
   if (DATABASE_AVAILABLE) {
@@ -28509,7 +27176,7 @@ setInterval(async () => {
     }
   }
   for (const [sessionId, terminalSession] of terminalSessions.entries()) {
-    if (await closeExamTerminalSessionIfUnavailable(terminalSession)) continue;
+
     const lastActivityAt = Number(terminalSession.lastActivityAt || terminalSession.createdAt || 0);
     if (now - lastActivityAt > terminalSessionIdleTimeoutMs) {
       if (typeof terminalSession.closeForIdle === "function") {

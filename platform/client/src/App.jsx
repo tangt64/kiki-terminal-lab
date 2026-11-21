@@ -5,8 +5,8 @@ import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { api, canUseCourseQuotePortal, usePortalApp } from "./portal-state.js";
 import { AdminField } from "./admin-field.jsx";
 import { formatBuildBranch, formatBuildCommit } from "./build-info.js";
-import { getQuotaUsagePercent, getQuotaUsageToneClass } from "./quota-usage.js";
-import TerminalLabLogo, { COMMUNITY_BRAND_NAME, TerminalLabBrand, KIKIOS_LOGO_MIME_TYPE, getTerminalLabFaviconHref } from "./terminal-lab-logo.jsx";
+
+import {KIKIOS_LOGO_MIME_TYPE,getTerminalLabFaviconHref} from "./terminal-lab-logo.jsx";
 import { getStandaloneExamCourseIds, isLearningLabResource, isStandaloneExamCourse } from "./course-visibility.js";
 const GuideMarkdownBlock = lazy(() => import("./guide-renderer.jsx"));
 const InteractiveLogoStage = lazy(() => import("./interactive-logo-stage.jsx"));
@@ -238,28 +238,7 @@ const SERVICE_ACCESS_RULES = {
   }
 };
 const TERMINAL_CLOUD_LEGACY_SECTION_INTENTS = {};
-const TERMINAL_CLOUD_SERVICE_HINT_INTENTS = {
-  vm: {
-    action: "instance",
-    tab: "instances"
-  },
-  container: {
-    action: "container",
-    tab: "containers"
-  },
-  k8s: {
-    action: "cluster",
-    tab: "clusters"
-  },
-  network: {
-    action: "network",
-    tab: "networks"
-  },
-  gpu: {
-    action: "gpu",
-    tab: "activity"
-  }
-};
+
 const SESSION_LOADING_MESSAGES = [{
   emote: "KEY",
   text: "세션 키를 확인하는 중입니다..."
@@ -1344,257 +1323,16 @@ if (!portalApp.session) {
       <SiteFooter platformStatus={app.platformStatus} />
     </div></CommunityUiMemory>;
 }
-function SidebarSection({
-  title,
-  children,
-  defaultOpen = true,
-  isActive = false
-}) {
-  const [open, setOpen] = useState(defaultOpen || isActive);
-  const hasMountedRef = useRef(false);
-  useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
-    if (isActive) setOpen(true);
-  }, [isActive]);
-  useEffect(() => {
-    setOpen(defaultOpen || isActive);
-  }, [defaultOpen]);
-  return <div className={`portal-nav-block ${isActive ? "is-active" : ""}`}>
-      <button aria-expanded={open ? "true" : "false"} className={`sidebar-section-toggle ${open ? "is-open" : ""}`} onClick={() => setOpen(current => !current)} type="button">
-        <span className="card-label">{title}</span>
-        <span aria-hidden="true" className="sidebar-section-toggle-icon">
-          {open ? "▾" : "▸"}
-        </span>
-      </button>
-      {open ? <nav className="nav">{children}</nav> : null}
-    </div>;
-}
-function SidebarSubmenu({
-  title,
-  children,
-  defaultOpen = true,
-  isActive = false
-}) {
-  const [open, setOpen] = useState(defaultOpen || isActive);
-  useEffect(() => {
-    if (isActive) setOpen(true);
-  }, [isActive]);
-  useEffect(() => {
-    setOpen(defaultOpen || isActive);
-  }, [defaultOpen]);
-  return <div className={`sidebar-submenu ${isActive ? "is-active" : ""}`}>
-      <button aria-expanded={open ? "true" : "false"} className={`sidebar-submenu-toggle ${open ? "is-open" : ""}`} onClick={() => setOpen(current => !current)} type="button">
-        <span>{title}</span>
-        <span aria-hidden="true" className="sidebar-submenu-toggle-icon">
-          {open ? "▾" : "▸"}
-        </span>
-      </button>
-      {open ? <div className="sidebar-submenu-list">{children}</div> : null}
-    </div>;
-}
-function SidebarItem({
-  active,
-  label,
-  onClick,
-  badge = 0,
-  tone = "",
-  tag = ""
-}) {
-  return <button aria-current={active ? "page" : undefined} className={`nav-item ${active ? "is-active" : ""} ${tone ? `is-${tone}` : ""}`} onClick={onClick} type="button">
-      <span className="nav-item-label">{label}</span>
-      {tag ? <span className="nav-item-tag">{tag}</span> : null}
-      {badge > 0 ? <span className="sidebar-badge">{badge}</span> : null}
-    </button>;
-}
-function SidebarServiceHint({
-  items = [],
-  onClick,
-  onItemClick,
-  title = "",
-  description = "",
-  tone = ""
-}) {
-  const visibleItems = items.filter(item => item?.label);
-  if (!visibleItems.length) return null;
-  return <div className={`sidebar-service-hint ${tone ? `is-${tone}` : ""}`}>
-      <button className="sidebar-service-hint-main" onClick={onClick} type="button">
-        <span>{title}</span>
-        <small>{description || "작업 상태와 다음 행동을 한곳에서 확인합니다."}</small>
-      </button>
-      <div aria-label={`${title || "메뉴"} 빠른 작업`} className="sidebar-service-hint-actions">
-        {visibleItems.map(item => <button aria-label={item.enabled ? `${item.label} 작업 열기` : `${item.label} 상태 확인`} key={item.key || item.label} onClick={() => onItemClick?.(item)} title={item.enabled ? `${item.label} 작업 열기` : `${item.label} 설정 상태 확인`} type="button">
-            <em className={[item.enabled ? "is-enabled" : "is-disabled", item.tone ? `is-${item.tone}` : ""].filter(Boolean).join(" ")}>
-              {item.label}
-            </em>
-          </button>)}
-      </div>
-    </div>;
-}
-function getPortalStatusLabel(percent) {
-  if (percent >= 92) return "위험";
-  if (percent >= 78) return "높음";
-  if (percent >= 60) return "주의";
-  return "정상";
-}
-function getPortalResourceHealthText(percent) {
-  if (percent >= 92) return "자원 생성이 제한될 수 있어요";
-  if (percent >= 78) return "새 실습 생성에 주의해 주세요";
-  if (percent >= 60) return "사용량을 확인해 주세요";
-  return "자원이 여유롭게 순항 중이에요";
-}
-function getPortalResourceMood(percent, {
-  circuitBreaker = false,
-  autoEnabled = true
-} = {}) {
-  if (circuitBreaker) return {
-    emoji: "🛑",
-    label: "긴급! 자원 생성 중지!"
-  };
-  if (percent >= 92 && autoEnabled) return {
-    emoji: "🚨",
-    label: "긴급! 자동 차단 준비"
-  };
-  if (percent >= 92) return {
-    emoji: "🚨",
-    label: "긴급! 생성 제한 가능"
-  };
-  if (percent >= 78) return {
-    emoji: "🔥",
-    label: "한계에 가까워요!"
-  };
-  if (percent >= 60) return {
-    emoji: "🟡",
-    label: "슬슬 바빠져요"
-  };
-  return {
-    emoji: "✨",
-    label: "쌩쌩해요!"
-  };
-}
-function formatPortalResourceAmount(value, unit = "") {
-  const number = Math.max(0, Number(value || 0) || 0);
-  if (unit === "MB") {
-    if (number >= 1024) return `${Math.round(number / 1024)}GB`;
-    return `${Math.round(number)}MB`;
-  }
-  if (unit === "GB") return `${Math.round(number)}GB`;
-  return `${Math.round(number)}`;
-}
-function buildPortalResourceDetails(quotaStatus) {
-  const metrics = quotaStatus?.metrics || {};
-  return [{
-    key: "cores",
-    label: "vCPU",
-    metric: metrics.cores
-  }, {
-    key: "ram",
-    label: "RAM",
-    metric: metrics.ram
-  }, {
-    key: "volumeStorage",
-    label: "Volume",
-    metric: metrics.volumeStorage
-  }].map(item => {
-    const limit = Number(item.metric?.limit || 0);
-    if (!Number.isFinite(limit) || limit <= 0) return null;
-    const used = Math.max(0, Number(item.metric?.used || 0) || 0);
-    const remaining = Math.max(0, limit - used);
-    const percent = Math.max(0, Math.min(100, Math.round(Number(item.metric?.percent ?? used / limit * 100) || 0)));
-    return {
-      key: item.key,
-      label: item.label,
-      unit: item.metric?.unit || "",
-      percent,
-      usedText: formatPortalResourceAmount(used, item.metric?.unit),
-      limitText: formatPortalResourceAmount(limit, item.metric?.unit),
-      remainingText: formatPortalResourceAmount(remaining, item.metric?.unit),
-      value: `${formatPortalResourceAmount(remaining, item.metric?.unit)} 남음`
-    };
-  }).filter(Boolean);
-}
-function PortalStatusBadge({
-  quotaStatus,
-  accessStats,
-  platformStatus
-}) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const quotaPercent = getQuotaUsagePercent(quotaStatus);
-  const toneClass = getQuotaUsageToneClass(quotaStatus);
-  const circuitBreakerOpen = Boolean(platformStatus?.labCircuitBreaker);
-  const dotLevel = quotaPercent >= 92 ? "critical" : quotaPercent >= 78 ? "hot" : quotaPercent >= 60 ? "warn" : "calm";
-  const statusLabel = circuitBreakerOpen ? "차단" : getPortalStatusLabel(quotaPercent);
-  const healthText = circuitBreakerOpen ? "신규 실습 자원 생성을 중지했어요" : getPortalResourceHealthText(quotaPercent);
-  const resourceMood = getPortalResourceMood(quotaPercent, {
-    circuitBreaker: circuitBreakerOpen,
-    autoEnabled: platformStatus?.labAutoCircuitBreakerEnabled !== false
-  });
-  const resourceDetails = buildPortalResourceDetails(quotaStatus);
-  const currentConnectedUsers = Math.max(0, Number(accessStats?.currentConnectedUsers || 0) || 0);
-  const currentInstructorUsers = Math.max(0, Number(accessStats?.currentInstructorUsers || accessStats?.activeInstructorUsers || 0) || 0);
-  const activeWithinMinutes = Math.max(1, Number(accessStats?.activeWithinMinutes || 2) || 2);
-  const instructorPresenceLabel = currentInstructorUsers > 0 ? "강사 접속중" : "강사 부재중";
-  const instructorPresenceIcon = currentInstructorUsers > 0 ? "🧑‍🏫" : "💤";
-  const projectName = String(quotaStatus?.projectName || "서비스 프로젝트").trim() || "서비스 프로젝트";
-  const detailTitle = resourceDetails.length ? resourceDetails.map(item => `${item.label} ${item.value}`).join(" · ") : "vCPU/RAM/Volume quota 정보 대기";
-  const statusSummary = `${healthText} · 리소스 ${quotaPercent}% 사용`;
-  return <div className="portal-status-wrap">
-      <button className={`portal-status-badge ${toneClass}`} style={{
-      "--portal-quota-level": `${quotaPercent}%`
-    }} type="button" aria-expanded={detailsOpen} aria-label={`전체 실습 프로젝트 기준 자원 상태 ${statusLabel}, ${resourceMood.label}, ${statusSummary}, ${instructorPresenceLabel}, 현재 접속 ${currentConnectedUsers}명`} onClick={() => setDetailsOpen(current => !current)} title={`${projectName} 전체 실습 프로젝트 기준 · ${resourceMood.label} ${healthText} · Core/RAM/Volume 사용률 ${quotaPercent}% · ${instructorPresenceLabel} · 현재 접속 ${currentConnectedUsers}명 · ${detailTitle}`}>
-        <span className={`portal-resource-dots is-${dotLevel}`} aria-hidden="true">
-          {Array.from({
-          length: 18
-        }).map((_, index) => <span className={`portal-resource-dot is-dot-${index + 1}`} key={index} />)}
-        </span>
-        <span className="portal-status-copy">
-          <span className="portal-status-title">자원 상태</span>
-          <small className="portal-status-mood">
-            <span aria-hidden="true">{resourceMood.emoji}</span>
-            {resourceMood.label}
-          </small>
-        </span>
-        <span className="portal-status-action">
-          <span className="portal-status-state">
-            <i aria-hidden="true" />
-            <strong>{statusLabel}</strong>
-          </span>
-          <span className="portal-status-expand-hint">
-            {detailsOpen ? "닫기" : "상세"}
-            <i aria-hidden="true" />
-          </span>
-        </span>
-      </button>
-      {detailsOpen ? <div className="portal-status-popover" role="region" aria-label="실습 자원 상세">
-          <div className="portal-status-popover-head">
-            <strong>{projectName}</strong>
-            <span>{`전체 실습 프로젝트 기준 · ${statusSummary}`}</span>
-          </div>
-          {resourceDetails.length ? <div className="portal-status-resource-list">
-              {resourceDetails.map(item => <div className="portal-status-resource-row" key={item.key}>
-                  <div className="portal-status-resource-line">
-                    <span>{item.label}</span>
-                    <strong>{`${item.percent}% 사용`}</strong>
-                  </div>
-                  <span className="portal-status-meter" aria-hidden="true">
-                    <span style={{
-              width: `${item.percent}%`
-            }} />
-                  </span>
-                  <small>{`${item.usedText} 사용 · ${item.remainingText} 남음 / 총 ${item.limitText}`}</small>
-                </div>)}
-            </div> : <p>vCPU/RAM/Volume quota 정보를 기다리고 있습니다.</p>}
-          <div className="portal-status-presence-detail">
-            <span>{`${instructorPresenceIcon} ${instructorPresenceLabel}`}</span>
-            <span>{`👥 현재 접속 ${currentConnectedUsers}명`}</span>
-          </div>
-          <p className="portal-status-active-note">{`최근 ${activeWithinMinutes}분 활동 기준입니다.`}</p>
-          <p>개인 PC 기준이 아니라 실습 프로젝트 전체 자원 기준입니다.</p>
-        </div> : null}
-    </div>;
-}
+
+
+
+
+
+
+
+
+
+
 function switchSection(app, setMobileNavOpen, section, options = {}) {
   const {
     closeMobileNav = true
@@ -2226,16 +1964,4 @@ function renderLabStatus(status) {
   if (status === "terminated") return "종료됨";
   if (status === "failed") return "실패";
   return status || "-";
-}
-export function getRoute() {
-  if (window.location.pathname.startsWith("/arena-preview")) return "arena-preview";
-  return window.location.pathname.startsWith("/admin") ? "admin" : "portal";
-}
-export function getPopupMode() {
-  if (window.location.pathname.startsWith("/instructor-share")) return "instructor-share";
-  return window.location.pathname.startsWith("/terminal-popup") ? "terminal" : "";
-}
-export function navigate(pathname) {
-  if (window.location.pathname !== pathname) window.history.pushState({}, "", pathname);
-  window.dispatchEvent(new PopStateEvent("popstate"));
 }

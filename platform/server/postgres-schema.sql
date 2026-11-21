@@ -264,106 +264,10 @@ CREATE INDEX IF NOT EXISTS idx_mail_campaign_deliveries_campaign_status ON mail_
 CREATE INDEX IF NOT EXISTS idx_mail_campaign_deliveries_message ON mail_campaign_deliveries(message_id);
 CREATE INDEX IF NOT EXISTS idx_mail_campaign_deliveries_email ON mail_campaign_deliveries(email, created_at DESC);
 
-CREATE TABLE IF NOT EXISTS courses (
-  id BIGINT PRIMARY KEY,
-  slug TEXT NOT NULL UNIQUE,
-  category TEXT NOT NULL,
-  course_type TEXT NOT NULL DEFAULT 'standard',
-  package_items_json TEXT NOT NULL DEFAULT '[]',
-  title TEXT NOT NULL,
-  summary TEXT NOT NULL,
-  price INTEGER NOT NULL DEFAULT 0,
-  promo_enabled INTEGER NOT NULL DEFAULT 0,
-  promo_price INTEGER NOT NULL DEFAULT 0,
-  promo_starts_at TEXT NOT NULL DEFAULT '',
-  promo_ends_at TEXT NOT NULL DEFAULT '',
-  duration TEXT NOT NULL,
-  course_access_days INTEGER NOT NULL DEFAULT 30,
-  level TEXT NOT NULL,
-  body TEXT NOT NULL,
-  youtube_url TEXT NOT NULL DEFAULT '',
-  online_meeting_url TEXT NOT NULL DEFAULT '',
-  online_board_url TEXT NOT NULL DEFAULT '',
-  online_course_notice TEXT NOT NULL DEFAULT '',
-  online_session_note TEXT NOT NULL DEFAULT '',
-  lab_guide_markdown TEXT NOT NULL DEFAULT '',
-  commands_markdown TEXT NOT NULL DEFAULT '',
-  ai_system_prompt TEXT NOT NULL DEFAULT '',
-  ai_quick_prompts_json TEXT NOT NULL DEFAULT '[]',
-  objectives_json TEXT NOT NULL,
-  materials_json TEXT NOT NULL,
-  course_curriculum_json TEXT NOT NULL DEFAULT '[]',
-  course_videos_json TEXT NOT NULL DEFAULT '[]',
-  course_recordings_json TEXT NOT NULL DEFAULT '[]',
-  external_tool_links_json TEXT NOT NULL DEFAULT '[]',
-  external_learning_tools_json TEXT NOT NULL DEFAULT '[]',
-  lab_start_checklist_json TEXT NOT NULL DEFAULT '[]',
-  lab_enabled INTEGER NOT NULL DEFAULT 0,
-  lab_approval_mode TEXT NOT NULL DEFAULT 'manual',
-  public_domain_approval_mode TEXT NOT NULL DEFAULT 'manual',
-  public_tcp_approval_mode TEXT NOT NULL DEFAULT 'manual',
-  external_ssh_approval_mode TEXT NOT NULL DEFAULT 'manual',
-  external_rdp_approval_mode TEXT NOT NULL DEFAULT 'manual',
-  lab_retention_mode TEXT NOT NULL DEFAULT 'ephemeral',
-  lab_retention_preset TEXT NOT NULL DEFAULT '1',
-  lab_retention_days INTEGER NOT NULL DEFAULT 1,
-  allow_resume_existing_lab INTEGER NOT NULL DEFAULT 0,
-  lab_resize_policy TEXT NOT NULL DEFAULT 'requestable',
-  lab_resize_allowed_flavors TEXT NOT NULL DEFAULT '',
-  terminal_replay_mode TEXT NOT NULL DEFAULT 'inherit',
-  traffic_monitoring_enabled INTEGER NOT NULL DEFAULT 1,
-  traffic_daily_limit_gb DOUBLE PRECISION NOT NULL DEFAULT 0,
-  traffic_total_limit_gb DOUBLE PRECISION NOT NULL DEFAULT 0,
-  traffic_exceeded_action TEXT NOT NULL DEFAULT 'warn',
-  heat_api_url TEXT NOT NULL DEFAULT '',
-  heat_template_name TEXT NOT NULL DEFAULT '',
-  heat_stack_prefix TEXT NOT NULL DEFAULT '',
-  heat_parameters_json TEXT NOT NULL DEFAULT '{}',
-  terminal_ssh_user TEXT NOT NULL DEFAULT 'ubuntu',
-  terminal_ssh_port INTEGER NOT NULL DEFAULT 22,
-  terminal_jump_host TEXT NOT NULL DEFAULT '',
-  terminal_jump_user TEXT NOT NULL DEFAULT '',
-  is_published INTEGER NOT NULL DEFAULT 1,
-  is_landing_preview INTEGER NOT NULL DEFAULT 0,
-  course_status TEXT NOT NULL DEFAULT 'published',
-  release_label TEXT NOT NULL DEFAULT '',
-  access_scope TEXT NOT NULL DEFAULT 'public',
-  access_code TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS textbooks (
-  id BIGINT PRIMARY KEY,
-  slug TEXT NOT NULL UNIQUE,
-  title TEXT NOT NULL,
-  summary TEXT NOT NULL DEFAULT '',
-  content_markdown TEXT NOT NULL DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'draft',
-  version TEXT NOT NULL DEFAULT '1.0',
-  created_by BIGINT REFERENCES users(id),
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS course_textbooks (
-  id BIGINT PRIMARY KEY,
-  course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-  textbook_id BIGINT NOT NULL REFERENCES textbooks(id) ON DELETE CASCADE,
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  required INTEGER NOT NULL DEFAULT 0,
-  visible INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL,
-  UNIQUE(course_id, textbook_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_course_textbooks_course_order ON course_textbooks(course_id, sort_order, id);
-CREATE INDEX IF NOT EXISTS idx_course_textbooks_textbook ON course_textbooks(textbook_id);
-
 CREATE TABLE IF NOT EXISTS qna_posts (
   id BIGINT PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id),
-  course_id BIGINT REFERENCES courses(id),
+  course_id BIGINT ,
   lab_request_id BIGINT,
   post_type TEXT NOT NULL DEFAULT 'question',
   status TEXT NOT NULL DEFAULT 'open',
@@ -477,96 +381,17 @@ CREATE TABLE IF NOT EXISTS invite_codes (
   enabled INTEGER NOT NULL DEFAULT 1,
   max_uses INTEGER NOT NULL DEFAULT 1,
   used_count INTEGER NOT NULL DEFAULT 0,
-  course_id BIGINT REFERENCES courses(id),
+  course_id BIGINT ,
   expires_at TEXT,
   created_by BIGINT REFERENCES users(id),
   created_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS user_course_access (
-  id BIGINT PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  course_id BIGINT NOT NULL REFERENCES courses(id),
-  granted_via TEXT NOT NULL DEFAULT 'code',
-  expires_at TEXT,
-  created_at TEXT NOT NULL,
-  UNIQUE(user_id, course_id)
-);
-
-CREATE TABLE IF NOT EXISTS course_access_requests (
-  id BIGINT PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  course_id BIGINT NOT NULL REFERENCES courses(id),
-  status TEXT NOT NULL DEFAULT 'requested',
-  request_type TEXT NOT NULL DEFAULT 'access',
-  request_note TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL,
-  reviewed_at TEXT,
-  reviewed_by BIGINT REFERENCES users(id),
-  review_note TEXT NOT NULL DEFAULT ''
-);
-
-CREATE TABLE IF NOT EXISTS payments (
-  id BIGINT PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  course_id BIGINT NOT NULL REFERENCES courses(id),
-  provider TEXT NOT NULL DEFAULT 'manual',
-  order_id TEXT NOT NULL UNIQUE,
-  payment_key TEXT UNIQUE,
-  provider_order_id TEXT NOT NULL DEFAULT '',
-  amount INTEGER NOT NULL DEFAULT 0,
-  currency TEXT NOT NULL DEFAULT 'KRW',
-  status TEXT NOT NULL DEFAULT 'ready',
-  failure_reason TEXT NOT NULL DEFAULT '',
-  metadata_json TEXT NOT NULL DEFAULT '{}',
-  requested_at TEXT NOT NULL,
-  ready_at TEXT,
-  paid_at TEXT,
-  failed_at TEXT,
-  cancelled_at TEXT,
-  reviewed_by BIGINT REFERENCES users(id)
-);
-
-CREATE TABLE IF NOT EXISTS exam_entitlements (
-  id TEXT PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  exam_course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-  source TEXT NOT NULL DEFAULT 'admin',
-  source_payment_id BIGINT REFERENCES payments(id) ON DELETE SET NULL,
-  required_course_id BIGINT REFERENCES courses(id) ON DELETE SET NULL,
-  status TEXT NOT NULL DEFAULT 'active',
-  granted_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
-  granted_at TEXT NOT NULL,
-  expires_at TEXT,
-  revoked_at TEXT,
-  revoke_reason TEXT NOT NULL DEFAULT '',
-  metadata_json TEXT NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX IF NOT EXISTS idx_exam_entitlements_user_exam_status ON exam_entitlements(user_id, exam_course_id, status);
-CREATE INDEX IF NOT EXISTS idx_exam_entitlements_payment ON exam_entitlements(source_payment_id);
-
-CREATE TABLE IF NOT EXISTS course_package_grants (
-  id TEXT PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  package_course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-  item_course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-  source_payment_id BIGINT REFERENCES payments(id) ON DELETE SET NULL,
-  access_created INTEGER NOT NULL DEFAULT 0,
-  status TEXT NOT NULL DEFAULT 'active',
-  granted_at TEXT NOT NULL,
-  revoked_at TEXT,
-  UNIQUE(user_id, package_course_id, item_course_id, source_payment_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_course_package_grants_payment ON course_package_grants(source_payment_id, status);
-CREATE INDEX IF NOT EXISTS idx_course_package_grants_user ON course_package_grants(user_id, package_course_id, status);
-
 CREATE TABLE IF NOT EXISTS discount_coupons (
   id BIGINT PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,
   user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-  course_id BIGINT REFERENCES courses(id) ON DELETE CASCADE,
+  course_id BIGINT ,
   source TEXT NOT NULL DEFAULT 'manual',
   discount_type TEXT NOT NULL DEFAULT 'percent',
   discount_value INTEGER NOT NULL DEFAULT 0,
@@ -616,90 +441,11 @@ CREATE TABLE IF NOT EXISTS user_terms_agreements (
 
 CREATE INDEX IF NOT EXISTS idx_user_terms_agreements_user ON user_terms_agreements(user_id, agreed_at DESC);
 
-CREATE TABLE IF NOT EXISTS lab_requests (
-  id BIGINT PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  course_id BIGINT NOT NULL REFERENCES courses(id),
-  status TEXT NOT NULL DEFAULT 'pending',
-  approval_mode TEXT NOT NULL DEFAULT 'manual',
-  stack_name TEXT,
-  stack_id TEXT,
-  instance_uuid TEXT,
-  instance_ip TEXT,
-  current_flavor TEXT NOT NULL DEFAULT '',
-  instance_ips_json TEXT NOT NULL DEFAULT '[]',
-  vm_nodes_json TEXT NOT NULL DEFAULT '[]',
-  terminal_ssh_user TEXT NOT NULL DEFAULT '',
-  terminal_ssh_password TEXT NOT NULL DEFAULT '',
-  traffic_resource_id TEXT NOT NULL DEFAULT '',
-  traffic_incoming_metric_id TEXT NOT NULL DEFAULT '',
-  traffic_outgoing_metric_id TEXT NOT NULL DEFAULT '',
-  traffic_rx_bytes BIGINT NOT NULL DEFAULT 0,
-  traffic_tx_bytes BIGINT NOT NULL DEFAULT 0,
-  traffic_total_bytes BIGINT NOT NULL DEFAULT 0,
-  traffic_daily_bytes BIGINT NOT NULL DEFAULT 0,
-  traffic_checked_at TEXT,
-  traffic_exceeded INTEGER NOT NULL DEFAULT 0,
-  traffic_exceeded_at TEXT,
-  cpu_usage_percent DOUBLE PRECISION NOT NULL DEFAULT 0,
-  memory_usage_percent DOUBLE PRECISION NOT NULL DEFAULT 0,
-  disk_read_bytes BIGINT NOT NULL DEFAULT 0,
-  disk_write_bytes BIGINT NOT NULL DEFAULT 0,
-  vm_metrics_checked_at TEXT,
-  requested_public_domains_json TEXT NOT NULL DEFAULT '[]',
-  requested_public_subdomain TEXT NOT NULL DEFAULT '',
-  requested_public_fqdn TEXT NOT NULL DEFAULT '',
-  requested_public_protocol TEXT NOT NULL DEFAULT 'http',
-  requested_public_port INTEGER,
-  public_domains_json TEXT NOT NULL DEFAULT '[]',
-  public_subdomain TEXT NOT NULL DEFAULT '',
-  public_fqdn TEXT NOT NULL DEFAULT '',
-  public_protocol TEXT NOT NULL DEFAULT 'http',
-  public_port INTEGER,
-  public_enabled INTEGER NOT NULL DEFAULT 0,
-  public_request_pending INTEGER NOT NULL DEFAULT 0,
-  public_reviewed_by TEXT NOT NULL DEFAULT '',
-  public_reviewed_at TEXT,
-  public_review_note TEXT NOT NULL DEFAULT '',
-  requested_public_tcp_routes_json TEXT NOT NULL DEFAULT '[]',
-  public_tcp_routes_json TEXT NOT NULL DEFAULT '[]',
-  public_tcp_enabled INTEGER NOT NULL DEFAULT 0,
-  public_tcp_request_pending INTEGER NOT NULL DEFAULT 0,
-  public_tcp_reviewed_by TEXT NOT NULL DEFAULT '',
-  public_tcp_reviewed_at TEXT,
-  public_tcp_review_note TEXT NOT NULL DEFAULT '',
-  external_ssh_enabled INTEGER NOT NULL DEFAULT 0,
-  external_ssh_port INTEGER,
-  external_ssh_request_pending INTEGER NOT NULL DEFAULT 0,
-  external_ssh_reviewed_by TEXT NOT NULL DEFAULT '',
-  external_ssh_reviewed_at TEXT,
-  external_ssh_review_note TEXT NOT NULL DEFAULT '',
-  external_rdp_enabled INTEGER NOT NULL DEFAULT 0,
-  external_rdp_port INTEGER,
-  external_rdp_request_pending INTEGER NOT NULL DEFAULT 0,
-  external_rdp_reviewed_by TEXT NOT NULL DEFAULT '',
-  external_rdp_reviewed_at TEXT,
-  external_rdp_review_note TEXT NOT NULL DEFAULT '',
-  requested_resize_flavor TEXT NOT NULL DEFAULT '',
-  resize_request_pending INTEGER NOT NULL DEFAULT 0,
-  resize_reviewed_by TEXT NOT NULL DEFAULT '',
-  resize_reviewed_at TEXT,
-  resize_review_note TEXT NOT NULL DEFAULT '',
-  metallb_vip_cidr TEXT NOT NULL DEFAULT '',
-  last_accessed_at TEXT,
-  expires_at TEXT,
-  error_message TEXT,
-  created_at TEXT NOT NULL,
-  approved_at TEXT,
-  started_at TEXT,
-  terminated_at TEXT
-);
-
 CREATE TABLE IF NOT EXISTS cicd_projects (
   id BIGINT PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  course_id BIGINT REFERENCES courses(id) ON DELETE SET NULL,
-  lab_request_id BIGINT REFERENCES lab_requests(id) ON DELETE SET NULL,
+  course_id BIGINT ,
+  lab_request_id BIGINT ,
   name TEXT NOT NULL,
   slug TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
@@ -804,84 +550,7 @@ CREATE TABLE IF NOT EXISTS heat_workload_test_jobs (
 CREATE INDEX IF NOT EXISTS idx_heat_workload_test_jobs_status_updated ON heat_workload_test_jobs(status, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_heat_workload_test_jobs_project_updated ON heat_workload_test_jobs(project_name, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_heat_workload_test_jobs_template_updated ON heat_workload_test_jobs(template_name, updated_at DESC);
-
-CREATE TABLE IF NOT EXISTS lab_exam_sessions (
-  id TEXT PRIMARY KEY,
-  course_id BIGINT NOT NULL,
-  exam_title TEXT NOT NULL DEFAULT '',
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  lab_request_id BIGINT,
-  attempt_id TEXT,
-  status TEXT NOT NULL DEFAULT 'preparing',
-  started_at TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  ended_at TEXT,
-  grading_started_at TEXT,
-  grading_finished_at TEXT,
-  end_reason TEXT NOT NULL DEFAULT '',
-  error_message TEXT NOT NULL DEFAULT '',
-  metadata_json TEXT NOT NULL DEFAULT '{}',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_monitoring_enabled INTEGER NOT NULL DEFAULT 1;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_access_days INTEGER NOT NULL DEFAULT 30;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_type TEXT NOT NULL DEFAULT 'standard';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_enabled INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_price INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_starts_at TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS promo_ends_at TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS online_meeting_url TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS online_board_url TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS online_course_notice TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS online_session_note TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS ai_system_prompt TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS ai_quick_prompts_json TEXT NOT NULL DEFAULT '[]';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_curriculum_json TEXT NOT NULL DEFAULT '[]';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_videos_json TEXT NOT NULL DEFAULT '[]';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_recordings_json TEXT NOT NULL DEFAULT '[]';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS external_tool_links_json TEXT NOT NULL DEFAULT '[]';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS external_learning_tools_json TEXT NOT NULL DEFAULT '[]';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_start_checklist_json TEXT NOT NULL DEFAULT '[]';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS survey_config_json TEXT NOT NULL DEFAULT '{}';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_status TEXT NOT NULL DEFAULT 'published';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS release_label TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_resize_policy TEXT NOT NULL DEFAULT 'requestable';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_resize_allowed_flavors TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS public_domain_approval_mode TEXT NOT NULL DEFAULT 'manual';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS public_tcp_approval_mode TEXT NOT NULL DEFAULT 'manual';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_daily_limit_gb DOUBLE PRECISION NOT NULL DEFAULT 0;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_total_limit_gb DOUBLE PRECISION NOT NULL DEFAULT 0;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_exceeded_action TEXT NOT NULL DEFAULT 'warn';
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS is_pinned INTEGER NOT NULL DEFAULT 0;
-
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS instance_uuid TEXT;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS current_flavor TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_resource_id TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_incoming_metric_id TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_outgoing_metric_id TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_rx_bytes BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_tx_bytes BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_total_bytes BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_daily_bytes BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_checked_at TEXT;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_exceeded INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS traffic_exceeded_at TEXT;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS cpu_usage_percent DOUBLE PRECISION NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS memory_usage_percent DOUBLE PRECISION NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS disk_read_bytes BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS disk_write_bytes BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS vm_metrics_checked_at TEXT;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS requested_public_tcp_routes_json TEXT NOT NULL DEFAULT '[]';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_routes_json TEXT NOT NULL DEFAULT '[]';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_enabled INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_request_pending INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_reviewed_by TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_reviewed_at TEXT;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS public_tcp_review_note TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS purpose TEXT NOT NULL DEFAULT 'learning';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS exam_session_id TEXT;
 
 CREATE TABLE IF NOT EXISTS custom_lab_requests (
   id BIGINT PRIMARY KEY,
@@ -1187,107 +856,6 @@ CREATE TABLE IF NOT EXISTS sessions (
   updated_at BIGINT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS arena_seasons (
-  id BIGINT PRIMARY KEY,
-  code TEXT NOT NULL UNIQUE,
-  title TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'scheduled',
-  reset_policy TEXT NOT NULL DEFAULT 'quarterly',
-  started_at TEXT,
-  ends_at TEXT,
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS arena_scenarios (
-  id BIGINT PRIMARY KEY,
-  code TEXT NOT NULL UNIQUE,
-  title TEXT NOT NULL,
-  summary TEXT NOT NULL DEFAULT '',
-  backend_type TEXT NOT NULL DEFAULT 'container',
-  console_type TEXT NOT NULL DEFAULT 'xterm',
-  tier TEXT NOT NULL DEFAULT 'normal',
-  difficulty INTEGER NOT NULL DEFAULT 1,
-  ttl_seconds INTEGER NOT NULL DEFAULT 1200,
-  validator_key TEXT NOT NULL DEFAULT '',
-  image_name TEXT NOT NULL DEFAULT '',
-  flavor_name TEXT NOT NULL DEFAULT '',
-  network_name TEXT NOT NULL DEFAULT '',
-  metadata_json TEXT NOT NULL DEFAULT '{}',
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS arena_nodes (
-  id BIGINT PRIMARY KEY,
-  season_id BIGINT NOT NULL REFERENCES arena_seasons(id) ON DELETE CASCADE,
-  scenario_id BIGINT NOT NULL REFERENCES arena_scenarios(id),
-  node_code TEXT NOT NULL,
-  label TEXT NOT NULL,
-  map_x DOUBLE PRECISION NOT NULL DEFAULT 0,
-  map_y DOUBLE PRECISION NOT NULL DEFAULT 0,
-  current_owner_user_id BIGINT REFERENCES users(id),
-  current_owner_handle TEXT NOT NULL DEFAULT '',
-  first_capture_at TEXT,
-  status TEXT NOT NULL DEFAULT 'open',
-  created_at TEXT NOT NULL,
-  UNIQUE(season_id, node_code)
-);
-
-CREATE TABLE IF NOT EXISTS arena_sessions (
-  id BIGINT PRIMARY KEY,
-  season_id BIGINT NOT NULL REFERENCES arena_seasons(id),
-  node_id BIGINT NOT NULL REFERENCES arena_nodes(id),
-  scenario_id BIGINT NOT NULL REFERENCES arena_scenarios(id),
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  state TEXT NOT NULL DEFAULT 'provisioning',
-  backend_type TEXT NOT NULL DEFAULT 'container',
-  console_type TEXT NOT NULL DEFAULT 'xterm',
-  resource_id TEXT NOT NULL DEFAULT '',
-  resource_name TEXT NOT NULL DEFAULT '',
-  console_url TEXT NOT NULL DEFAULT '',
-  validator_state TEXT NOT NULL DEFAULT 'pending',
-  started_at TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  ended_at TEXT,
-  terminated_reason TEXT NOT NULL DEFAULT '',
-  metadata_json TEXT NOT NULL DEFAULT '{}'
-);
-
-CREATE TABLE IF NOT EXISTS arena_attempts (
-  id BIGINT PRIMARY KEY,
-  session_id BIGINT NOT NULL UNIQUE REFERENCES arena_sessions(id) ON DELETE CASCADE,
-  season_id BIGINT NOT NULL REFERENCES arena_seasons(id),
-  node_id BIGINT NOT NULL REFERENCES arena_nodes(id),
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  result TEXT NOT NULL DEFAULT 'failed',
-  score INTEGER NOT NULL DEFAULT 0,
-  mmr_delta INTEGER NOT NULL DEFAULT 0,
-  rank_delta INTEGER NOT NULL DEFAULT 0,
-  duration_seconds INTEGER NOT NULL DEFAULT 0,
-  first_try_bonus INTEGER NOT NULL DEFAULT 0,
-  remaining_seconds INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS arena_captures (
-  id BIGINT PRIMARY KEY,
-  season_id BIGINT NOT NULL REFERENCES arena_seasons(id),
-  node_id BIGINT NOT NULL REFERENCES arena_nodes(id),
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  capture_type TEXT NOT NULL DEFAULT 'first_blood',
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS arena_events (
-  id BIGINT PRIMARY KEY,
-  season_id BIGINT NOT NULL REFERENCES arena_seasons(id),
-  node_id BIGINT REFERENCES arena_nodes(id),
-  user_id BIGINT REFERENCES users(id),
-  event_type TEXT NOT NULL DEFAULT 'system',
-  message TEXT NOT NULL DEFAULT '',
-  payload_json TEXT NOT NULL DEFAULT '{}',
-  created_at TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS lucky_draw_events (
   id BIGINT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -1312,7 +880,7 @@ CREATE TABLE IF NOT EXISTS lucky_draw_rewards (
   event_id BIGINT NOT NULL REFERENCES lucky_draw_events(id) ON DELETE CASCADE,
   reward_type TEXT NOT NULL DEFAULT 'message',
   label TEXT NOT NULL,
-  course_id BIGINT REFERENCES courses(id),
+  course_id BIGINT ,
   coupon_discount_type TEXT NOT NULL DEFAULT 'percent',
   coupon_discount_value INTEGER NOT NULL DEFAULT 0,
   coupon_expires_in_days INTEGER NOT NULL DEFAULT 7,
@@ -1358,14 +926,6 @@ CREATE INDEX IF NOT EXISTS idx_lucky_draw_rewards_event_id ON lucky_draw_rewards
 CREATE INDEX IF NOT EXISTS idx_lucky_draw_attempts_event_user_date ON lucky_draw_attempts(event_id, user_id, attempt_date);
 CREATE INDEX IF NOT EXISTS idx_lucky_draw_grants_user_created_at ON lucky_draw_grants(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_llm_daily_usage_date ON llm_daily_usage(usage_date, user_id);
-
-CREATE INDEX IF NOT EXISTS idx_lab_requests_user_id ON lab_requests(user_id);
-CREATE INDEX IF NOT EXISTS idx_lab_requests_course_id ON lab_requests(course_id);
-CREATE INDEX IF NOT EXISTS idx_lab_requests_exam_session ON lab_requests(exam_session_id);
-CREATE INDEX IF NOT EXISTS idx_lab_requests_created ON lab_requests(created_at DESC, id DESC);
-CREATE INDEX IF NOT EXISTS idx_lab_requests_status_created ON lab_requests(status, created_at DESC, id DESC);
-CREATE INDEX IF NOT EXISTS idx_lab_exam_sessions_user_course_status ON lab_exam_sessions(user_id, course_id, status);
-CREATE INDEX IF NOT EXISTS idx_lab_exam_sessions_lab ON lab_exam_sessions(lab_request_id);
 CREATE INDEX IF NOT EXISTS idx_terminal_replay_sessions_user_started ON terminal_replay_sessions(user_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_terminal_replay_sessions_lab_started ON terminal_replay_sessions(lab_request_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_terminal_replay_events_session_offset ON terminal_replay_events(replay_session_id, offset_ms, id);
@@ -1378,32 +938,3 @@ CREATE INDEX IF NOT EXISTS idx_trove_instances_user_id ON trove_instances(user_i
 CREATE INDEX IF NOT EXISTS idx_trove_instances_project_status ON trove_instances(project_name, status);
 CREATE INDEX IF NOT EXISTS idx_internal_image_cache_namespace_repo ON internal_image_cache(namespace, repository);
 CREATE INDEX IF NOT EXISTS idx_internal_image_cache_cached_at ON internal_image_cache(cached_at DESC);
-CREATE INDEX IF NOT EXISTS idx_course_access_requests_user_id ON course_access_requests(user_id);
-CREATE INDEX IF NOT EXISTS idx_arena_nodes_season_id ON arena_nodes(season_id);
-CREATE INDEX IF NOT EXISTS idx_arena_sessions_user_state ON arena_sessions(user_id, state);
-CREATE INDEX IF NOT EXISTS idx_arena_events_season_created ON arena_events(season_id, created_at DESC);
-
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_ssh_enabled INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_ssh_port INTEGER;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_ssh_request_pending INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_ssh_reviewed_by TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_ssh_reviewed_at TEXT;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_ssh_review_note TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_enabled INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_port INTEGER;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_request_pending INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_reviewed_by TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_reviewed_at TEXT;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS external_rdp_review_note TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS requested_resize_flavor TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS resize_request_pending INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS resize_reviewed_by TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS resize_reviewed_at TEXT;
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS resize_review_note TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS metallb_vip_cidr TEXT NOT NULL DEFAULT '';
-CREATE UNIQUE INDEX IF NOT EXISTS idx_lab_requests_metallb_vip_cidr_unique
-  ON lab_requests (metallb_vip_cidr)
-  WHERE metallb_vip_cidr <> '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS terminal_ssh_user TEXT NOT NULL DEFAULT '';
-ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS terminal_ssh_password TEXT NOT NULL DEFAULT '';
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS terminal_replay_mode TEXT NOT NULL DEFAULT 'inherit';

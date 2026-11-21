@@ -5,12 +5,12 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ADMIN_PERMISSION_OPTIONS, isAdminUserRole, navigate, normalizeAdminPermissions } from "./portal-state.js";
 import NoticeView from "./notice-view.jsx";
 import PortalLogin from "./portal-login-view.jsx";
-import { TerminalLabBrand } from "./terminal-lab-logo.jsx";
+
 
 import { lazyNamedWithChunkReload, lazyWithChunkReload } from "./dynamic-import-reload.js";
 import { normalizeConsultingReplyTemplates, renderConsultingReplyTemplateNote, renderConsultingReplyTemplateSubject } from "./consulting-reply-templates.js";
 
-import { AdminField, AdminLuckyDrawTab, AdminSaveDialog, ToastStack, formatCourseDuration, formatCoursePriceLabel, formatDateTime, getCourseProgramType, getCourseProgramTypeDisplay, getQnaStatus, labStatus, useImeBufferedInput } from "./portal-views.jsx";
+import {AdminField,AdminLuckyDrawTab,AdminSaveDialog,ToastStack,formatDateTime,getCourseProgramType,getCourseProgramTypeDisplay,getQnaStatus,labStatus,useImeBufferedInput} from "./portal-views.jsx";
 const ADMIN_PLATFORM_FOCUS_STORAGE_KEY = "admin:platform:focus";
 
 
@@ -2425,145 +2425,8 @@ function AdminUsersTab(props) {
       </section>;
 }
 
-export function buildGuestPreviewPreview(course, options = {}) {
-  if (!course) return null;
-  const normalizedCourse = course;
-  const isExplicitPreview = Boolean(options.isExplicitPreview);
-  const courseTypeLabel = normalizedCourse.courseType === "online" ? "온라인 과정" : normalizedCourse.courseType === "exam" ? "시험 과정" : normalizedCourse.courseType === "package" ? "과정·시험 패키지" : "일반 과정";
-  const priceLabel = formatCoursePriceLabel(normalizedCourse);
-  const durationLabel = formatCourseDuration(normalizedCourse.duration);
-  const labEnabledLabel = normalizedCourse.labEnabled ? "랩 포함" : "랩 미사용";
-  const approvalLabel = normalizedCourse.labApprovalMode === "instant" ? "즉시 시작" : "승인 후 시작";
-  const retentionLabel = normalizedCourse.labEnabled ? String(normalizedCourse.labRetentionMode || "ephemeral") === "persistent" ? `${Math.max(1, Number(normalizedCourse.labRetentionDays || normalizedCourse.labRetentionPreset || 1) || 1)}일 유지` : "세션형 랩" : "랩 미사용";
-  const terminalUser = String(normalizedCourse.terminalSshUser || "rocky").trim() || "rocky";
-  const firstObjective = (normalizedCourse.objectives || [])[0] || "공개 커리큘럼 요약을 먼저 확인";
-  const secondObjective = (normalizedCourse.objectives || [])[1] || "학습 목표와 진행 순서를 파악";
-  const categoryLabel = normalizedCourse.category || "카테고리 미지정";
-  return {
-    title: normalizedCourse.title || "공개 과정",
-    subtitle: isExplicitPreview ? "과정 관리에서 미리보기 과정으로 체크된 공개 과정을 우선 노출합니다." : "맛보기 과정이 아직 지정되지 않아, 현재 공개 과정 중 하나를 먼저 보여주고 있습니다.",
-    badge: isExplicitPreview ? "로그인 없이 확인" : "공개 과정 미리보기",
-    description: normalizedCourse.body || normalizedCourse.summary || "과정 흐름과 결과 화면을 로그인 전에 미리 확인할 수 있습니다.",
-    chips: [{
-      label: courseTypeLabel,
-      tone: "is-success"
-    }, {
-      label: categoryLabel,
-      tone: "is-muted"
-    }, {
-      label: durationLabel,
-      tone: "is-muted"
-    }, {
-      label: labEnabledLabel,
-      tone: normalizedCourse.labEnabled ? "is-success" : "is-muted"
-    }],
-    lines: [{
-      label: "선택 과정",
-      value: normalizedCourse.title || "공개 과정"
-    }, {
-      label: "가격",
-      value: priceLabel
-    }, {
-      label: "학습 방식",
-      value: "자기 주도형 맛보기"
-    }, {
-      label: "진행 방식",
-      value: normalizedCourse.labEnabled ? `${approvalLabel} / ${retentionLabel}` : "설명과 결과 화면 미리보기"
-    }],
-    phases: [{
-      label: "과정 확인",
-      summary: "과정 설명과 전달 목표를 먼저 학습합니다.",
-      description: "공개된 과정 설명, 차시, 예상 필요 시간만 먼저 확인합니다. 로그인이나 요청은 아직 하지 않습니다.",
-      statusRows: [{
-        label: "과정 유형",
-        value: courseTypeLabel
-      }, {
-        label: "카테고리",
-        value: categoryLabel
-      }, {
-        label: "예상 기간",
-        value: durationLabel
-      }, {
-        label: "전달 목표",
-        value: firstObjective
-      }],
-      console: []
-    }, {
-      label: normalizedCourse.labEnabled ? "접속 준비" : "학습 준비",
-      summary: normalizedCourse.labEnabled ? "랩 입장 전에 준비 화면을 보여줍니다." : "랩이 없는 과정은 학습 안내를 보여줍니다.",
-      description: normalizedCourse.labEnabled ? "실제 랩 생성 전에 진입 직전 준비 화면을 샘플로 보여줍니다. 상태, 대표 IP, 접속 방식까지 여기서 먼저 확인합니다." : "랩이 없는 과정은 학습 자료와 진행 순서를 중심으로 맛보기 화면을 보여줍니다.",
-      statusRows: normalizedCourse.labEnabled ? [{
-        label: "상태",
-        value: approvalLabel
-      }, {
-        label: "대표 IP",
-        value: "192.0.2.34"
-      }, {
-        label: "고정 IP",
-        value: "192.0.2.34 (fixed)"
-      }, {
-        label: "외부 SSH",
-        value: `${terminalUser}@ssh.example.com:2200`
-      }, {
-        label: "요청 URL",
-        value: "preview.apps.example.com"
-      }] : [{
-        label: "학습 방식",
-        value: "자기 주도형 맛보기"
-      }, {
-        label: "학습 순서",
-        value: secondObjective
-      }, {
-        label: "안내",
-        value: "로그인 후 과정이 활성화됩니다."
-      }],
-      console: []
-    }, {
-      label: normalizedCourse.labEnabled ? "결과 화면 확인" : "결과 확인",
-      summary: normalizedCourse.labEnabled ? "실제 브라우저 터미널 화면 예시를 봅니다." : "결과 화면을 샘플로 봅니다.",
-      description: normalizedCourse.labEnabled ? "마지막 단계에서는 브라우저 터미널이 어떤 모습으로 보이는지 샘플 세션을 보여줍니다. 실제 접속과 이어하기는 로그인 후 가능합니다." : "결과 로그와 학습 흐름은 샘플 세션으로 보여주고, 실제 이어보기는 로그인 후에 이어집니다.",
-      console: [{
-        prefix: "[연결]",
-        text: `${terminalUser}@lab-preview:22`
-      }, {
-        prefix: "$",
-        text: "pwd"
-      }, {
-        prefix: "-",
-        text: "/workspace/lab-preview"
-      }, {
-        prefix: "$",
-        text: "cat mission.txt"
-      }, {
-        prefix: "-",
-        text: secondObjective
-      }, {
-        prefix: "$",
-        text: `whoami # ${terminalUser}`
-      }]
-    }]
-  };
-}
-export function buildPublicCourseTickerItems(courses) {
-  if (Array.isArray(courses) && courses.length) {
-    return courses.map(course => ({
-      label: `${course.title} · ${course.courseType === "online" ? "온라인" : "일반"} · ${course.level || "과정"}`
-    }));
-  }
-  return [{
-    label: "Linux 기초 실습 · 일반 · 입문"
-  }, {
-    label: "Kubernetes 운영 입문 · 일반 · 초급"
-  }, {
-    label: "OpenStack 첫 미리보기 · 일반 · 중급"
-  }, {
-    label: "GPU / vGPU 환경 체험 · 일반 · 중급"
-  }, {
-    label: "컨테이너 기초 흐름 · 온라인 · 입문"
-  }, {
-    label: "AI 실습 환경 시작하기 · 온라인 · 초급"
-  }];
-}
+
+
 export function truncateMiddleText(value, maxLength = 34) {
   const text = String(value || "").trim();
   if (text.length <= maxLength) return text;
@@ -2711,16 +2574,13 @@ function QnaThreadCard({
       </div>
       <div className="qna-tag-row">
         <span className="status-chip is-muted">{getQnaPostTypeLabel(post.postType)}</span>
-        {post.courseTitle ? <span className="status-chip is-muted">{post.courseTitle}</span> : null}
-        {post.labRequestId ? <span className="status-chip is-warn">{`랩 #${post.labRequestId}${post.labStatus ? ` · ${post.labStatus}` : ""}`}</span> : null}
+
+
         <span className="status-chip is-muted">{`댓글 ${(post.comments || []).length}`}</span>
         <span className="status-chip is-muted">{`도움돼요 ${helpfulCount}`}</span>
       </div>
-      {post.courseTitle ? <div className="qna-head"><strong>관련 과정</strong><span>{post.courseTitle}</span></div> : null}
-      {post.labRequestId ? <div className="qna-head">
-          <strong>연결 랩</strong>
-          <span>{[`#${post.labRequestId}`, post.labStackName || post.labContext?.stackName, post.labInstanceIp || post.labContext?.instanceIp].filter(Boolean).join(" · ")}</span>
-        </div> : null}
+
+
       <div className="qna-post-body">{post.body}</div>
       {post.answerText ? <div className="qna-answer">
           <strong>기존 관리자 답변</strong>
@@ -2767,7 +2627,7 @@ function AdminQnaTab(props) {
   return <section className="portal-stack">
       <section className="admin-simple-card admin-course-card">
         <div className="admin-card-header"><strong>커뮤니티 관리</strong></div>
-        <p className="hint">과정별 커뮤니티 글을 확인하고, 관리자도 공지성 글이나 댓글 답변을 바로 남길 수 있습니다.</p>
+        <p className="hint">커뮤니티 글을 확인하고, 관리자도 공지성 글이나 댓글 답변을 바로 남길 수 있습니다.</p>
         <form className="qna-form" onSubmit={props.onCreateQna}>
           <div className="community-compose-grid">
             <select value={props.qnaForm.postType || "question"} onChange={event => props.setQnaForm(current => ({
@@ -2776,25 +2636,8 @@ function AdminQnaTab(props) {
           }))}>
               {QNA_POST_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
             </select>
-            <select value={props.qnaForm.courseId || ""} onChange={event => props.setQnaForm(current => ({
-            ...current,
-            courseId: event.target.value,
-            labRequestId: ""
-          }))}>
-              <option value="">과정 미지정</option>
-              {(props.adminCourses || []).map(course => <option key={course.id} value={course.id}>{course.title}</option>)}
-            </select>
-            <select value={props.qnaForm.labRequestId || ""} onChange={event => {
-            const selectedLab = (props.adminLabs || []).find(lab => String(lab.id) === String(event.target.value));
-            props.setQnaForm(current => ({
-              ...current,
-              labRequestId: event.target.value,
-              courseId: selectedLab?.courseId ? String(selectedLab.courseId) : current.courseId
-            }));
-          }}>
-              <option value="">랩 연결 없음</option>
-              {(props.adminLabs || []).map(lab => <option key={lab.id} value={lab.id}>{`${lab.courseTitle || `과정 #${lab.courseId || "-"}`} · 랩 #${lab.id} · ${lab.status || "상태 없음"}`}</option>)}
-            </select>
+
+
           </div>
           <input value={props.qnaForm.title} onChange={event => props.setQnaForm(current => ({
           ...current,
@@ -2809,10 +2652,7 @@ function AdminQnaTab(props) {
       </section>
       <section className="admin-simple-card admin-course-card">
         <div className="admin-history-search">
-          <select value={courseFilter} onChange={event => setCourseFilter(event.target.value)}>
-            <option value="">전체 과정</option>
-            {(props.adminCourses || []).map(course => <option key={course.id} value={course.id}>{course.title}</option>)}
-          </select>
+
           <input type="search" {...searchInput} placeholder="제목, 내용, 작성자, 댓글로 검색" />
           <label className="admin-filter-inline">
             <input checked={showUnansweredOnly} onChange={event => setShowUnansweredOnly(event.target.checked)} type="checkbox" />

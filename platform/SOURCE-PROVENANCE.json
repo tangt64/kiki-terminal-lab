@@ -2135,7 +2135,7 @@
   ],
   "notes": [
     "General API implementations and UI copied from the recorded working tree. Education HTTP entry points removed; edition guard also returns 404.",
-    "Shared schema retains empty education compatibility tables. No original environment, data, training materials or Git history are distributed.",
+    "Active education tables removed; installed records are archived for migration and backup compatibility. No original environment, data, training materials or Git history are distributed.",
     "Operator domains, contacts, landing defaults and installation paths replaced with neutral examples."
   ],
   "version": "0.2.1",
@@ -2147,7 +2147,7 @@
     "removedEducationContent": [
       "client/src/curriculum-2026-data.js"
     ],
-    "description": "Education reports, lab terminals, instructor sharing and educational validation seeds removed; compatibility schema and inert shared helpers remain."
+    "description": "Education authoring, exam, survey and lab state removed; general SQL is independent of education tables. Legacy records and numeric links are preserved for data and backup compatibility."
   },
   "upstreamSync": {
     "date": "2026-11-11",

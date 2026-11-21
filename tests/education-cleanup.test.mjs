@@ -1,63 +1,65 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import pg from 'pg';
-import {REMOVED_EDUCATION_TABLES,removeEmptyEducationTables,omitEmptyEducationSnapshots,removeLegacyEducationUserReferences} from '../platform/server/education-schema-cleanup.js';
-
-test('removed education tables are not created by the new schema',()=>{
-  const schema=fs.readFileSync(new URL('../platform/server/postgres-schema.sql',import.meta.url),'utf8');
-  for(const table of REMOVED_EDUCATION_TABLES)assert.doesNotMatch(schema,new RegExp('CREATE TABLE IF NOT EXISTS '+table+'\\b'));
+import os from 'node:os';import path from 'node:path';import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import {randomBytes}from'node:crypto';import pg from'pg';
+import {REMOVED_EDUCATION_TABLES,archiveEducationTables,separateLegacyBackup}from'../platform/server/education-schema-cleanup.js';
+test('active schema creates no retired education tables',()=>{
+ const schema=fs.readFileSync(new URL('../platform/server/postgres-schema.sql',import.meta.url),'utf8');
+ assert.equal(REMOVED_EDUCATION_TABLES.length,25);
+ const server=fs.readFileSync(new URL('../platform/server/index.js',import.meta.url),'utf8');assert.doesNotMatch(server,/await null|function (?:grantPackageContents|loadLabExam|closeExamTerminalSessionIfUnavailable)\b/);
+ for(const table of REMOVED_EDUCATION_TABLES)assert.doesNotMatch(schema,new RegExp('(?:CREATE TABLE IF NOT EXISTS|ALTER TABLE) '+table+'\\b'));
 });
-test('empty legacy education backup snapshots are omitted without changing general data',()=>{
-  const users={rows:[{id:1,name:'Operator'}]};
-  const old={users,certificates:{rows:[],rowCount:0},course_quotes:{chunks:[],rowCount:0}};
-  assert.deepEqual(omitEmptyEducationSnapshots(old),{users});
-  assert.equal(old.certificates.rows.length,0);
+test('old populated backup records move to the generic archive without losing general rows',()=>{
+ const original={tables:{users:{rows:[{id:1,name:'operator'}]},courses:{rowCount:1,rows:[{id:7,content:{kept:true}}]},lab_requests:{rows:[]}},dumps:{}};
+ const copy=structuredClone(original),next=separateLegacyBackup(original);
+ assert.deepEqual(original,copy);assert.deepEqual(next.tables.users,original.tables.users);
+ assert.deepEqual(next.tables.community_legacy_records.rows,[{source_table:'courses',row_index:1,row_data:original.tables.courses.rows[0]}]);assert.ok(!next.tables.courses);
 });
-test('education backup data and invalid snapshots are never silently discarded',()=>{
-  for(const value of [{rows:[{id:1}]},{rows:[],rowCount:1},{rows:[],chunks:[{rows:[{id:1}]}]},{rows:[],truncated:true},{},{rows:'invalid'}])assert.throws(()=>omitEmptyEducationSnapshots({certificates:value}));
-  assert.deepEqual(omitEmptyEducationSnapshots({unrecognized:{rows:[]}}),{unrecognized:{rows:[]}});
+test('chunked old backup data is preserved and incomplete or duplicate sources fail before restore',()=>{
+ const next=separateLegacyBackup({tables:{},dumps:{courses:{format:'json-row-chunks-v1',rowCount:1,chunks:[{rowCount:1,rows:[{id:1}]}]}}});assert.equal(next.tables.community_legacy_records.rows.length,1);
+ for(const value of [{},{rows:[],rowCount:1},{rows:[],truncated:true},{rows:'invalid'},{chunks:[{rows:[],rowCount:1}]}])assert.throws(()=>separateLegacyBackup({tables:{courses:value}}));
+ assert.throws(()=>separateLegacyBackup({tables:{courses:{rows:[{id:1}]}},dumps:{courses:{rows:[]}}}));
+ assert.throws(()=>separateLegacyBackup({tables:{community_legacy_records:{rows:[{source_table:'courses',row_index:1,row_data:{}}]},courses:{rows:[{id:1}]}}}));
 });
-test('education screen stubs and their application imports are removed',()=>{
-  const app=fs.readFileSync(new URL('../platform/client/src/App.jsx',import.meta.url),'utf8');
-  for(const name of ['course-view.jsx','learning-views.jsx','curriculum-2026-view.jsx','offline-schedule-view.jsx','survey-view.jsx','survey-results-view.jsx','course-quote-view.jsx']){
-    assert.equal(fs.existsSync(new URL('../platform/client/src/'+name,import.meta.url)),false);
-    assert.ok(!app.includes('import("./'+name+'")'));
-  }
+test('general hook no longer synthesizes education responses or issues education loads',()=>{
+ const s=fs.readFileSync(new URL('../platform/client/src/portal-state.js',import.meta.url),'utf8');
+ assert.doesNotMatch(s,/emptyEducationResponse|(?:function|const) (?:loadCourses|loadLabs|loadWrittenExams|loadLabExams|loadPayments|onPurchaseCourse)\b/);
+ for(const handler of ['onCreateCustomLabTerminalSession','onPublishLabDomain','onUnpublishLabDomain','onLogin','onSavePlatformSettings','onCreateQna'])assert.match(s,new RegExp('function '+handler+'\\b'));
 });
-
-const url=process.env.TEST_EDUCATION_CLEANUP_DATABASE_URL;
-test('independent empty education tables migrate safely while accounts, data and external references survive',{skip:!url},async t=>{
-  assert.match(new URL(url).pathname,/^\/community_test_[a-z0-9_]+$/);
-  const db=new pg.Client({connectionString:url});await db.connect();
-  const transaction=async fn=>{await db.query('BEGIN');try{const value=await fn();await db.query('COMMIT');return value;}catch(error){await db.query('ROLLBACK');throw error;}};
-  const create=async()=>{for(const name of REMOVED_EDUCATION_TABLES)await db.query('CREATE TABLE "'+name+'"(id integer PRIMARY KEY,user_id integer REFERENCES users(id))');};
-  try{
-    await db.query("CREATE TABLE users(id integer PRIMARY KEY,name text);INSERT INTO users VALUES(1,'preserved user')");
-    await t.test('only empty education tables are removed and repeated runs are safe',async()=>{
-      await create();const result=await transaction(()=>removeEmptyEducationTables(db));
-      assert.equal(result.removed.length,7);assert.deepEqual(result.retained,[]);
-      assert.equal((await db.query('SELECT name FROM users WHERE id=1')).rows[0].name,'preserved user');
-      assert.deepEqual(await transaction(()=>removeEmptyEducationTables(db)),{removed:[],retained:[]});
-    });
-    await t.test('nonempty educational data preserves the entire group',async()=>{
-      await create();await db.query('INSERT INTO certificates VALUES(1,1)');
-      const result=await transaction(()=>removeEmptyEducationTables(db));assert.equal(result.removed.length,0);assert.equal(result.retained.length,7);
-      assert.equal((await db.query('SELECT * FROM certificates')).rows.length,1);
-      await transaction(()=>removeLegacyEducationUserReferences(db,1));
-      assert.equal((await db.query('SELECT * FROM certificates')).rows.length,0);
-      assert.equal((await db.query('SELECT * FROM users')).rows.length,1);
-    });
-    await t.test('unknown referencing tables are preserved rather than cascaded',async()=>{
-      await db.query('CREATE TABLE operator_links(id integer REFERENCES schedule_events(id))');
-      const result=await transaction(()=>removeEmptyEducationTables(db));assert.equal(result.removed.length,0);assert.equal(result.retained.length,7);
-      assert.ok((await db.query("SELECT to_regclass('operator_links') AS name")).rows[0].name);
-      await db.query('DROP TABLE operator_links');
-      assert.equal((await transaction(()=>removeEmptyEducationTables(db))).removed.length,7);
-    });
-    await t.test('caller rollback restores removed tables',async()=>{
-      await create();await db.query('BEGIN');await removeEmptyEducationTables(db);await db.query('ROLLBACK');
-      assert.ok((await db.query("SELECT to_regclass('certificates') AS name")).rows[0].name);
-    });
-  }finally{await db.end();}
+const target=process.env.TEST_EDUCATION_CLEANUP_DATABASE_URL;
+test('installed data migration, archive protection and actual old/new backup restore',{skip:!target,timeout:30000},async t=>{
+ assert.match(new URL(target).pathname,/^\/community_test_[a-z0-9_]+$/);
+ Object.assign(process.env,{DATABASE_URL:target,SESSION_SECRET:randomBytes(32).toString('hex'),CREDENTIAL_KEY:randomBytes(32).toString('hex'),INITIAL_ADMIN_PASSWORD:randomBytes(16).toString('hex'),DATA_ROOT_DIR:fs.mkdtempSync(path.join(os.tmpdir(),'community-separation-'))});
+ const db=new pg.Client({connectionString:target});await db.connect();let runtime;
+ try{
+  const {getConfig}=await import('../server/config.js'),{migratePlatform}=await import('../platform/server/community-migration.js');
+  assert.equal(getConfig().databaseUrl,target);await migratePlatform(getConfig());runtime=await import('../platform/server/db-runtime.js');
+  await db.query("INSERT INTO users(id,name,username,password_hash,role,status,created_at)VALUES(1,'preserved operator','operator','fixture-hash','admin','approved',CURRENT_TIMESTAMP::text)");
+  for(const name of REMOVED_EDUCATION_TABLES)await db.query('CREATE TABLE "'+name+'"(id bigint primary key,user_id bigint REFERENCES users(id),payload jsonb)');
+  await db.query(`INSERT INTO courses VALUES(7,1,'{"nested":[true,42,null]}');INSERT INTO lab_requests VALUES(8,1,'{"credential":"fixture-encrypted"}')`);
+  await db.query("INSERT INTO qna_posts(id,user_id,course_id,lab_request_id,title,body,created_at)VALUES(9,1,7,8,'General question','Keep this post',CURRENT_TIMESTAMP::text)");
+  await db.query('ALTER TABLE qna_posts ADD CONSTRAINT fixture_course_link FOREIGN KEY(course_id) REFERENCES courses(id)');
+  const before=(await db.query('SELECT to_jsonb(t) AS data FROM qna_posts t')).rows;
+  const oldBackup=await runtime.runtimeExportBackupData();
+  await t.test('operator-managed external links cause a rollback, not cascading loss',async()=>{
+   await db.query('CREATE TABLE operator_links(id bigint references courses(id))');await db.query('BEGIN');await assert.rejects(()=>archiveEducationTables(db),/operator-managed/);await db.query('ROLLBACK');assert.equal((await db.query('SELECT count(*)::int AS count FROM courses')).rows[0].count,1);await db.query('DROP TABLE operator_links');
+  });
+  await t.test('archive operations are transactional',async()=>{
+   await db.query('BEGIN');const result=await archiveEducationTables(db);assert.equal(result.removed.length,25);assert.equal(result.archivedRows,2);await db.query('ROLLBACK');assert.ok((await db.query("SELECT to_regclass('courses') AS name")).rows[0].name);
+  });
+  await migratePlatform(getConfig());
+  await t.test('general rows, legacy IDs and retired payloads survive upgrade',async()=>{
+   assert.deepEqual((await db.query('SELECT to_jsonb(t) AS data FROM qna_posts t')).rows,before);
+   for(const name of REMOVED_EDUCATION_TABLES)assert.equal((await db.query('SELECT to_regclass($1) AS name',['public.'+name])).rows[0].name,null);
+   assert.deepEqual((await db.query("SELECT row_data FROM community_legacy_records WHERE source_table='courses'")).rows[0].row_data.payload,{nested:[true,42,null]});
+   assert.equal((await runtime.runtimeListUsers()).length,1);assert.equal((await runtime.runtimeListQnaPosts()).length,1);
+  });
+  await t.test('actual old backup restores general data and archives populated education records',async()=>{
+   await db.query("UPDATE qna_posts SET body='modified';DELETE FROM community_legacy_records");await runtime.runtimeImportBackupData({database:oldBackup});
+   assert.equal((await db.query('SELECT body FROM qna_posts WHERE id=9')).rows[0].body,'Keep this post');
+   assert.deepEqual((await db.query("SELECT row_data FROM community_legacy_records WHERE source_table='courses'")).rows[0].row_data,oldBackup.tables.courses.rows[0]);
+  });
+  await t.test('new backup round-trips the archive and invalid old data never truncates general rows',async()=>{
+   const next=await runtime.runtimeExportBackupData();await db.query('DELETE FROM community_legacy_records');await runtime.runtimeImportBackupData({database:next});assert.equal((await db.query('SELECT count(*)::int AS count FROM community_legacy_records')).rows[0].count,2);
+   const invalid=structuredClone(oldBackup);invalid.tables.courses.rowCount+=1;await assert.rejects(()=>runtime.runtimeImportBackupData({database:invalid}));assert.equal((await db.query('SELECT body FROM qna_posts WHERE id=9')).rows[0].body,'Keep this post');
+   await migratePlatform(getConfig());assert.equal((await db.query('SELECT count(*)::int AS count FROM community_legacy_records')).rows[0].count,2);
+  });
+ }finally{await runtime?.runtimeCloseDatabasePool();await db.end();}
 });

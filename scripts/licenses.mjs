@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const output=path.join(root,'client/public/licenses');fs.mkdirSync(output,{recursive:true});
-const packages=['react','react-dom','scheduler','@xterm/xterm','@xterm/addon-fit','@novnc/novnc','@mdxeditor/editor'];
+const packages=['react','react-dom','scheduler','@xterm/xterm','@xterm/addon-fit','@novnc/novnc'];
 const notices=[];
 for(const name of packages){
   const directory=path.join(root,'node_modules',name);const info=JSON.parse(fs.readFileSync(path.join(directory,'package.json'),'utf8'));
