@@ -10,6 +10,8 @@ Maintained by **Choi Gook Hyun ([tangt64](https://github.com/tangt64))** · 문�
 
 Self-hosted OpenStack portal for general users and administrators, with SSO, OTP, community posts and infrastructure management. Education features and Lab Board are excluded.
 
+예제 운영 사이트: [터미널랩](https://www.terminal-lab.kr/). 원본 Terminal Lab 서비스의 참고 화면이며, Community 배포본에서는 교육 기능과 Lab Board를 제외합니다.
+
 이 버전은 **배포 준비본(Preview)**입니다. 소스·API·브라우저 테스트를 수행했으며, 실제 Linux 컨테이너 설치·복원과 운영 인프라 연결은 별도 검증이 필요합니다.
 
 기존 Terminal Lab에서 교육 기능을 제외하고 일반 사용자·관리자 기능을 분리한 독립 설치형 배포본입니다. 일반 사용자·관리자 기능은 원본 UI·API를 기반으로 유지합니다. 이 디렉터리 전체를 별도 Git 저장소의 루트로 사용할 수 있습니다. 기존 Terminal Lab의 소스·DB·설정·배포 스크립트는 참조하지 않습니다.
@@ -21,7 +23,7 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 - **기반 인프라:** 현재 OpenStack 기반으로 사용할 수 있으며, 기존 OpenStack의 인증·컴퓨트·이미지·네트워크 API에 연결합니다. 사용 기능별로 필요한 서비스가 있어야 합니다.
 - **개발 중:** 현재 **OpenStack과 호환되는 경량 플랫폼을 구성 중**입니다. 해당 플랫폼 연동은 준비 단계이며, 기본적인 기능검증 및 구현이 되면 릴리즈할 예정입니다.
 
-0.2.2에서 제한 관리자 권한 상승을 차단하고, 교육 진입점·커리큘럼 데이터·기존 내부망 기본값을 정리했습니다. 검증 내용과 공개 전 남은 작업은 [공개·운영 전 정리 항목](docs/development.md#공개운영-전-정리-항목)을 참조하세요. 실제 Linux 설치·복원과 운영 인프라 연결은 별도 검증 대상이며, Gitea는 비공개로 유지하고 GitHub는 공개합니다.
+0.2.2에서 제한 관리자 권한 상승을 차단하고, 교육 진입점·커리큘럼 데이터·기존 내부망 기본값을 정리했습니다. 검증 내용과 공개 전 남은 작업은 [공개·운영 전 정리 항목](docs/development.md#공개운영-전-정리-항목)을 참조하세요. 실제 Linux 설치·복원과 운영 인프라 연결은 별도 검증 대상이며, GitHub와 Gitea 커뮤니티 저장소는 모두 공개합니다.
 
 ## 포함 기능
 
@@ -38,7 +40,7 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 기존 터미널 랩에서 제공하였던 **교육 과정·커리큘럼·교재·강의 일정·수강 권한·교육 랩실·시험·수료증·교육 설문·과정 견적/결제·강사 공유·교육 역량 진단**은 제외했습니다.
 **교육 보고서·교육 랩 터미널·강사 공유 WebSocket·검증용 과정 생성 경로도 제거**했습니다. 
 
-공통 쿼리 호환성을 위해 DB의 교육 호환 테이블과 일부 비활성 호환 코드·빈 화면 스텁은 남아 있습니다. 이 배포본의 초기화는 교육 콘텐츠를 생성하지 않습니다. 원본 수강생 정보·운영 DB·운영 자격증명 파일과 원문 커리큘럼 데이터는 현재 배포 소스에서 제외합니다. 과거 교육 콘텐츠가 포함된 이력·릴리스는 별도 비공개 아카이브에 보존했습니다. 현재 저장소에는 정리된 Community 이력만 포함하며 GitHub에서는 공개합니다. 과거 비공개 아카이브는 공개하지 않습니다.
+공통 쿼리 호환성을 위해 DB의 교육 호환 테이블과 일부 비활성 호환 코드·빈 화면 스텁은 남아 있습니다. 이 배포본의 초기화는 교육 콘텐츠를 생성하지 않습니다. 원본 수강생 정보·운영 DB·운영 자격증명 파일과 원문 커리큘럼 데이터는 현재 배포 소스에서 제외합니다. 과거 교육 콘텐츠가 포함된 이력·릴리스는 별도 비공개 아카이브에 보존했습니다. 현재 저장소에는 정리된 Community 이력만 포함하며 GitHub와 Gitea에서 공개합니다. 과거 비공개 아카이브는 공개하지 않습니다.
 
 ## 0.3.6 프로젝트 정리 안내 개선
 
@@ -183,9 +185,9 @@ python3 installer/package.py
 
 ## 저장소
 
-배포 담당자는 `npm run release:publish` 한 번으로 GitHub와 Gitea에 코드·태그·ZIP·체크섬을 올리고 일치 여부와 비공개 접근을 확인할 수 있습니다. 새 버전을 커밋한 깨끗한 `main`에서 실행합니다. 준비·재시도·검증 전용 옵션은 [양쪽 저장소 배포 안내](docs/releasing.md)를 참조하세요.
+배포 담당자는 `npm run release:publish` 한 번으로 GitHub와 Gitea에 코드·태그·ZIP·체크섬을 올리고 일치 여부와 공개 접근을 확인할 수 있습니다. 새 버전을 커밋한 깨끗한 `main`에서 실행합니다. 준비·재시도·검증 전용 옵션은 [양쪽 저장소 배포 안내](docs/releasing.md)를 참조하세요.
 
-저장소는 [tangt64/kiki-terminal-lab](https://github.com/tangt64/kiki-terminal-lab)이며, GitHub는 **공개**, [Gitea](https://git.vlab.dustbox.kr/terminal-lab/kiki-terminal-lab)는 **비공개**로 관리합니다. 이 디렉터리의 배포 소스만 포함하며 부모 저장소와 Git 이력, 운영 DB·설정·키·업로드를 포함하지 않습니다. `.gitignore`는 운영 경로를 제외합니다. MIT 라이선스와 의존성 고지는 [LICENSE](LICENSE)·[NOTICE.md](NOTICE.md)에 있으며, 추출 원본 해시는 [출처 기록](platform/SOURCE-PROVENANCE.json)에 있습니다. 공개 연락처는 위의 문의 메일이며 실제 인프라 자격증명은 설치자가 별도로 설정합니다.
+저장소는 [tangt64/kiki-terminal-lab](https://github.com/tangt64/kiki-terminal-lab)이며, GitHub와 [Gitea](https://git.vlab.dustbox.kr/terminal-lab/kiki-terminal-lab)는 모두 **공개**로 관리합니다. 이 디렉터리의 배포 소스만 포함하며 부모 저장소와 Git 이력, 운영 DB·설정·키·업로드를 포함하지 않습니다. `.gitignore`는 운영 경로를 제외합니다. MIT 라이선스와 의존성 고지는 [LICENSE](LICENSE)·[NOTICE.md](NOTICE.md)에 있으며, 추출 원본 해시는 [출처 기록](platform/SOURCE-PROVENANCE.json)에 있습니다. 공개 연락처는 위의 문의 메일이며 실제 인프라 자격증명은 설치자가 별도로 설정합니다.
 
 ```bash
 git clone https://github.com/tangt64/kiki-terminal-lab.git
@@ -198,6 +200,6 @@ cd kiki-terminal-lab
 
 ## 2026-11-02 업데이트
 중지된 VM의 다중 선택·순차 시작 요청을 추가했습니다. 실제 자원 시작 없이 모의 요청으로 검증했으며, 기존 권한·한도는 유지합니다.
-현재 GitHub는 공개, Gitea는 비공개로 관리하며 운영 비밀과 실행 환경은 포함하지 않습니다.
+현재 GitHub와 Gitea는 모두 공개로 관리하며 운영 비밀과 실행 환경은 포함하지 않습니다.
 
-프로젝트 단위 삭제 버튼과 기록·인스턴스·프로젝트별 범위는 [프로젝트 정리 안내](docs/project-cleanup.md)를 참고하세요. 배포는 `npm run release:publish`로 수행합니다. 현재 Gitea는 비공개이며, 공개 Gitea 허용 옵션은 사용하지 않습니다.
+프로젝트 단위 삭제 버튼과 기록·인스턴스·프로젝트별 범위는 [프로젝트 정리 안내](docs/project-cleanup.md)를 참고하세요. 배포는 `npm run release:publish`로 수행합니다. 이 npm 명령에는 `--allow-public-gitea`가 포함되어 공개 Gitea 배포를 허용합니다. 저장소 공개 설정 자체를 변경하는 옵션은 아닙니다.

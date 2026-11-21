@@ -18,7 +18,7 @@
     "db:migrate": "node scripts/migrate-platform.mjs",
     "release:pack": "python installer/package.py",
     "predev": "node scripts/prepare-platform-assets.mjs",
-    "release:publish": "node scripts/release-publish.mjs"
+    "release:publish": "node scripts/release-publish.mjs --allow-public-gitea"
   },
   "dependencies": {
     "@mdxeditor/editor": "^4.1.0",
