@@ -107,22 +107,16 @@ function lazyWithChunkReload(loader) {
     throw error;
   }));
 }
-const ArenaPreviewPage = lazyWithChunkReload(() => import("./arena/ArenaPreviewPage.jsx"));
+
 const AdminView = lazyWithChunkReload(() => import("./admin-view.jsx"));
-const CertificateView = lazyWithChunkReload(() => import("./learning-views.jsx").then(module => ({
-  default: module.CertificateView
-})));
+
 const CicdView = lazyWithChunkReload(() => import("./cicd-view.jsx"));
-const CourseView = lazyWithChunkReload(() => import("./course-view.jsx"));
-const CourseQuoteView = lazyWithChunkReload(() => import("./course-quote-view.jsx"));
-const Curriculum2026View = lazyWithChunkReload(() => import("./curriculum-2026-view.jsx"));
+
 const InquiryHubView = lazyWithChunkReload(() => import("./inquiry-hub-view.jsx"));
 const InternalImageServerView = lazyWithChunkReload(() => import("./infra-views.jsx").then(module => ({
   default: module.InternalImageServerView
 })));
-const LabExamView = lazyWithChunkReload(() => import("./learning-views.jsx").then(module => ({
-  default: module.LabExamView
-})));
+
 const LlmView = lazyWithChunkReload(() => import("./llm-view.jsx"));
 const LuckyDrawView = lazyWithChunkReload(() => import("./lucky-draw-view.jsx"));
 const MarketingSurveyView = lazyWithChunkReload(() => import("./marketing-survey-view.jsx"));
@@ -132,12 +126,11 @@ const MagnumView = lazyWithChunkReload(() => import("./infra-views.jsx").then(mo
 
 const NoticeView = lazyWithChunkReload(() => import("./notice-view.jsx"));
 const NotificationView = lazyWithChunkReload(() => import("./notification-view.jsx"));
-const OfflineScheduleView = lazyWithChunkReload(() => import("./offline-schedule-view.jsx"));
+
 const OpsMonitorView = lazyWithChunkReload(() => import("./ops-monitor-view.jsx"));
 const PortalLogin = lazyWithChunkReload(() => import("./portal-login-view.jsx"));
 const ProfileView = lazyWithChunkReload(() => import("./profile-view.jsx"));
-const SurveyView = lazyWithChunkReload(() => import("./survey-view.jsx"));
-const SurveyResultsView = lazyWithChunkReload(() => import("./survey-results-view.jsx"));
+
 const TerminalView = lazyWithChunkReload(() => import("./terminal-view.jsx"));
 
 const TerminalCloudView = lazyWithChunkReload(() => import("./terminal-cloud-view.jsx"));
@@ -154,9 +147,7 @@ function getLoadingPreviewMode() {
   return "";
 }
 const ToastStack = lazyWithChunkReload(() => import("./toast-stack.jsx"));
-const WrittenExamView = lazyWithChunkReload(() => import("./learning-views.jsx").then(module => ({
-  default: module.WrittenExamView
-})));
+
 const ZunView = lazyWithChunkReload(() => import("./infra-views.jsx").then(module => ({
   default: module.ZunView
 })));
@@ -642,8 +633,6 @@ function StatusLine({
   return <span className={`terms-inline-status ${status.tone || ""}`}>{status.message}</span>;
 }
 
-
-
 function getLabOverrideFieldHelper(field) {
   if (field?.description) return field.description;
   if (field?.type === "openshift-pull-secret") return "Red Hat Hybrid Cloud Console에서 받은 pull secret JSON 원문을 붙여넣어 주세요.";
@@ -1106,19 +1095,8 @@ export default function App() {
   if (loadingPreviewMode) {
     return <LoadingPreviewPage mode={loadingPreviewMode} />;
   }
-  if (portalApp.route === "arena-preview" && portalApp.session && !portalApp.isAdmin && !isServiceOpen("arena")) {
-    return <div className="shell">
-        <main className="loading-shell">
-          <div className="loading-card">{SERVICE_READY_MESSAGE}</div>
-        </main>
-      </div>;
-  }
-  if (portalApp.route === "arena-preview") {
-    return <Suspense fallback={<ViewLoadingFallback />}>
-        <ArenaPreviewPage />
-      </Suspense>;
-  }
-  if (portalApp.loading) {
+
+if (portalApp.loading) {
     return <div className="shell">
         <main className="loading-shell">
           <SessionLoadingFallback />
@@ -1131,9 +1109,7 @@ export default function App() {
       </Suspense>;
   }
 
-
-
-  if (!portalApp.session) {
+if (!portalApp.session) {
     return <Suspense fallback={<ViewLoadingFallback />}>
         <PortalLogin {...portalApp} />
       </Suspense>;
@@ -1332,26 +1308,26 @@ export default function App() {
 
           <Suspense fallback={<ViewLoadingFallback />}>
             {portalApp.section === "notices" ? <NoticeView {...portalApp} /> : null}
-            {portalApp.section === "offlineSchedule" ? <OfflineScheduleView {...portalApp} /> : null}
+
             {portalApp.section === "notifications" ? <NotificationView {...portalApp} /> : null}
             {portalApp.section === "profile" ? <ProfileView {...portalApp} /> : null}
-            {portalApp.section === "curriculum2026" ? <Curriculum2026View /> : null}
-            {portalApp.section === "courses" ? <CourseView {...portalApp} courseTypeFilter="standard" /> : null}
-            {portalApp.section === "iltCourses" ? <CourseView {...portalApp} courseTypeFilter="standard" programTypeFilter="ILT" /> : null}
-            {portalApp.section === "governmentCourses" ? <CourseView {...portalApp} courseTypeFilter="standard" programTypeFilter="정부지원금" /> : null}
-            {portalApp.section === "onlineCourses" ? <CourseView {...portalApp} courseTypeFilter="online" /> : null}
-            {portalApp.section === "courseQuotes" && courseQuotesOpen ? <CourseQuoteView {...portalApp} /> : null}
-            {portalApp.section === "writtenExam" ? <WrittenExamView {...portalApp} /> : null}
-            {portalApp.section === "labExam" ? <LabExamView {...portalApp} /> : null}
-            {portalApp.section === "certificates" ? <CertificateView {...portalApp} /> : null}
+
+
+
+
+
+
+
+
+
             {portalApp.section === "terminal" ? <TerminalView {...portalApp} autoOpenTerminal portalUiV2Active={portalUiV2Active} /> : null}
             {portalApp.section === "luckyDraw" ? <LuckyDrawView {...portalApp} /> : null}
             {portalApp.section === "marketingSurveys" ? <MarketingSurveyView {...portalApp} /> : null}
             {portalApp.section === "opsMonitor" && portalApp.isAdmin ? <OpsMonitorView {...portalApp} /> : null}
             {portalApp.section === "opsMonitor" && !portalApp.isAdmin ? <div className="global-banner is-danger">운영 모니터는 관리자만 사용할 수 있습니다.</div> : null}
             {portalApp.section === "resources" ? <TerminalCloudView {...portalApp} terminalCloudIntent={terminalCloudIntent} onOpenTerminalCloudIntent={openTerminalCloudIntent} portalUiV2Active={portalUiV2Active} /> : null}
-            {portalApp.section === "surveys" ? <SurveyView {...portalApp} /> : null}
-            {portalApp.section === "surveyResults" ? <SurveyResultsView {...portalApp} /> : null}
+
+
             {portalApp.section === "terminalCloud" ? <TerminalCloudView {...portalApp} terminalCloudIntent={terminalCloudIntent} /> : null}
             {portalApp.section === "internalImageServer" ? <InternalImageServerView {...portalApp} /> : null}
             {portalApp.section === "cicd" ? <CicdView {...portalApp} /> : null}

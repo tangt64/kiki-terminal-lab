@@ -1,3 +1,4 @@
+import {removeEmptyEducationTables} from './education-schema-cleanup.js';
 import fs from 'node:fs/promises';
 import pg from 'pg';
 import {createCipheriv,createHash,randomBytes} from 'node:crypto';
@@ -24,6 +25,8 @@ export async function migratePlatform(config){
       // Sessions use a different serialization contract. Expire them, preserving all account data.
       await client.query('DROP TABLE IF EXISTS sessions');
     }
+    const educationCleanup=await removeEmptyEducationTables(client);
+    if(educationCleanup.retained.length)console.warn('[community-schema] retained education tables containing data or external dependencies:',educationCleanup.retained.join(', '));
     await client.query(await fs.readFile(new URL('./postgres-schema.sql',import.meta.url),'utf8'));
     if(Number((await client.query('SELECT count(*) FROM users')).rows[0].count)===0&&(!config.initialAdmin.password||config.initialAdmin.password.length<12||Buffer.byteLength(config.initialAdmin.password)>72))throw new Error('Set a unique INITIAL_ADMIN_PASSWORD before installing an empty Community database.');
     await client.query('CREATE TABLE IF NOT EXISTS community_platform_migrations(version INTEGER PRIMARY KEY,applied_at TIMESTAMPTZ NOT NULL DEFAULT now())');

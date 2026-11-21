@@ -1,3 +1,4 @@
+import {omitEmptyEducationSnapshots, removeLegacyEducationUserReferences} from './education-schema-cleanup.js';
 import pg from "pg";
 import { createHash, randomUUID } from "node:crypto";
 import "./env-loader.js";
@@ -416,15 +417,6 @@ const COURSE_SELECT = `
        c.created_at AS "createdAt", c.updated_at AS "updatedAt"
 `;
 
-const COURSE_FREE_PROMOTION_SQL = `(
-  COALESCE(c.promo_enabled, 0)=1
-  AND COALESCE(c.promo_price, 0) <= 0
-  AND NULLIF(c.promo_starts_at, '') IS NOT NULL
-  AND NULLIF(c.promo_ends_at, '') IS NOT NULL
-  AND NULLIF(c.promo_starts_at, '')::timestamptz <= NOW()
-  AND NULLIF(c.promo_ends_at, '')::timestamptz > NOW()
-)`;
-
 const LAB_SELECT = `
 SELECT lr.*, u.name AS "userName", u.username, c.title AS "courseTitle", c.slug AS "courseSlug",
        c.summary AS "courseSummary", c.category AS "courseCategory", c.heat_template_name AS "courseHeatTemplateName"
@@ -434,13 +426,6 @@ JOIN courses c ON c.id = lr.course_id
 `;
 const LAB_ACTIVE_RECORD_CLAUSE = "COALESCE(lr.archived_at, '') = ''";
 const OLD_LAB_REQUEST_ARCHIVE_STATUSES = ["terminated", "failed", "deleted", "deleting", "cancelled", "canceled", "rejected"];
-const LAB_ADMIN_IN_USE_QUERY_STATUSES = ["provisioning", "running", "paused", "stopped"];
-
-const ARENA_SEASON_SELECT = `
-SELECT s.id, s.code, s.title, s.status, s.reset_policy AS "resetPolicy",
-       s.started_at AS "startedAt", s.ends_at AS "endsAt", s.created_at AS "createdAt"
-FROM arena_seasons s
-`;
 
 const ARENA_SCENARIO_SELECT = `
 SELECT s.id, s.code, s.title, s.summary, s.backend_type AS "backendType", s.console_type AS "consoleType",
@@ -448,28 +433,6 @@ SELECT s.id, s.code, s.title, s.summary, s.backend_type AS "backendType", s.cons
        s.image_name AS "imageName", s.flavor_name AS "flavorName", s.network_name AS "networkName",
        s.metadata_json AS "metadataJson", s.created_at AS "createdAt"
 FROM arena_scenarios s
-`;
-
-const ARENA_NODE_SELECT = `
-SELECT n.id, n.season_id AS "seasonId", n.scenario_id AS "scenarioId", n.node_code AS "nodeCode", n.label,
-       n.map_x AS "mapX", n.map_y AS "mapY", n.current_owner_user_id AS "currentOwnerUserId",
-       n.current_owner_handle AS "currentOwnerHandle", n.first_capture_at AS "firstCaptureAt",
-       n.status, n.created_at AS "createdAt", sc.code AS "scenarioCode", sc.backend_type AS "backendType",
-       sc.console_type AS "consoleType", sc.tier, sc.title AS "scenarioTitle"
-FROM arena_nodes n
-JOIN arena_scenarios sc ON sc.id = n.scenario_id
-`;
-
-const ARENA_SESSION_SELECT = `
-SELECT s.id, s.season_id AS "seasonId", s.node_id AS "nodeId", s.scenario_id AS "scenarioId", s.user_id AS "userId",
-       s.state, s.backend_type AS "backendType", s.console_type AS "consoleType", s.resource_id AS "resourceId",
-       s.resource_name AS "resourceName", s.console_url AS "consoleUrl", s.validator_state AS "validatorState",
-       s.started_at AS "startedAt", s.expires_at AS "expiresAt", s.ended_at AS "endedAt",
-       s.terminated_reason AS "terminatedReason", s.metadata_json AS "metadataJson",
-       n.node_code AS "nodeCode", n.label AS "nodeLabel", sc.code AS "scenarioCode", sc.title AS "scenarioTitle"
-FROM arena_sessions s
-JOIN arena_nodes n ON n.id = s.node_id
-JOIN arena_scenarios sc ON sc.id = s.scenario_id
 `;
 
 function getPool() {
@@ -549,12 +512,7 @@ async function pgWithExternalPortLock(fn) {
     return fn();
   });
 }
-async function pgWithMetalLbVipAllocationLock(fn) {
-  return withTx(async (client) => {
-    await client.query("SELECT pg_advisory_xact_lock(hashtext($1)::bigint)", ["terminal_lab_metallb_vip_allocation"]);
-    return fn();
-  });
-}
+
 async function ensureCicdTables(client) {
   await client.query(`
     CREATE TABLE IF NOT EXISTS cicd_projects (
@@ -679,61 +637,8 @@ async function ensurePostgresSchemaCompatibility() {
   if (!p) return;
   const client = await p.connect();
   try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS written_exam_attempts (
-        id TEXT PRIMARY KEY,
-        course_id BIGINT NOT NULL,
-        exam_title TEXT NOT NULL,
-        user_id BIGINT NOT NULL REFERENCES users(id),
-        user_name TEXT NOT NULL,
-        username TEXT NOT NULL,
-        answers_json TEXT NOT NULL DEFAULT '{}',
-        score INTEGER NOT NULL DEFAULT 0,
-        total_points INTEGER NOT NULL DEFAULT 0,
-        passed INTEGER NOT NULL DEFAULT 0,
-        results_json TEXT NOT NULL DEFAULT '[]',
-        submitted_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS lab_exam_attempts (
-        id TEXT PRIMARY KEY,
-        course_id BIGINT NOT NULL,
-        exam_title TEXT NOT NULL,
-        user_id BIGINT NOT NULL REFERENCES users(id),
-        user_name TEXT NOT NULL,
-        username TEXT NOT NULL,
-        session_id TEXT,
-        lab_request_id BIGINT,
-        exit_code INTEGER NOT NULL DEFAULT 1,
-        stdout_text TEXT NOT NULL DEFAULT '',
-        stderr_text TEXT NOT NULL DEFAULT '',
-        score INTEGER NOT NULL DEFAULT 0,
-        total_points INTEGER NOT NULL DEFAULT 0,
-        passed INTEGER NOT NULL DEFAULT 0,
-        messages_json TEXT NOT NULL DEFAULT '[]',
-        screenshot_path TEXT NOT NULL DEFAULT '',
-        screenshot_url TEXT NOT NULL DEFAULT '',
-        result_snapshot_json TEXT NOT NULL DEFAULT '{}',
-        review_status TEXT NOT NULL DEFAULT 'pending',
-        review_note TEXT NOT NULL DEFAULT '',
-        reviewed_by BIGINT REFERENCES users(id),
-        reviewed_at TEXT,
-        result_mail_sent_at TEXT,
-        submitted_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS screenshot_path TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS screenshot_url TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS result_snapshot_json TEXT NOT NULL DEFAULT '{}'`);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS review_status TEXT NOT NULL DEFAULT 'pending'`);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS review_note TEXT NOT NULL DEFAULT ''`);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS reviewed_by BIGINT REFERENCES users(id)`);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS reviewed_at TEXT`);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS review_history_json TEXT NOT NULL DEFAULT '[]'`);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS result_mail_sent_at TEXT`);
-    await client.query(`ALTER TABLE lab_exam_attempts ADD COLUMN IF NOT EXISTS session_id TEXT`);
-    await client.query(`
+
+await client.query(`
       CREATE TABLE IF NOT EXISTS lab_exam_sessions (
         id TEXT PRIMARY KEY,
         course_id BIGINT NOT NULL,
@@ -763,21 +668,7 @@ async function ensurePostgresSchemaCompatibility() {
         updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP::text)
       )
     `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS certificates (
-        id TEXT PRIMARY KEY,
-        user_id BIGINT NOT NULL REFERENCES users(id),
-        user_name TEXT NOT NULL,
-        username TEXT NOT NULL,
-        course_id BIGINT NOT NULL,
-        course_title TEXT NOT NULL,
-        certificate_code TEXT NOT NULL UNIQUE,
-        verify_code TEXT NOT NULL UNIQUE,
-        written_attempt_id TEXT,
-        lab_attempt_id TEXT,
-        issued_at TEXT NOT NULL
-      )
-    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS user_access_logs (
         id BIGINT PRIMARY KEY,
@@ -1012,10 +903,8 @@ async function ensurePostgresSchemaCompatibility() {
     await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_start_checklist_json TEXT NOT NULL DEFAULT '[]'`);
     await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_recordings_json TEXT NOT NULL DEFAULT '[]'`);
     await client.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS lab_exam_config_json TEXT NOT NULL DEFAULT '{}'`);
-    await client.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS schedule_source TEXT NOT NULL DEFAULT 'manual'`);
-    await client.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS external_event_id TEXT NOT NULL DEFAULT ''`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_schedule_events_external_source ON schedule_events(schedule_source, external_event_id)`);
-    await client.query(`
+
+await client.query(`
       CREATE TABLE IF NOT EXISTS user_marketing_consents (
         id BIGINT PRIMARY KEY,
         user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -1098,62 +987,8 @@ async function ensurePostgresSchemaCompatibility() {
         [randomUUID(), row.user_id, row.course_id, source, row.source_payment_id || null, row.created_at || new Date().toISOString(), row.expires_at || null, JSON.stringify({ migratedFrom: "user_course_access", grantedVia })],
       );
     }
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS course_quotes (
-        id BIGINT PRIMARY KEY,
-        quote_no TEXT NOT NULL UNIQUE,
-        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        status TEXT NOT NULL DEFAULT 'issued',
-        recipient_company_name TEXT NOT NULL DEFAULT '',
-        recipient_name TEXT NOT NULL DEFAULT '',
-        recipient_email TEXT NOT NULL DEFAULT '',
-        recipient_phone TEXT NOT NULL DEFAULT '',
-        subtotal_amount INTEGER NOT NULL DEFAULT 0,
-        discount_rate DOUBLE PRECISION NOT NULL DEFAULT 0,
-        discount_amount INTEGER NOT NULL DEFAULT 0,
-        vat_rate DOUBLE PRECISION NOT NULL DEFAULT 0.1,
-        vat_amount INTEGER NOT NULL DEFAULT 0,
-        total_amount INTEGER NOT NULL DEFAULT 0,
-        currency TEXT NOT NULL DEFAULT 'KRW',
-        pricing_basis_json TEXT NOT NULL DEFAULT '{}',
-        business_snapshot_json TEXT NOT NULL DEFAULT '{}',
-        note TEXT NOT NULL DEFAULT '',
-        issued_at TEXT NOT NULL,
-        valid_until TEXT,
-        sent_at TEXT,
-        sent_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
-        accepted_at TEXT,
-        cancelled_at TEXT,
-        reviewed_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
-        updated_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`ALTER TABLE course_quotes ADD COLUMN IF NOT EXISTS sent_at TEXT`);
-    await client.query(`ALTER TABLE course_quotes ADD COLUMN IF NOT EXISTS sent_by BIGINT REFERENCES users(id) ON DELETE SET NULL`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_course_quotes_user_issued ON course_quotes(user_id, issued_at DESC)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_course_quotes_status_issued ON course_quotes(status, issued_at DESC)`);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS course_quote_items (
-        id BIGINT PRIMARY KEY,
-        quote_id BIGINT NOT NULL REFERENCES course_quotes(id) ON DELETE CASCADE,
-        course_id BIGINT REFERENCES courses(id) ON DELETE SET NULL,
-        course_title TEXT NOT NULL DEFAULT '',
-        course_slug TEXT NOT NULL DEFAULT '',
-        course_category TEXT NOT NULL DEFAULT '',
-        course_type TEXT NOT NULL DEFAULT 'standard',
-        program_type TEXT NOT NULL DEFAULT '',
-        duration TEXT NOT NULL DEFAULT '',
-        quantity INTEGER NOT NULL DEFAULT 1,
-        unit_price INTEGER NOT NULL DEFAULT 0,
-        line_subtotal INTEGER NOT NULL DEFAULT 0,
-        pricing_note TEXT NOT NULL DEFAULT '',
-        metadata_json TEXT NOT NULL DEFAULT '{}',
-        sort_order INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL
-      )
-    `);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_course_quote_items_quote ON course_quote_items(quote_id, sort_order, id)`);
-    await client.query(`
+
+await client.query(`
       CREATE TABLE IF NOT EXISTS discount_coupons (
         id BIGINT PRIMARY KEY,
         code TEXT NOT NULL UNIQUE,
@@ -2575,149 +2410,7 @@ function normalizeTextbookRow(row) {
     courseCount: Number(row.courseCount ?? row.course_count ?? 0),
   };
 }
-function normalizeScheduleEventRow(row) {
-  if (!row) return null;
-  const visibility = String(row.visibility || "public").trim();
-  return {
-    id: Number(row.id),
-    title: String(row.title || "").trim(),
-    summary: String(row.summary || "").trim(),
-    memo: String(row.memo ?? "").trim(),
-    location: String(row.location || "").trim(),
-    instructorName: String(row.instructorName ?? row.instructor_name ?? "").trim(),
-    capacity: Number(row.capacity ?? 0) > 0 ? Number(row.capacity ?? 0) : null,
-    applyUrl: String(row.applyUrl ?? row.apply_url ?? "").trim(),
-    applyMethod: String(row.applyMethod ?? row.apply_method ?? "").trim(),
-    startAt: row.startAt ?? row.start_at ?? "",
-    endAt: row.endAt ?? row.end_at ?? "",
-    timezone: String(row.timezone || "Asia/Seoul").trim() || "Asia/Seoul",
-    visibility: visibility === "private" ? "admin" : ["public", "member", "admin"].includes(visibility) ? visibility : "public",
-    status: String(row.status || "scheduled").trim() || "scheduled",
-    showOnLanding: Boolean(Number(row.showOnLanding ?? row.show_on_landing ?? 0)),
-    promotionEnabled: Boolean(Number(row.promotionEnabled ?? row.promotion_enabled ?? 0)),
-    promotionTitle: String(row.promotionTitle ?? row.promotion_title ?? "").trim(),
-    promotionMessage: String(row.promotionMessage ?? row.promotion_message ?? "").trim(),
-    promotionPriority: Number(row.promotionPriority ?? row.promotion_priority ?? 0) || 0,
-    badgeLabel: String(row.badgeLabel ?? row.badge_label ?? "").trim(),
-    iconKey: String(row.iconKey ?? row.icon_key ?? "video").trim() || "video",
-    courseId: row.courseId ?? row.course_id ? Number(row.courseId ?? row.course_id) : null,
-    courseTitle: String(row.courseTitle || "").trim(),
-    courseSlug: String(row.courseSlug || "").trim(),
-    courseProgramType: String(row.courseProgramType || "").trim(),
-    courseType: String(row.courseType || "").trim(),
-    recurrence: safeJsonParse(row.recurrenceJson ?? row.recurrence_json ?? "{}", {}),
-    recurrenceExceptions: safeJsonParse(row.recurrenceExceptionsJson ?? row.recurrence_exceptions_json ?? "[]", []),
-    scheduleSource: String(row.scheduleSource ?? row.schedule_source ?? "manual").trim() || "manual",
-    externalEventId: String(row.externalEventId ?? row.external_event_id ?? "").trim(),
-    createdBy: row.createdBy ?? row.created_by ? Number(row.createdBy ?? row.created_by) : null,
-    createdAt: row.createdAt ?? row.created_at ?? "",
-    updatedAt: row.updatedAt ?? row.updated_at ?? "",
-  };
-}
-function normalizeCourseAccessRequestRow(row) {
-  return row ? {
-    id: Number(row.id),
-    userId: Number(row.userId ?? row.user_id),
-    courseId: Number(row.courseId ?? row.course_id),
-    status: row.status,
-    requestType: String(row.requestType ?? row.request_type ?? "access").trim() || "access",
-    requestNote: String(row.requestNote ?? row.request_note ?? "").trim(),
-    createdAt: row.createdAt ?? row.created_at ?? null,
-    reviewedAt: row.reviewedAt ?? row.reviewed_at ?? null,
-    reviewedBy: row.reviewedBy ?? row.reviewed_by ?? null,
-    reviewNote: row.reviewNote ?? row.review_note ?? "",
-    userName: row.userName || "",
-    username: row.username || "",
-    courseTitle: row.courseTitle || "",
-    coursePrice: Math.max(0, Number(row.coursePrice ?? row.course_price ?? 0)),
-    courseSlug: row.courseSlug || "",
-    enrollmentExpiresAt: row.enrollmentExpiresAt ?? row.enrollment_expires_at ?? null,
-  } : null;
-}
-function normalizePaymentRow(row) {
-  return row ? {
-    id: Number(row.id),
-    userId: Number(row.userId ?? row.user_id),
-    courseId: Number(row.courseId ?? row.course_id),
-    provider: String(row.provider || "manual"),
-    orderId: String(row.orderId ?? row.order_id ?? ""),
-    paymentKey: String(row.paymentKey ?? row.payment_key ?? "").trim(),
-    providerOrderId: String(row.providerOrderId ?? row.provider_order_id ?? "").trim(),
-    amount: Math.max(0, Number(row.amount || 0)),
-    currency: String(row.currency || "KRW").trim() || "KRW",
-    status: String(row.status || "ready").trim() || "ready",
-    failureReason: String(row.failureReason ?? row.failure_reason ?? "").trim(),
-    metadata: safeJsonParse(row.metadataJson ?? row.metadata_json ?? "{}", {}),
-    requestedAt: row.requestedAt ?? row.requested_at ?? null,
-    readyAt: row.readyAt ?? row.ready_at ?? null,
-    paidAt: row.paidAt ?? row.paid_at ?? null,
-    failedAt: row.failedAt ?? row.failed_at ?? null,
-    cancelledAt: row.cancelledAt ?? row.cancelled_at ?? null,
-    reviewedBy: row.reviewedBy ?? row.reviewed_by ?? null,
-    userName: String(row.userName || "").trim(),
-    username: String(row.username || "").trim(),
-    courseTitle: String(row.courseTitle || "").trim(),
-    courseSlug: String(row.courseSlug || "").trim(),
-  } : null;
-}
-function normalizeCourseQuoteItemRow(row) {
-  return row ? {
-    id: Number(row.id),
-    quoteId: Number(row.quoteId ?? row.quote_id),
-    courseId: (row.courseId ?? row.course_id) == null ? null : Number(row.courseId ?? row.course_id),
-    courseTitle: String(row.courseTitle ?? row.course_title ?? "").trim(),
-    courseSlug: String(row.courseSlug ?? row.course_slug ?? "").trim(),
-    courseCategory: String(row.courseCategory ?? row.course_category ?? "").trim(),
-    courseType: String(row.courseType ?? row.course_type ?? "standard").trim() || "standard",
-    programType: String(row.programType ?? row.program_type ?? "").trim(),
-    duration: String(row.duration || "").trim(),
-    quantity: Math.max(1, Number(row.quantity || 1) || 1),
-    unitPrice: Math.max(0, Number(row.unitPrice ?? row.unit_price ?? 0) || 0),
-    lineSubtotal: Math.max(0, Number(row.lineSubtotal ?? row.line_subtotal ?? 0) || 0),
-    pricingNote: String(row.pricingNote ?? row.pricing_note ?? "").trim(),
-    metadata: safeJsonParse(row.metadataJson ?? row.metadata_json ?? "{}", {}),
-    sortOrder: Math.max(0, Number(row.sortOrder ?? row.sort_order ?? 0) || 0),
-    createdAt: row.createdAt ?? row.created_at ?? null,
-  } : null;
-}
-function normalizeCourseQuoteRow(row) {
-  return row ? {
-    id: Number(row.id),
-    quoteNo: String(row.quoteNo ?? row.quote_no ?? "").trim(),
-    userId: Number(row.userId ?? row.user_id),
-    status: String(row.status || "issued").trim() || "issued",
-    recipientCompanyName: String(row.recipientCompanyName ?? row.recipient_company_name ?? "").trim(),
-    recipientName: String(row.recipientName ?? row.recipient_name ?? "").trim(),
-    recipientEmail: String(row.recipientEmail ?? row.recipient_email ?? "").trim(),
-    recipientPhone: String(row.recipientPhone ?? row.recipient_phone ?? "").trim(),
-    subtotalAmount: Math.max(0, Number(row.subtotalAmount ?? row.subtotal_amount ?? 0) || 0),
-    discountRate: Math.max(0, Number(row.discountRate ?? row.discount_rate ?? 0) || 0),
-    discountAmount: Math.max(0, Number(row.discountAmount ?? row.discount_amount ?? 0) || 0),
-    vatRate: Math.max(0, Number(row.vatRate ?? row.vat_rate ?? 0) || 0),
-    vatAmount: Math.max(0, Number(row.vatAmount ?? row.vat_amount ?? 0) || 0),
-    totalAmount: Math.max(0, Number(row.totalAmount ?? row.total_amount ?? 0) || 0),
-    currency: String(row.currency || "KRW").trim() || "KRW",
-    pricingBasis: safeJsonParse(row.pricingBasisJson ?? row.pricing_basis_json ?? "{}", {}),
-    businessSnapshot: safeJsonParse(row.businessSnapshotJson ?? row.business_snapshot_json ?? "{}", {}),
-    note: String(row.note || "").trim(),
-    issuedAt: row.issuedAt ?? row.issued_at ?? null,
-    validUntil: row.validUntil ?? row.valid_until ?? null,
-    sentAt: row.sentAt ?? row.sent_at ?? null,
-    sentBy: row.sentBy ?? row.sent_by ?? null,
-    acceptedAt: row.acceptedAt ?? row.accepted_at ?? null,
-    cancelledAt: row.cancelledAt ?? row.cancelled_at ?? null,
-    reviewedBy: row.reviewedBy ?? row.reviewed_by ?? null,
-    updatedAt: row.updatedAt ?? row.updated_at ?? null,
-    userName: String(row.userName || "").trim(),
-    username: String(row.username || "").trim(),
-    userEmail: String(row.userEmail || "").trim(),
-    sentByName: String(row.sentByName || "").trim(),
-    sentByUsername: String(row.sentByUsername || "").trim(),
-    reviewedByName: String(row.reviewedByName || "").trim(),
-    reviewedByUsername: String(row.reviewedByUsername || "").trim(),
-    items: Array.isArray(row.items) ? row.items.map(normalizeCourseQuoteItemRow).filter(Boolean) : [],
-  } : null;
-}
+
 function normalizeDomainEntry(entry) {
   if (!entry) return null;
   const domainType = String(entry.domainType || entry.domain_type || "managed").trim().toLowerCase() === "custom" ? "custom" : "managed";
@@ -3242,66 +2935,7 @@ function normalizeInternalImageCacheRow(row) {
     metadata: safeJsonParse(row.metadataJson ?? row.metadata_json ?? "{}", {}),
   } : null;
 }
-function normalizeWrittenExamAttemptRow(row) {
-  return row ? {
-    id: String(row.id),
-    courseId: Number(row.courseId ?? row.course_id),
-    examTitle: row.examTitle ?? row.exam_title ?? "",
-    userId: Number(row.userId ?? row.user_id),
-    userName: row.userName ?? row.user_name ?? "",
-    username: row.username ?? "",
-    answers: safeJsonParse(row.answersJson ?? row.answers_json ?? "{}", {}),
-    score: Number(row.score || 0),
-    totalPoints: Number(row.totalPoints ?? row.total_points ?? 0),
-    passed: Boolean(row.passed),
-    results: safeJsonParse(row.resultsJson ?? row.results_json ?? "[]", []),
-    submittedAt: row.submittedAt ?? row.submitted_at ?? null,
-  } : null;
-}
-function normalizeLabExamAttemptRow(row) {
-  return row ? {
-    id: String(row.id),
-    courseId: Number(row.courseId ?? row.course_id),
-    examTitle: row.examTitle ?? row.exam_title ?? "",
-    userId: Number(row.userId ?? row.user_id),
-    userName: row.userName ?? row.user_name ?? "",
-    username: row.username ?? "",
-    sessionId: String(row.sessionId ?? row.session_id ?? "").trim(),
-    labRequestId: row.labRequestId != null ? Number(row.labRequestId) : row.lab_request_id != null ? Number(row.lab_request_id) : null,
-    exitCode: Number(row.exitCode ?? row.exit_code ?? 1),
-    stdoutText: row.stdoutText ?? row.stdout_text ?? "",
-    stderrText: row.stderrText ?? row.stderr_text ?? "",
-    score: Number(row.score || 0),
-    totalPoints: Number(row.totalPoints ?? row.total_points ?? 0),
-    passed: Boolean(row.passed),
-    messages: safeJsonParse(row.messagesJson ?? row.messages_json ?? "[]", []),
-    screenshotPath: row.screenshotPath ?? row.screenshot_path ?? "",
-    screenshotUrl: row.screenshotUrl ?? row.screenshot_url ?? "",
-    resultSnapshot: safeJsonParse(row.resultSnapshotJson ?? row.result_snapshot_json ?? "{}", {}),
-    reviewStatus: row.reviewStatus ?? row.review_status ?? "pending",
-    reviewNote: row.reviewNote ?? row.review_note ?? "",
-    reviewedBy: row.reviewedBy != null ? Number(row.reviewedBy) : row.reviewed_by != null ? Number(row.reviewed_by) : null,
-    reviewedAt: row.reviewedAt ?? row.reviewed_at ?? null,
-    reviewHistory: safeJsonParse(row.reviewHistoryJson ?? row.review_history_json ?? "[]", []),
-    resultMailSentAt: row.resultMailSentAt ?? row.result_mail_sent_at ?? null,
-    submittedAt: row.submittedAt ?? row.submitted_at ?? null,
-  } : null;
-}
-function normalizeCertificateRow(row) {
-  return row ? {
-    id: String(row.id),
-    userId: Number(row.userId ?? row.user_id),
-    userName: row.userName ?? row.user_name ?? "",
-    username: row.username ?? "",
-    courseId: Number(row.courseId ?? row.course_id),
-    courseTitle: row.courseTitle ?? row.course_title ?? "",
-    certificateCode: row.certificateCode ?? row.certificate_code ?? "",
-    verifyCode: row.verifyCode ?? row.verify_code ?? "",
-    writtenAttemptId: row.writtenAttemptId ?? row.written_attempt_id ?? null,
-    labAttemptId: row.labAttemptId ?? row.lab_attempt_id ?? null,
-    issuedAt: row.issuedAt ?? row.issued_at ?? null,
-  } : null;
-}
+
 function normalizeNoticeRow(row) {
   return row ? {
     id: Number(row.id),
@@ -3402,18 +3036,7 @@ function normalizeTermsVersionRow(row) {
     publishedAt: row.publishedAt ?? row.published_at ?? null,
   } : null;
 }
-function normalizeArenaSeasonRow(row) {
-  return row ? {
-    id: Number(row.id),
-    code: String(row.code || "").trim(),
-    title: String(row.title || "").trim(),
-    status: String(row.status || "scheduled").trim(),
-    resetPolicy: String(row.resetPolicy ?? row.reset_policy ?? "quarterly").trim(),
-    startedAt: row.startedAt ?? row.started_at ?? null,
-    endsAt: row.endsAt ?? row.ends_at ?? null,
-    createdAt: row.createdAt ?? row.created_at ?? null,
-  } : null;
-}
+
 function normalizeArenaScenarioRow(row) {
   return row ? {
     id: Number(row.id),
@@ -3431,99 +3054,6 @@ function normalizeArenaScenarioRow(row) {
     networkName: String(row.networkName ?? row.network_name ?? "").trim(),
     metadata: safeJsonParse(row.metadataJson ?? row.metadata_json ?? "{}", {}),
     createdAt: row.createdAt ?? row.created_at ?? null,
-  } : null;
-}
-function normalizeArenaNodeRow(row) {
-  return row ? {
-    id: Number(row.id),
-    seasonId: Number(row.seasonId ?? row.season_id),
-    scenarioId: Number(row.scenarioId ?? row.scenario_id),
-    nodeCode: String(row.nodeCode ?? row.node_code ?? "").trim(),
-    label: String(row.label || "").trim(),
-    mapX: Number(row.mapX ?? row.map_x ?? 0),
-    mapY: Number(row.mapY ?? row.map_y ?? 0),
-    currentOwnerUserId: row.currentOwnerUserId != null ? Number(row.currentOwnerUserId) : row.current_owner_user_id != null ? Number(row.current_owner_user_id) : null,
-    currentOwnerHandle: String(row.currentOwnerHandle ?? row.current_owner_handle ?? "").trim(),
-    firstCaptureAt: row.firstCaptureAt ?? row.first_capture_at ?? null,
-    status: String(row.status || "open").trim(),
-    createdAt: row.createdAt ?? row.created_at ?? null,
-    scenarioCode: String(row.scenarioCode ?? row.scenario_code ?? "").trim(),
-    scenarioTitle: String(row.scenarioTitle ?? row.scenario_title ?? "").trim(),
-    backendType: String(row.backendType ?? row.backend_type ?? "").trim(),
-    consoleType: String(row.consoleType ?? row.console_type ?? "").trim(),
-    tier: String(row.tier || "").trim(),
-  } : null;
-}
-function normalizeArenaSessionRow(row) {
-  return row ? {
-    id: Number(row.id),
-    seasonId: Number(row.seasonId ?? row.season_id),
-    nodeId: Number(row.nodeId ?? row.node_id),
-    scenarioId: Number(row.scenarioId ?? row.scenario_id),
-    userId: Number(row.userId ?? row.user_id),
-    state: String(row.state || "provisioning").trim(),
-    backendType: String(row.backendType ?? row.backend_type ?? "container").trim(),
-    consoleType: String(row.consoleType ?? row.console_type ?? "xterm").trim(),
-    resourceId: String(row.resourceId ?? row.resource_id ?? "").trim(),
-    resourceName: String(row.resourceName ?? row.resource_name ?? "").trim(),
-    consoleUrl: String(row.consoleUrl ?? row.console_url ?? "").trim(),
-    validatorState: String(row.validatorState ?? row.validator_state ?? "pending").trim(),
-    startedAt: row.startedAt ?? row.started_at ?? null,
-    expiresAt: row.expiresAt ?? row.expires_at ?? null,
-    endedAt: row.endedAt ?? row.ended_at ?? null,
-    terminatedReason: String(row.terminatedReason ?? row.terminated_reason ?? "").trim(),
-    metadata: safeJsonParse(row.metadataJson ?? row.metadata_json ?? "{}", {}),
-    nodeCode: String(row.nodeCode ?? row.node_code ?? "").trim(),
-    nodeLabel: String(row.nodeLabel ?? row.node_label ?? "").trim(),
-    scenarioCode: String(row.scenarioCode ?? row.scenario_code ?? "").trim(),
-    scenarioTitle: String(row.scenarioTitle ?? row.scenario_title ?? "").trim(),
-  } : null;
-}
-function normalizeArenaEventRow(row) {
-  return row ? {
-    id: Number(row.id),
-    seasonId: Number(row.seasonId ?? row.season_id),
-    nodeId: row.nodeId != null ? Number(row.nodeId) : row.node_id != null ? Number(row.node_id) : null,
-    userId: row.userId != null ? Number(row.userId) : row.user_id != null ? Number(row.user_id) : null,
-    eventType: String(row.eventType ?? row.event_type ?? "system").trim(),
-    message: String(row.message || "").trim(),
-    payload: safeJsonParse(row.payloadJson ?? row.payload_json ?? "{}", {}),
-    createdAt: row.createdAt ?? row.created_at ?? null,
-  } : null;
-}
-function normalizeArenaAttemptRow(row) {
-  return row ? {
-    id: Number(row.id),
-    sessionId: Number(row.sessionId ?? row.session_id),
-    seasonId: Number(row.seasonId ?? row.season_id),
-    nodeId: Number(row.nodeId ?? row.node_id),
-    userId: Number(row.userId ?? row.user_id),
-    result: String(row.result || "failed").trim(),
-    score: Number(row.score || 0),
-    mmrDelta: Number(row.mmrDelta ?? row.mmr_delta ?? 0),
-    rankDelta: Number(row.rankDelta ?? row.rank_delta ?? 0),
-    durationSeconds: Number(row.durationSeconds ?? row.duration_seconds ?? 0),
-    firstTryBonus: Number(row.firstTryBonus ?? row.first_try_bonus ?? 0),
-    remainingSeconds: Number(row.remainingSeconds ?? row.remaining_seconds ?? 0),
-    createdAt: row.createdAt ?? row.created_at ?? null,
-    nodeCode: String(row.nodeCode ?? row.node_code ?? "").trim(),
-    nodeLabel: String(row.nodeLabel ?? row.node_label ?? "").trim(),
-    scenarioCode: String(row.scenarioCode ?? row.scenario_code ?? "").trim(),
-    scenarioTitle: String(row.scenarioTitle ?? row.scenario_title ?? "").trim(),
-  } : null;
-}
-function normalizeArenaCaptureRow(row) {
-  return row ? {
-    id: Number(row.id),
-    seasonId: Number(row.seasonId ?? row.season_id),
-    nodeId: Number(row.nodeId ?? row.node_id),
-    userId: Number(row.userId ?? row.user_id),
-    captureType: String(row.captureType ?? row.capture_type ?? "first_blood").trim(),
-    createdAt: row.createdAt ?? row.created_at ?? null,
-    nodeCode: String(row.nodeCode ?? row.node_code ?? "").trim(),
-    nodeLabel: String(row.nodeLabel ?? row.node_label ?? "").trim(),
-    scenarioCode: String(row.scenarioCode ?? row.scenario_code ?? "").trim(),
-    scenarioTitle: String(row.scenarioTitle ?? row.scenario_title ?? "").trim(),
   } : null;
 }
 
@@ -3606,66 +3136,6 @@ function normalizeLuckyDrawGrantRow(row) {
     rewardLabel: String(row.rewardLabel ?? row.reward_label ?? "").trim(),
     rewardType: String(row.rewardType ?? row.reward_type ?? "").trim(),
   } : null;
-}
-
-function normalizeCourseSurveyResponseRow(row) {
-  const extractLegacyFeedbackText = (body) => {
-    const text = String(body || "").trim();
-    if (!text) return "";
-    const lines = text.split(/\r?\n/);
-    const markerIndex = lines.findIndex((line) => line.includes("응답을 바탕으로 AI 해설을 생성했습니다."));
-    if (markerIndex >= 0) return lines.slice(markerIndex + 2).join("\n").trim();
-    return text;
-  };
-  const feedbackText = String(row?.llmFeedbackText ?? row?.llm_feedback_text ?? "").trim()
-    || extractLegacyFeedbackText(row?.legacyFeedbackBody ?? row?.legacy_feedback_body);
-  const feedbackMessageId = Number(row?.llmFeedbackMessageId ?? row?.llm_feedback_message_id ?? row?.legacyFeedbackMessageId ?? row?.legacy_feedback_message_id ?? 0) || null;
-  const feedbackGeneratedBy = Number(row?.llmFeedbackGeneratedBy ?? row?.llm_feedback_generated_by ?? row?.legacyFeedbackGeneratedBy ?? row?.legacy_feedback_generated_by ?? 0) || null;
-  const feedbackGeneratedAt = row?.llmFeedbackGeneratedAt ?? row?.llm_feedback_generated_at ?? row?.legacyFeedbackGeneratedAt ?? row?.legacy_feedback_generated_at ?? null;
-  const feedbackDelivered = row?.llmFeedbackDelivered ?? row?.llm_feedback_delivered ?? (feedbackText ? 1 : 0);
-  return row ? {
-    id: Number(row.id),
-    userId: Number(row.userId ?? row.user_id),
-    userName: String(row.userName ?? row.user_name ?? "").trim(),
-    username: String(row.username || "").trim(),
-    courseId: Number(row.courseId ?? row.course_id),
-    courseTitle: String(row.courseTitle ?? row.course_title ?? "").trim(),
-    phase: String(row.phase || "").trim(),
-    answers: safeJsonParse(row.answersJson ?? row.answers_json ?? "{}", {}),
-    metrics: safeJsonParse(row.metricsJson ?? row.metrics_json ?? "{}", {}),
-    submittedAt: row.submittedAt ?? row.submitted_at ?? null,
-    updatedAt: row.updatedAt ?? row.updated_at ?? null,
-    feedback: feedbackText ? {
-      text: feedbackText,
-      model: String(row.llmFeedbackModel ?? row.llm_feedback_model ?? "").trim(),
-      provider: String(row.llmFeedbackProvider ?? row.llm_feedback_provider ?? "").trim(),
-      delivered: Boolean(Number(feedbackDelivered)),
-      messageId: feedbackMessageId,
-      generatedBy: feedbackGeneratedBy,
-      generatedAt: feedbackGeneratedAt,
-    } : null,
-    feedbackAuto: {
-      status: String(row.llmFeedbackAutoStatus ?? row.llm_feedback_auto_status ?? "none").trim() || "none",
-      scheduledFor: row.llmFeedbackAutoScheduledFor ?? row.llm_feedback_auto_scheduled_for ?? null,
-      attempts: Number(row.llmFeedbackAutoAttempts ?? row.llm_feedback_auto_attempts ?? 0) || 0,
-      error: String(row.llmFeedbackAutoError ?? row.llm_feedback_auto_error ?? "").trim(),
-      updatedAt: row.llmFeedbackAutoUpdatedAt ?? row.llm_feedback_auto_updated_at ?? null,
-    },
-  } : null;
-}
-
-function getNextKstSurveyFeedbackRunIso(now = new Date()) {
-  const kstOffsetMs = 9 * 60 * 60 * 1000;
-  const kstDate = new Date(now.getTime() + kstOffsetMs);
-  const nextKstRunUtcMs = Date.UTC(
-    kstDate.getUTCFullYear(),
-    kstDate.getUTCMonth(),
-    kstDate.getUTCDate() + 1,
-    0,
-    5,
-    0,
-  ) - kstOffsetMs;
-  return new Date(nextKstRunUtcMs).toISOString();
 }
 
 function normalizeMarketingSurveyRow(row) {
@@ -3834,111 +3304,6 @@ async function nextId(client, tableName) {
   await client.query(`LOCK TABLE ${tableName} IN EXCLUSIVE MODE`);
   const result = await client.query(`SELECT COALESCE(MAX(id), 0) + 1 AS id FROM ${tableName}`);
   return Number(result.rows[0]?.id || 1);
-}
-const qOne = async (sql, params, norm) => normalizeUserRow ? norm((await withClient((c) => c.query(sql, params))).rows[0] || null) : null;
-function serializeCourseInput(input) {
-  const heatParameters = input.heatParameters && typeof input.heatParameters === "object"
-    ? input.heatParameters
-    : {};
-  const labProvisioningTimeoutMinutes = Math.max(1, Math.min(120, Math.round(Number(
-    input.labProvisioningTimeoutMinutes
-      ?? heatParameters.labProvisioningTimeoutMinutes
-      ?? 10,
-  ) || 10)));
-  return {
-    slug: String(input.slug || "").trim(),
-    category: String(input.category || "").trim(),
-    courseType: ["standard", "online", "exam", "package"].includes(String(input.courseType || "standard").trim().toLowerCase())
-      ? String(input.courseType || "standard").trim().toLowerCase()
-      : "standard",
-    packageItemsJson: JSON.stringify(Array.from(new Set((Array.isArray(input.packageItems) ? input.packageItems : []).map(Number).filter((id) => Number.isInteger(id) && id > 0)))),
-    programType: normalizeCourseProgramTypeValue(input.programType),
-    title: String(input.title || "").trim(),
-    summary: String(input.summary || "").trim(),
-    price: Math.max(0, Number(input.price || 0)),
-    promoEnabled: Number(Boolean(input.promoEnabled)),
-    promoPrice: Math.max(0, Number(input.promoPrice || 0)),
-    promoStartsAt: String(input.promoStartsAt || "").trim(),
-    promoEndsAt: String(input.promoEndsAt || "").trim(),
-    duration: String(input.duration || "").trim(),
-    courseAccessDays: resolveCourseAccessDays(input.courseAccessDays),
-    level: String(input.level || "").trim(),
-    body: String(input.body || "").trim(),
-    youtubeUrl: String(input.youtubeUrl || "").trim(),
-    onlineMeetingUrl: String(input.onlineMeetingUrl || "").trim(),
-    onlineBoardUrl: String(input.onlineBoardUrl || "").trim(),
-    onlineCourseNotice: String(input.onlineCourseNotice || "").trim(),
-    onlineSessionNote: String(input.onlineSessionNote || "").trim(),
-    labGuideMarkdown: String(input.labGuideMarkdown || ""),
-    commandsMarkdown: String(input.commandsMarkdown || ""),
-    aiSystemPrompt: String(input.aiSystemPrompt || "").trim(),
-    aiQuickPromptsJson: JSON.stringify(normalizeAiQuickPrompts(input.aiQuickPrompts)),
-    externalToolLinksJson: JSON.stringify(normalizeExternalToolLinks(input.externalToolLinks)),
-    externalLearningToolsJson: JSON.stringify(normalizeExternalToolLinks(input.externalLearningTools)),
-    labStartChecklistJson: JSON.stringify(normalizeLabStartChecklist(input.labStartChecklist)),
-      objectivesJson: JSON.stringify(Array.isArray(input.objectives) ? input.objectives : []),
-      materialsJson: JSON.stringify(Array.isArray(input.materials) ? input.materials : []),
-      courseCurriculumJson: JSON.stringify(Array.isArray(input.courseCurriculum) ? input.courseCurriculum : []),
-      courseVideosJson: JSON.stringify(Array.isArray(input.courseVideos) ? input.courseVideos : []),
-      courseRecordingsJson: JSON.stringify(normalizeCourseRecordings(input.courseRecordings)),
-      exampleFilesJson: JSON.stringify(Array.isArray(input.exampleFiles) ? input.exampleFiles : []),
-      gitRepositoriesJson: JSON.stringify(Array.isArray(input.gitRepositories) ? input.gitRepositories : []),
-      surveyConfigJson: JSON.stringify(input.surveyConfig && typeof input.surveyConfig === "object" ? input.surveyConfig : {}),
-      labEnabled: Number(Boolean(input.labEnabled)),
-      labApprovalMode: String(input.labApprovalMode || "manual").trim() || "manual",
-      publicDomainApprovalMode: normalizeCourseFeatureApprovalMode(input.publicDomainApprovalMode),
-      publicTcpApprovalMode: normalizeCourseFeatureApprovalMode(input.publicTcpApprovalMode),
-      externalSshApprovalMode: normalizeCourseFeatureApprovalMode(input.externalSshApprovalMode),
-      externalRdpApprovalMode: normalizeCourseFeatureApprovalMode(input.externalRdpApprovalMode),
-      externalSshRouteMode: String(input.externalSshRouteMode || "").trim().toLowerCase() === "domain"
-        ? "domain"
-        : "both",
-      labRetentionMode: String(input.labRetentionMode || "ephemeral").trim() || "ephemeral",
-      labRetentionPreset: String(input.labRetentionPreset || "1").trim() || "1",
-      labRetentionDays: Math.max(1, Number(input.labRetentionDays || 1) || 1),
-      allowResumeExistingLab: Number(Boolean(input.allowResumeExistingLab)),
-      labResizePolicy: String(input.labResizePolicy || "requestable").trim() || "requestable",
-      labResizeAllowedFlavors: (Array.isArray(input.labResizeAllowedFlavors) ? input.labResizeAllowedFlavors : String(input.labResizeAllowedFlavors || "").split(","))
-        .map((item) => String(item || "").trim())
-        .filter(Boolean)
-        .join(","),
-      terminalReplayMode: ["inherit", "enabled", "disabled"].includes(String(input.terminalReplayMode || "").trim())
-        ? String(input.terminalReplayMode || "").trim()
-        : "inherit",
-      labBackendType: normalizeLabBackendType(input.labBackendType),
-      containerImageName: String(input.containerImageName || "").trim(),
-      containerCommandText: String(input.containerCommandText || "").trim(),
-      containerExposedPort: input.containerExposedPort == null || input.containerExposedPort === ""
-        ? null
-        : Math.max(1, Number(input.containerExposedPort || 22) || 22),
-      containerAccessMode: ["ssh", "console", "ssh_console"].includes(String(input.containerAccessMode || "").trim())
-        ? String(input.containerAccessMode || "").trim()
-        : "console",
-      containerConsoleMode: ["zun", "ssh"].includes(String(input.containerConsoleMode || "").trim())
-        ? String(input.containerConsoleMode || "").trim()
-        : "zun",
-      trafficMonitoringEnabled: input.trafficMonitoringEnabled == null ? 1 : Number(Boolean(input.trafficMonitoringEnabled)),
-      trafficDailyLimitGb: Math.max(0, Number(input.trafficDailyLimitGb || 0)),
-      trafficTotalLimitGb: Math.max(0, Number(input.trafficTotalLimitGb || 0)),
-      trafficExceededAction: String(input.trafficExceededAction || "warn").trim() || "warn",
-      heatApiUrl: String(input.heatApiUrl || "").trim(),
-    heatTemplateName: String(input.heatTemplateName || "").trim(),
-    heatStackPrefix: String(input.heatStackPrefix || "").trim(),
-    heatParametersJson: JSON.stringify({
-      ...heatParameters,
-      labProvisioningTimeoutMinutes,
-    }),
-    terminalSshUser: String(input.terminalSshUser || "").trim(),
-    terminalSshPort: Number(input.terminalSshPort || 22),
-    terminalJumpHost: String(input.terminalJumpHost || "").trim(),
-    terminalJumpUser: String(input.terminalJumpUser || "").trim(),
-    isPublished: Number(Boolean(input.isPublished)),
-    isLandingPreview: Number(Boolean(input.isLandingPreview)),
-    courseStatus: ["published", "coming_soon", "archived"].includes(String(input.courseStatus || "").trim()) ? String(input.courseStatus || "").trim() : "published",
-    releaseLabel: String(input.releaseLabel || "").trim(),
-    accessScope: String(input.accessScope || "public").trim() || "public",
-    accessCode: String(input.accessCode || "").trim(),
-  };
 }
 
 const USER_MARKETING_CONSENT_SELECT = `COALESCE((SELECT json_build_object('hasDecision', true, 'emailConsent', umc.consented, 'emailConsentAt', umc.agreed_at, 'emailRevokedAt', umc.revoked_at) FROM user_marketing_consents umc WHERE umc.user_id=u.id AND umc.channel='email' AND umc.purpose='marketing' ORDER BY umc.created_at DESC, umc.id DESC LIMIT 1),'{}'::json) AS "marketingConsentJson"`;
@@ -4160,6 +3525,7 @@ async function pgUpdateUserAccess(id, patch) {
 async function pgMarkApprovalMailSent(id, sentAt = new Date().toISOString()) { await withClient((c) => c.query(`UPDATE users SET approval_mail_sent_at=$2 WHERE id=$1`, [id, sentAt])); return pgFindUserById(id); }
 async function pgDeleteUser(id) {
   await withTx(async (c) => {
+    await removeLegacyEducationUserReferences(c,id);
     await c.query(`DELETE FROM password_reset_pins WHERE user_id=$1 OR issued_by=$1`, [id]);
     await c.query(`DELETE FROM user_access_logs WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM user_notifications WHERE user_id=$1`, [id]);
@@ -4167,10 +3533,8 @@ async function pgDeleteUser(id) {
     await c.query(`DELETE FROM user_marketing_consents WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM qna_comments WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM qna_posts WHERE user_id=$1 OR answered_by=$1`, [id]);
-    await c.query(`DELETE FROM lab_exam_attempts WHERE user_id=$1`, [id]);
-    await c.query(`DELETE FROM written_exam_attempts WHERE user_id=$1`, [id]);
-    await c.query(`DELETE FROM certificates WHERE user_id=$1`, [id]);
-    await c.query(`DELETE FROM lucky_draw_attempts WHERE user_id=$1`, [id]);
+
+await c.query(`DELETE FROM lucky_draw_attempts WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM lucky_draw_grants WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM arena_events WHERE user_id=$1`, [id]);
     await c.query(`DELETE FROM arena_captures WHERE user_id=$1`, [id]);
@@ -5315,27 +4679,6 @@ async function pgRecordMailCampaignEvent({ campaignId = "", messageId = "", emai
   return delivery;
 }
 
-async function pgDeleteMailLogsByMetadata({ purpose = "", campaignName = "" } = {}) {
-  const normalizedPurpose = String(purpose || "").trim();
-  const normalizedCampaignName = String(campaignName || "").trim();
-  if (!normalizedPurpose && !normalizedCampaignName) return 0;
-  const clauses = [];
-  const params = [];
-  if (normalizedPurpose) {
-    params.push(normalizedPurpose);
-    clauses.push(`COALESCE(metadata_json::jsonb ->> 'purpose', '') = $${params.length}`);
-  }
-  if (normalizedCampaignName) {
-    params.push(normalizedCampaignName);
-    clauses.push(`COALESCE(metadata_json::jsonb ->> 'campaignName', '') = $${params.length}`);
-  }
-  const result = await withClient((c) => c.query(`
-    DELETE FROM mail_logs
-    WHERE ${clauses.join(" AND ")}
-  `, params));
-  return Number(result.rowCount || 0);
-}
-
 async function pgCreateUserNotification({
   userId,
   type = "system",
@@ -6366,29 +5709,7 @@ async function pgUpdateInviteCode(id, patch) {
 async function pgDeleteInviteCode(id) {
   await withClient((c) => c.query(`DELETE FROM invite_codes WHERE id=$1`, [id]));
 }
-function normalizeCourseTextbookAssignments(input = []) {
-  return (Array.isArray(input) ? input : [])
-    .map((item, index) => ({
-      textbookId: Number(item?.textbookId ?? item?.id),
-      sortOrder: Number.isFinite(Number(item?.sortOrder)) ? Number(item.sortOrder) : index,
-      required: Boolean(item?.required),
-      visible: item?.visible == null ? true : Boolean(item.visible),
-    }))
-    .filter((item, index, list) => Number.isInteger(item.textbookId) && item.textbookId > 0 && list.findIndex((candidate) => candidate.textbookId === item.textbookId) === index);
-}
-async function replaceCourseTextbooks(client, courseId, assignments = []) {
-  await client.query(`DELETE FROM course_textbooks WHERE course_id=$1`, [Number(courseId)]);
-  for (const [index, assignment] of normalizeCourseTextbookAssignments(assignments).entries()) {
-    const id = await nextId(client, "course_textbooks");
-    await client.query(
-      `INSERT INTO course_textbooks (id,course_id,textbook_id,sort_order,required,visible,created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,CURRENT_TIMESTAMP::text)
-       ON CONFLICT (course_id,textbook_id) DO UPDATE
-       SET sort_order=EXCLUDED.sort_order, required=EXCLUDED.required, visible=EXCLUDED.visible`,
-      [id, Number(courseId), assignment.textbookId, Number.isFinite(Number(assignment.sortOrder)) ? Number(assignment.sortOrder) : index, assignment.required ? 1 : 0, assignment.visible ? 1 : 0],
-    );
-  }
-}
+
 async function attachTextbooksToCourses(courses, { publicOnly = false } = {}) {
   const list = (Array.isArray(courses) ? courses : [courses]).filter(Boolean);
   if (!list.length) return Array.isArray(courses) ? [] : null;
@@ -6432,473 +5753,7 @@ async function pgListCourses() {
   ))).rows.map(normalizeCourseRow);
   return attachTextbooksToCourses(courses);
 }
-async function pgCreateCourse(input) {
-  const values = serializeCourseInput(input);
-  const id = await withTx(async (c) => {
-    const id = await nextId(c, "courses");
-    await c.query(
-      `INSERT INTO courses (
-          id, slug, category, course_type, program_type, title, summary, price, duration, level, body, youtube_url, online_meeting_url, online_board_url, online_course_notice, online_session_note, lab_guide_markdown, commands_markdown, ai_system_prompt, objectives_json, materials_json, course_curriculum_json, course_videos_json, course_recordings_json, example_files_json, git_repositories_json, external_tool_links_json, lab_start_checklist_json, survey_config_json,
-          lab_enabled, lab_approval_mode, public_domain_approval_mode, external_ssh_approval_mode, external_ssh_route_mode, lab_backend_type, container_image_name, container_command_text, container_exposed_port, container_access_mode, container_console_mode, lab_retention_mode, lab_retention_preset, lab_retention_days, allow_resume_existing_lab, lab_resize_policy, lab_resize_allowed_flavors,
-          traffic_monitoring_enabled, traffic_daily_limit_gb, traffic_total_limit_gb, traffic_exceeded_action,
-          heat_api_url, heat_template_name, heat_stack_prefix, heat_parameters_json,
-          terminal_ssh_user, terminal_ssh_port, terminal_jump_host, terminal_jump_user, is_published, is_landing_preview, course_status, release_label, access_scope, access_code, external_rdp_approval_mode, ai_quick_prompts_json, public_tcp_approval_mode, course_access_days,
-          created_at, updated_at
-        ) VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
-          $30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,
-          $63,$64,$65,$66,
-          $67,$68,
-          CURRENT_TIMESTAMP::text, CURRENT_TIMESTAMP::text
-        )`,
-        [
-          id, values.slug, values.category, values.courseType, values.programType, values.title, values.summary, values.price, values.duration, values.level, values.body, values.youtubeUrl,
-          values.onlineMeetingUrl, values.onlineBoardUrl, values.onlineCourseNotice, values.onlineSessionNote, values.labGuideMarkdown, values.commandsMarkdown, values.aiSystemPrompt, values.objectivesJson, values.materialsJson, values.courseCurriculumJson, values.courseVideosJson, values.courseRecordingsJson, values.exampleFilesJson, values.gitRepositoriesJson, values.externalToolLinksJson, values.labStartChecklistJson, values.surveyConfigJson, values.labEnabled, values.labApprovalMode,
-          values.publicDomainApprovalMode, values.externalSshApprovalMode, values.externalSshRouteMode, values.labBackendType, values.containerImageName, values.containerCommandText, values.containerExposedPort, values.containerAccessMode, values.containerConsoleMode, values.labRetentionMode, values.labRetentionPreset, values.labRetentionDays, values.allowResumeExistingLab, values.labResizePolicy, values.labResizeAllowedFlavors,
-          values.trafficMonitoringEnabled, values.trafficDailyLimitGb, values.trafficTotalLimitGb, values.trafficExceededAction, values.heatApiUrl,
-          values.heatTemplateName, values.heatStackPrefix, values.heatParametersJson, values.terminalSshUser, values.terminalSshPort,
-          values.terminalJumpHost, values.terminalJumpUser, values.isPublished, values.isLandingPreview, values.courseStatus, values.releaseLabel, values.accessScope, values.accessCode, values.externalRdpApprovalMode, values.aiQuickPromptsJson, values.publicTcpApprovalMode, values.courseAccessDays,
-        ],
-    );
-    await c.query(
-      `UPDATE courses SET promo_enabled=$2, promo_price=$3, promo_starts_at=$4, promo_ends_at=$5 WHERE id=$1`,
-      [id, values.promoEnabled, values.promoPrice, values.promoStartsAt, values.promoEndsAt],
-    );
-    await c.query(`UPDATE courses SET package_items_json=$2 WHERE id=$1`, [id, values.packageItemsJson]);
-    await c.query(`UPDATE courses SET external_learning_tools_json=$2 WHERE id=$1`, [id, values.externalLearningToolsJson]);
-    await c.query(`UPDATE courses SET terminal_replay_mode=$2 WHERE id=$1`, [id, values.terminalReplayMode]);
-    await replaceCourseTextbooks(c, id, input.textbookAssignments || []);
-    return id;
-  });
-  return pgFindCourseById(id);
-}
-async function pgUpdateCourse(id, input) {
-  const values = serializeCourseInput(input);
-  await withTx(async (c) => {
-    await c.query(
-      `UPDATE courses
-       SET slug=$2, category=$3, course_type=$4, program_type=$5, title=$6, summary=$7, price=$8, duration=$9, level=$10, body=$11, youtube_url=$12,
-           online_meeting_url=$13, online_board_url=$14, online_course_notice=$15, online_session_note=$16, lab_guide_markdown=$17, commands_markdown=$18, ai_system_prompt=$19, objectives_json=$20, materials_json=$21, course_curriculum_json=$22, course_videos_json=$23, course_recordings_json=$24, example_files_json=$25, git_repositories_json=$26, external_tool_links_json=$27, lab_start_checklist_json=$28, survey_config_json=$29, lab_enabled=$30, lab_approval_mode=$31, public_domain_approval_mode=$32,
-           external_ssh_approval_mode=$33, external_ssh_route_mode=$34, lab_backend_type=$35, container_image_name=$36, container_command_text=$37, container_exposed_port=$38, container_access_mode=$39, container_console_mode=$40, lab_retention_mode=$41, lab_retention_preset=$42, lab_retention_days=$43, allow_resume_existing_lab=$44, lab_resize_policy=$45, lab_resize_allowed_flavors=$46,
-           traffic_monitoring_enabled=$47, traffic_daily_limit_gb=$48, traffic_total_limit_gb=$49, traffic_exceeded_action=$50,
-           heat_api_url=$51, heat_template_name=$52, heat_stack_prefix=$53, heat_parameters_json=$54,
-           terminal_ssh_user=$55, terminal_ssh_port=$56, terminal_jump_host=$57, terminal_jump_user=$58,
-           is_published=$59, is_landing_preview=$60, course_status=$61, release_label=$62, access_scope=$63, access_code=$64, external_rdp_approval_mode=$65, ai_quick_prompts_json=$66, terminal_replay_mode=$67, public_tcp_approval_mode=$68, course_access_days=$69, updated_at=CURRENT_TIMESTAMP::text
-       WHERE id=$1`,
-      [
-        id, values.slug, values.category, values.courseType, values.programType, values.title, values.summary, values.price, values.duration, values.level, values.body, values.youtubeUrl,
-        values.onlineMeetingUrl, values.onlineBoardUrl, values.onlineCourseNotice, values.onlineSessionNote, values.labGuideMarkdown, values.commandsMarkdown, values.aiSystemPrompt, values.objectivesJson, values.materialsJson, values.courseCurriculumJson, values.courseVideosJson, values.courseRecordingsJson, values.exampleFilesJson, values.gitRepositoriesJson, values.externalToolLinksJson, values.labStartChecklistJson, values.surveyConfigJson, values.labEnabled, values.labApprovalMode,
-        values.publicDomainApprovalMode, values.externalSshApprovalMode, values.externalSshRouteMode, values.labBackendType, values.containerImageName, values.containerCommandText, values.containerExposedPort, values.containerAccessMode, values.containerConsoleMode, values.labRetentionMode, values.labRetentionPreset, values.labRetentionDays, values.allowResumeExistingLab, values.labResizePolicy, values.labResizeAllowedFlavors,
-        values.trafficMonitoringEnabled, values.trafficDailyLimitGb, values.trafficTotalLimitGb, values.trafficExceededAction, values.heatApiUrl,
-        values.heatTemplateName, values.heatStackPrefix, values.heatParametersJson, values.terminalSshUser, values.terminalSshPort,
-        values.terminalJumpHost, values.terminalJumpUser, values.isPublished, values.isLandingPreview, values.courseStatus, values.releaseLabel, values.accessScope, values.accessCode, values.externalRdpApprovalMode, values.aiQuickPromptsJson, values.terminalReplayMode, values.publicTcpApprovalMode, values.courseAccessDays,
-      ],
-    );
-    await c.query(
-      `UPDATE courses SET promo_enabled=$2, promo_price=$3, promo_starts_at=$4, promo_ends_at=$5 WHERE id=$1`,
-      [id, values.promoEnabled, values.promoPrice, values.promoStartsAt, values.promoEndsAt],
-    );
-    await c.query(`UPDATE courses SET package_items_json=$2 WHERE id=$1`, [id, values.packageItemsJson]);
-    await c.query(`UPDATE courses SET external_learning_tools_json=$2 WHERE id=$1`, [id, values.externalLearningToolsJson]);
-    if (Array.isArray(input.textbookAssignments)) {
-      await replaceCourseTextbooks(c, id, input.textbookAssignments);
-    }
-  });
-  return pgFindCourseById(id);
-}
-async function pgDeleteCourse(id) {
-  await withTx(async (c) => {
-    const deletedSlugSuffix = `-deleted-${id}`;
-    const packageRows = (await c.query(`SELECT id, package_items_json AS "packageItemsJson" FROM courses WHERE course_type='package'`)).rows;
-    for (const packageRow of packageRows) {
-      const nextItems = safeJsonParse(packageRow.packageItemsJson || "[]", []).map(Number).filter((itemId) => Number(itemId) !== Number(id));
-      await c.query(
-        `UPDATE courses
-         SET package_items_json=$2,
-             is_published=CASE WHEN $3=0 THEN 0 ELSE is_published END,
-             access_scope=CASE WHEN $3=0 THEN 'private' ELSE access_scope END,
-             updated_at=CURRENT_TIMESTAMP::text
-         WHERE id=$1`,
-        [packageRow.id, JSON.stringify(nextItems), nextItems.length],
-      );
-    }
-    await c.query(`DELETE FROM course_access_requests WHERE course_id=$1`, [id]);
-    await c.query(`DELETE FROM user_course_access WHERE course_id=$1`, [id]);
-    await c.query(`UPDATE invite_codes SET enabled=0, code=code || $2 WHERE course_id=$1 AND code NOT LIKE '%' || $2`, [id, deletedSlugSuffix]);
-    await c.query(
-      `UPDATE courses
-       SET course_status='deleted',
-           is_published=0,
-           is_landing_preview=0,
-           access_scope='private',
-           access_code='',
-           slug=CASE WHEN slug LIKE '%' || $2 THEN slug ELSE slug || $2 END,
-           updated_at=CURRENT_TIMESTAMP::text
-       WHERE id=$1`,
-      [id, deletedSlugSuffix],
-    );
-  });
-}
-async function pgListTextbooks() {
-  const rows = (await withClient((c) => c.query(
-    `SELECT t.id, t.slug, t.title, t.summary, t.content_markdown AS "contentMarkdown", t.status, t.version,
-            t.created_by AS "createdBy", t.created_at AS "createdAt", t.updated_at AS "updatedAt",
-            COUNT(ct.id) AS "courseCount"
-     FROM textbooks t
-     LEFT JOIN course_textbooks ct ON ct.textbook_id = t.id
-     GROUP BY t.id
-     ORDER BY t.updated_at DESC, t.id DESC`,
-  ))).rows;
-  return rows.map(normalizeTextbookRow);
-}
-async function pgCreateTextbook(input) {
-  return withTx(async (c) => {
-    const id = await nextId(c, "textbooks");
-    await c.query(
-      `INSERT INTO textbooks (id,slug,title,summary,content_markdown,status,version,created_by,created_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,CURRENT_TIMESTAMP::text,CURRENT_TIMESTAMP::text)`,
-      [
-        id,
-        String(input.slug || "").trim(),
-        String(input.title || "").trim(),
-        String(input.summary || "").trim(),
-        String(input.contentMarkdown || ""),
-        String(input.status || "draft").trim(),
-        String(input.version || "1.0").trim() || "1.0",
-        input.createdBy || null,
-      ],
-    );
-    return normalizeTextbookRow((await c.query(
-      `SELECT id, slug, title, summary, content_markdown AS "contentMarkdown", status, version, created_by AS "createdBy", created_at AS "createdAt", updated_at AS "updatedAt", 0 AS "courseCount"
-       FROM textbooks WHERE id=$1`,
-      [id],
-    )).rows[0] || null);
-  });
-}
-async function pgUpdateTextbook(id, input) {
-  await withClient((c) => c.query(
-    `UPDATE textbooks
-     SET slug=$2, title=$3, summary=$4, content_markdown=$5, status=$6, version=$7, updated_at=CURRENT_TIMESTAMP::text
-     WHERE id=$1`,
-    [
-      Number(id),
-      String(input.slug || "").trim(),
-      String(input.title || "").trim(),
-      String(input.summary || "").trim(),
-      String(input.contentMarkdown || ""),
-      String(input.status || "draft").trim(),
-      String(input.version || "1.0").trim() || "1.0",
-    ],
-  ));
-  return (await pgListTextbooks()).find((item) => Number(item.id) === Number(id)) || null;
-}
-async function pgDeleteTextbook(id) {
-  await withTx(async (c) => {
-    await c.query(`DELETE FROM course_textbooks WHERE textbook_id=$1`, [Number(id)]);
-    await c.query(`DELETE FROM textbooks WHERE id=$1`, [Number(id)]);
-  });
-}
-function normalizeScheduleInput(input = {}) {
-  const recurrence = input.recurrence && typeof input.recurrence === "object" && !Array.isArray(input.recurrence)
-    ? input.recurrence
-    : {};
-  const frequency = ["none", "daily", "weekly", "monthly"].includes(String(recurrence.frequency || "none").trim())
-    ? String(recurrence.frequency || "none").trim()
-    : "none";
-  const weekdays = Array.isArray(recurrence.weekdays)
-    ? recurrence.weekdays.map((day) => Math.max(0, Math.min(6, Number(day)))).filter((day, index, list) => Number.isInteger(day) && list.indexOf(day) === index)
-    : [];
-  return {
-    title: String(input.title || "").trim(),
-    summary: String(input.summary || "").trim(),
-    memo: String(input.memo || "").trim(),
-    location: String(input.location || "").trim(),
-    instructorName: String(input.instructorName || "").trim(),
-    capacity: Number(input.capacity || 0) > 0 ? Number(input.capacity) : null,
-    applyUrl: String(input.applyUrl || "").trim(),
-    applyMethod: String(input.applyMethod || "").trim(),
-    startAt: String(input.startAt || "").trim(),
-    endAt: String(input.endAt || "").trim(),
-    timezone: String(input.timezone || "Asia/Seoul").trim() || "Asia/Seoul",
-    visibility: ["public", "member", "admin"].includes(String(input.visibility || "public").trim()) ? String(input.visibility || "public").trim() : "public",
-    status: ["scheduled", "recruiting", "closed", "ended", "cancelled"].includes(String(input.status || "scheduled").trim()) ? String(input.status || "scheduled").trim() : "scheduled",
-    showOnLanding: Boolean(input.showOnLanding),
-    promotionEnabled: Boolean(input.promotionEnabled),
-    promotionTitle: String(input.promotionTitle || "").trim(),
-    promotionMessage: String(input.promotionMessage || "").trim(),
-    promotionPriority: Math.max(0, Math.min(100, Number(input.promotionPriority || 0) || 0)),
-    badgeLabel: String(input.badgeLabel || "").trim(),
-    iconKey: ["video", "terminal", "calendar", "check", "rocket", "cloud"].includes(String(input.iconKey || "video").trim()) ? String(input.iconKey || "video").trim() : "video",
-    courseId: Number(input.courseId || 0) > 0 ? Number(input.courseId) : null,
-    recurrenceExceptions: Array.isArray(input.recurrenceExceptions) ? input.recurrenceExceptions.map((item) => String(item || "").trim()).filter(Boolean) : [],
-    recurrence: {
-      frequency,
-      interval: Math.max(1, Number(recurrence.interval || 1) || 1),
-      weekdays,
-      until: String(recurrence.until || "").trim(),
-      count: recurrence.count ? Math.max(1, Math.min(200, Number(recurrence.count) || 1)) : null,
-    },
-  };
-}
-function addScheduleInterval(date, frequency, interval) {
-  const next = new Date(date.getTime());
-  if (frequency === "daily") next.setUTCDate(next.getUTCDate() + interval);
-  if (frequency === "weekly") next.setUTCDate(next.getUTCDate() + (interval * 7));
-  if (frequency === "monthly") next.setUTCMonth(next.getUTCMonth() + interval);
-  return next;
-}
-function expandScheduleEvent(event, { from, to, limit = 300 } = {}) {
-  const start = new Date(event.startAt);
-  const end = new Date(event.endAt);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return [];
-  const rangeFrom = from ? new Date(from) : new Date(start.getTime() - 86400000);
-  const rangeTo = to ? new Date(to) : new Date(start.getTime() + 120 * 86400000);
-  const duration = end.getTime() - start.getTime();
-  const recurrence = event.recurrence || {};
-  const frequency = String(recurrence.frequency || "none");
-  const interval = Math.max(1, Number(recurrence.interval || 1) || 1);
-  const until = recurrence.until ? new Date(recurrence.until) : null;
-  const hasCountLimit = recurrence.count != null && recurrence.count !== "";
-  const maxCount = hasCountLimit ? Math.max(1, Math.min(200, Number(recurrence.count) || 1)) : Number.POSITIVE_INFINITY;
-  const excludedDates = new Set((event.recurrenceExceptions || []).map((value) => String(value || "").slice(0, 10)).filter(Boolean));
-  const isExcluded = (date) => excludedDates.has(date.toISOString().slice(0, 10));
-  const occurrences = [];
-  if (frequency === "weekly" && Array.isArray(recurrence.weekdays) && recurrence.weekdays.length) {
-    let cursorDay = new Date(start);
-    let generatedMatches = 0;
-    while (occurrences.length < limit && generatedMatches < maxCount && cursorDay <= rangeTo) {
-      const weekOffset = Math.floor((cursorDay.getTime() - start.getTime()) / (7 * 86400000));
-      const isScheduledWeek = weekOffset >= 0 && weekOffset % interval === 0;
-      if (isScheduledWeek && recurrence.weekdays.includes(cursorDay.getUTCDay()) && (!until || cursorDay <= until) && !isExcluded(cursorDay)) {
-        const occurrenceStart = new Date(cursorDay);
-        occurrenceStart.setUTCHours(start.getUTCHours(), start.getUTCMinutes(), start.getUTCSeconds(), start.getUTCMilliseconds());
-        const occurrenceEnd = new Date(occurrenceStart.getTime() + duration);
-        generatedMatches += 1;
-        if (occurrenceEnd >= rangeFrom && occurrenceStart <= rangeTo) {
-          occurrences.push({
-            ...event,
-            occurrenceId: `${event.id}:${occurrenceStart.toISOString()}`,
-            originalStartAt: event.startAt,
-            originalEndAt: event.endAt,
-            startAt: occurrenceStart.toISOString(),
-            endAt: occurrenceEnd.toISOString(),
-            isRecurring: true,
-          });
-        }
-      }
-      cursorDay.setUTCDate(cursorDay.getUTCDate() + 1);
-      if (until && cursorDay > until) break;
-    }
-    return occurrences;
-  }
-  let cursor = new Date(start);
-  let generated = 0;
-  while (occurrences.length < limit && generated < maxCount && cursor <= rangeTo) {
-    const occurrenceEnd = new Date(cursor.getTime() + duration);
-    const weekdayAllowed = frequency !== "weekly" || !recurrence.weekdays?.length || recurrence.weekdays.includes(cursor.getUTCDay());
-    if (weekdayAllowed && occurrenceEnd >= rangeFrom && cursor <= rangeTo && (!until || cursor <= until) && !isExcluded(cursor)) {
-      occurrences.push({
-        ...event,
-        occurrenceId: `${event.id}:${cursor.toISOString()}`,
-        originalStartAt: event.startAt,
-        originalEndAt: event.endAt,
-        startAt: cursor.toISOString(),
-        endAt: occurrenceEnd.toISOString(),
-        isRecurring: frequency !== "none",
-      });
-    }
-    if (frequency === "none") break;
-    cursor = addScheduleInterval(cursor, frequency, interval);
-    generated += 1;
-    if (until && cursor > until) break;
-  }
-  return occurrences;
-}
-async function pgListScheduleEvents({ audience = "member", from = "", to = "", courseId = null, limit = 300, landingOnly = false, status = "", government = "", courseType = "", search = "" } = {}) {
-  const params = [];
-  const where = [];
-  if (audience === "public") where.push(`se.visibility='public'`);
-  else if (audience === "member") where.push(`se.visibility IN ('public','member')`);
-  if (landingOnly) where.push(`(se.show_on_landing=1 OR se.promotion_enabled=1)`);
-  if (courseId) {
-    params.push(Number(courseId));
-    where.push(`se.course_id=$${params.length}`);
-  }
-  if (status) {
-    params.push(String(status));
-    where.push(`se.status=$${params.length}`);
-  }
-  if (courseType === "online") where.push(`co.course_type='online'`);
-  if (courseType === "standard") where.push(`(co.course_type IS NULL OR co.course_type='standard')`);
-  if (courseType === "exam") where.push(`co.course_type='exam'`);
-  if (government === "true") where.push(`(replace(co.program_type, ' ', '') LIKE '%정부%' OR replace(co.program_type, ' ', '') LIKE '%국비%')`);
-  if (government === "false") where.push(`(co.program_type IS NULL OR NOT (replace(co.program_type, ' ', '') LIKE '%정부%' OR replace(co.program_type, ' ', '') LIKE '%국비%'))`);
-  if (search) {
-    params.push(`%${String(search).trim()}%`);
-    where.push(`(se.title ILIKE $${params.length} OR se.summary ILIKE $${params.length} OR se.location ILIKE $${params.length} OR co.title ILIKE $${params.length})`);
-  }
-  const result = await withClient((c) => c.query(
-    `SELECT se.id, se.title, se.summary, '' AS memo, se.location, se.instructor_name AS "instructorName",
-            se.capacity, se.apply_url AS "applyUrl", se.apply_method AS "applyMethod",
-            se.start_at AS "startAt", se.end_at AS "endAt",
-            se.timezone, se.visibility, se.status, se.show_on_landing AS "showOnLanding", se.course_id AS "courseId",
-            se.promotion_enabled AS "promotionEnabled", se.promotion_title AS "promotionTitle",
-            se.promotion_message AS "promotionMessage", se.promotion_priority AS "promotionPriority",
-            se.badge_label AS "badgeLabel", se.icon_key AS "iconKey",
-            se.recurrence_json AS "recurrenceJson", se.recurrence_exceptions_json AS "recurrenceExceptionsJson",
-            se.schedule_source AS "scheduleSource", se.external_event_id AS "externalEventId", se.created_by AS "createdBy",
-            se.created_at AS "createdAt", se.updated_at AS "updatedAt",
-            co.title AS "courseTitle", co.slug AS "courseSlug", co.program_type AS "courseProgramType", co.course_type AS "courseType"
-     FROM schedule_events se
-     LEFT JOIN courses co ON co.id = se.course_id
-     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-     ORDER BY se.start_at ASC, se.id ASC`,
-    params,
-  ));
-  const events = result.rows.map(normalizeScheduleEventRow).filter((event) => status === "cancelled" || event.status !== "cancelled");
-  return events
-    .flatMap((event) => expandScheduleEvent(event, { from, to, limit }))
-    .sort((left, right) => {
-      const priorityDiff = Number(right.promotionPriority || 0) - Number(left.promotionPriority || 0);
-      if (landingOnly && priorityDiff) return priorityDiff;
-      return new Date(left.startAt).getTime() - new Date(right.startAt).getTime();
-    })
-    .slice(0, limit);
-}
-async function pgListAdminScheduleEvents() {
-  const result = await withClient((c) => c.query(
-    `SELECT se.id, se.title, se.summary, se.memo, se.location, se.instructor_name AS "instructorName",
-            se.capacity, se.apply_url AS "applyUrl", se.apply_method AS "applyMethod",
-            se.start_at AS "startAt", se.end_at AS "endAt",
-            se.timezone, se.visibility, se.status, se.show_on_landing AS "showOnLanding", se.course_id AS "courseId",
-            se.promotion_enabled AS "promotionEnabled", se.promotion_title AS "promotionTitle",
-            se.promotion_message AS "promotionMessage", se.promotion_priority AS "promotionPriority",
-            se.badge_label AS "badgeLabel", se.icon_key AS "iconKey",
-            se.recurrence_json AS "recurrenceJson", se.recurrence_exceptions_json AS "recurrenceExceptionsJson",
-            se.schedule_source AS "scheduleSource", se.external_event_id AS "externalEventId", se.created_by AS "createdBy",
-            se.created_at AS "createdAt", se.updated_at AS "updatedAt",
-            co.title AS "courseTitle", co.slug AS "courseSlug", co.program_type AS "courseProgramType", co.course_type AS "courseType"
-     FROM schedule_events se
-     LEFT JOIN courses co ON co.id = se.course_id
-     ORDER BY se.start_at DESC, se.id DESC`,
-  ));
-  return result.rows.map(normalizeScheduleEventRow);
-}
-async function pgCreateScheduleEvent(input) {
-  const values = normalizeScheduleInput(input);
-  const id = await withTx(async (c) => {
-    const id = await nextId(c, "schedule_events");
-    await c.query(
-      `INSERT INTO schedule_events (id,title,summary,memo,location,instructor_name,capacity,apply_url,apply_method,start_at,end_at,timezone,visibility,status,show_on_landing,promotion_enabled,promotion_title,promotion_message,promotion_priority,badge_label,icon_key,course_id,recurrence_json,recurrence_exceptions_json,created_by,created_at,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,CURRENT_TIMESTAMP::text,CURRENT_TIMESTAMP::text)`,
-      [id, values.title, values.summary, values.memo, values.location, values.instructorName, values.capacity, values.applyUrl, values.applyMethod, values.startAt, values.endAt, values.timezone, values.visibility, values.status, values.showOnLanding ? 1 : 0, values.promotionEnabled ? 1 : 0, values.promotionTitle, values.promotionMessage, values.promotionPriority, values.badgeLabel, values.iconKey, values.courseId, JSON.stringify(values.recurrence), JSON.stringify(values.recurrenceExceptions), input.createdBy || null],
-    );
-    return id;
-  });
-  return (await pgListAdminScheduleEvents()).find((event) => Number(event.id) === Number(id)) || null;
-}
-async function pgUpdateScheduleEvent(id, input) {
-  const values = normalizeScheduleInput(input);
-  await withClient((c) => c.query(
-    `UPDATE schedule_events
-     SET title=$2, summary=$3, memo=$4, location=$5, instructor_name=$6, capacity=$7, apply_url=$8, apply_method=$9,
-         start_at=$10, end_at=$11, timezone=$12, visibility=$13, status=$14, show_on_landing=$15,
-         promotion_enabled=$16, promotion_title=$17, promotion_message=$18, promotion_priority=$19, badge_label=$20, icon_key=$21,
-         course_id=$22, recurrence_json=$23, recurrence_exceptions_json=$24, updated_at=CURRENT_TIMESTAMP::text
-     WHERE id=$1`,
-    [Number(id), values.title, values.summary, values.memo, values.location, values.instructorName, values.capacity, values.applyUrl, values.applyMethod, values.startAt, values.endAt, values.timezone, values.visibility, values.status, values.showOnLanding ? 1 : 0, values.promotionEnabled ? 1 : 0, values.promotionTitle, values.promotionMessage, values.promotionPriority, values.badgeLabel, values.iconKey, values.courseId, JSON.stringify(values.recurrence), JSON.stringify(values.recurrenceExceptions)],
-  ));
-  return (await pgListAdminScheduleEvents()).find((event) => Number(event.id) === Number(id)) || null;
-}
-async function pgDeleteScheduleEvent(id) {
-  await withClient((c) => c.query(`DELETE FROM schedule_events WHERE id=$1`, [Number(id)]));
-}
-async function pgUpsertGoogleScheduleEvent(input, { createdBy = null } = {}) {
-  const values = normalizeScheduleInput({
-    ...input,
-    visibility: input.visibility || "public",
-    status: input.status || "scheduled",
-    iconKey: input.iconKey || "calendar",
-  });
-  const externalEventId = String(input.externalEventId || "").trim();
-  if (!externalEventId) {
-    throw new Error("Google Calendar 이벤트 ID가 없습니다.");
-  }
-  const id = await withTx(async (c) => {
-    const existing = (await c.query(
-      `SELECT id FROM schedule_events WHERE schedule_source='google-calendar' AND external_event_id=$1 LIMIT 1`,
-      [externalEventId],
-    )).rows[0];
-    if (existing?.id) {
-      return Number(existing.id);
-    }
-    const duplicate = (await c.query(
-      `SELECT id
-       FROM schedule_events
-       WHERE LOWER(TRIM(title))=LOWER(TRIM($1))
-         AND start_at=$2
-         AND end_at=$3
-       ORDER BY CASE WHEN schedule_source='manual' THEN 0 ELSE 1 END, id ASC
-       LIMIT 1`,
-      [values.title, values.startAt, values.endAt],
-    )).rows[0];
-    if (duplicate?.id) {
-      return Number(duplicate.id);
-    }
-    const id = await nextId(c, "schedule_events");
-    await c.query(
-      `INSERT INTO schedule_events (
-        id,title,summary,memo,location,instructor_name,capacity,apply_url,apply_method,start_at,end_at,timezone,visibility,status,show_on_landing,promotion_enabled,promotion_title,promotion_message,promotion_priority,badge_label,icon_key,course_id,recurrence_json,recurrence_exceptions_json,schedule_source,external_event_id,created_by,created_at,updated_at
-       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'google-calendar',$25,$26,CURRENT_TIMESTAMP::text,CURRENT_TIMESTAMP::text
-       )`,
-      [
-        id, values.title, values.summary, values.memo, values.location, values.instructorName, values.capacity,
-        values.applyUrl, values.applyMethod, values.startAt, values.endAt, values.timezone, values.visibility, values.status,
-        values.showOnLanding ? 1 : 0, values.promotionEnabled ? 1 : 0, values.promotionTitle, values.promotionMessage,
-        values.promotionPriority, values.badgeLabel, values.iconKey, values.courseId, JSON.stringify(values.recurrence),
-        JSON.stringify(values.recurrenceExceptions), externalEventId, createdBy || null,
-      ],
-    );
-    return id;
-  });
-  return (await pgListAdminScheduleEvents()).find((event) => Number(event.id) === Number(id)) || null;
-}
-async function pgListVisibleCoursesByUser(userId) {
-  const result = await withClient((c) => c.query(`${COURSE_SELECT},
-CASE WHEN uca.id IS NOT NULL AND (
-  NULLIF(uca.expires_at, '') IS NULL
-  OR (uca.expires_at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' AND NULLIF(uca.expires_at, '')::timestamptz > NOW())
-) THEN 1 WHEN uca.id IS NULL AND c.is_published=1 AND (
-  (c.access_scope='public' AND COALESCE(c.price, 0) <= 0)
-  OR ${COURSE_FREE_PROMOTION_SQL}
-) THEN 1 ELSE 0 END AS "hasAccess",
-CASE WHEN uca.id IS NOT NULL THEN 1 ELSE 0 END AS "hasEnrollmentRecord",
-uca.granted_via AS "enrollmentGrantedVia",
-uca.created_at AS "enrollmentCreatedAt",
-uca.expires_at AS "enrollmentExpiresAt",
-(SELECT car.status FROM course_access_requests car WHERE car.user_id=$1 AND car.course_id=c.id AND car.request_type='access' ORDER BY car.id DESC LIMIT 1) AS "accessRequestStatus",
-(SELECT car.review_note FROM course_access_requests car WHERE car.user_id=$1 AND car.course_id=c.id AND car.request_type='access' ORDER BY car.id DESC LIMIT 1) AS "accessRequestReviewNote",
-(SELECT car.status FROM course_access_requests car WHERE car.user_id=$1 AND car.course_id=c.id AND car.request_type='revoke' ORDER BY car.id DESC LIMIT 1) AS "revokeRequestStatus",
-(SELECT car.review_note FROM course_access_requests car WHERE car.user_id=$1 AND car.course_id=c.id AND car.request_type='revoke' ORDER BY car.id DESC LIMIT 1) AS "revokeRequestReviewNote"
-FROM courses c LEFT JOIN user_course_access uca ON uca.course_id=c.id AND uca.user_id=$2
-WHERE c.is_published=1
-  AND (
-    c.access_scope='public'
-    OR c.access_scope='private'
-    OR c.program_type LIKE '%정부%'
-    OR c.program_type LIKE '%국비%'
-    OR c.program_type LIKE '%지원금%'
-    OR c.program_type LIKE '%내일배움%'
-    OR LOWER(c.program_type) LIKE '%hrd%'
-    OR LOWER(c.program_type) LIKE '%k-digital%'
-    OR LOWER(c.program_type) LIKE '%kdigital%'
-    OR ${COURSE_FREE_PROMOTION_SQL}
-    OR uca.id IS NOT NULL
-  )
-ORDER BY c.id ASC`, [userId, userId]));
-  return attachTextbooksToCourses(result.rows.map(normalizeCourseRow), { publicOnly: true });
-}
+
 async function pgFindCourseById(id) { return attachTextbooksToCourses(normalizeCourseRow((await withClient((c) => c.query(`${COURSE_SELECT} FROM courses c WHERE c.id=$1`, [id]))).rows[0] || null)); }
 async function pgFindCourseByAccessCode(accessCode) {
   const code = String(accessCode || "").trim();
@@ -6949,16 +5804,7 @@ async function pgGrantUserCourseAccess(userId, courseId, grantedVia = "code", op
     await grantUserCourseAccessWithClient(c, userId, courseId, grantedVia, options);
   });
 }
-async function pgRevokeUserCourseAccess(userId, courseId) {
-  await withTx(async (c) => {
-    await c.query(`DELETE FROM user_course_access WHERE user_id=$1 AND course_id=$2`, [userId, courseId]);
-    await c.query(
-      `UPDATE exam_entitlements SET status='revoked', revoked_at=CURRENT_TIMESTAMP::text, revoke_reason='course_access_revoked'
-       WHERE user_id=$1 AND exam_course_id=$2 AND status='active'`,
-      [userId, courseId],
-    );
-  });
-}
+
 async function pgGrantCoursePackageItems({ userId, packageCourseId, sourcePaymentId = null } = {}) {
   const normalizedUserId = Number(userId || 0);
   const normalizedPackageId = Number(packageCourseId || 0);
@@ -7006,92 +5852,7 @@ async function pgGrantCoursePackageItems({ userId, packageCourseId, sourcePaymen
     return granted;
   });
 }
-async function pgRevokeCoursePackageByPayment(paymentId) {
-  const normalizedPaymentId = Number(paymentId || 0);
-  if (!normalizedPaymentId) return [];
-  return withTx(async (c) => {
-    const payment = (await c.query(`SELECT user_id AS "userId", course_id AS "courseId" FROM payments WHERE id=$1`, [normalizedPaymentId])).rows[0] || null;
-    if (!payment) return [];
-    const marker = `package:${Number(payment.courseId)}:${normalizedPaymentId}`;
-    const grants = (await c.query(
-      `SELECT id, item_course_id AS "itemCourseId", access_created AS "accessCreated"
-       FROM course_package_grants WHERE source_payment_id=$1 AND status='active'`,
-      [normalizedPaymentId],
-    )).rows;
-    for (const grant of grants) {
-      if (Boolean(Number(grant.accessCreated))) {
-        await c.query(`DELETE FROM user_course_access WHERE user_id=$1 AND course_id=$2 AND granted_via=$3`, [payment.userId, grant.itemCourseId, marker]);
-      }
-    }
-    await c.query(`DELETE FROM user_course_access WHERE user_id=$1 AND course_id=$2 AND granted_via=$3`, [payment.userId, payment.courseId, marker]);
-    await c.query(`UPDATE course_package_grants SET status='revoked', revoked_at=CURRENT_TIMESTAMP::text WHERE source_payment_id=$1 AND status='active'`, [normalizedPaymentId]);
-    return grants.map((grant) => Number(grant.itemCourseId));
-  });
-}
-async function pgRevokeCoursePackageItemsByUser(userId, packageCourseId) {
-  const normalizedUserId = Number(userId || 0);
-  const normalizedPackageId = Number(packageCourseId || 0);
-  if (!normalizedUserId || !normalizedPackageId) return [];
-  return withTx(async (c) => {
-    const grants = (await c.query(
-      `SELECT id, item_course_id AS "itemCourseId", source_payment_id AS "sourcePaymentId", access_created AS "accessCreated"
-       FROM course_package_grants WHERE user_id=$1 AND package_course_id=$2 AND status='active'`,
-      [normalizedUserId, normalizedPackageId],
-    )).rows;
-    for (const grant of grants) {
-      if (!Boolean(Number(grant.accessCreated))) continue;
-      const marker = `package:${normalizedPackageId}:${Number(grant.sourcePaymentId || 0) || "grant"}`;
-      await c.query(`DELETE FROM user_course_access WHERE user_id=$1 AND course_id=$2 AND granted_via=$3`, [normalizedUserId, grant.itemCourseId, marker]);
-    }
-    await c.query(
-      `UPDATE exam_entitlements SET status='revoked', revoked_at=CURRENT_TIMESTAMP::text, revoke_reason='package_access_revoked'
-       WHERE user_id=$1 AND required_course_id=$2 AND status='active'`,
-      [normalizedUserId, normalizedPackageId],
-    );
-    await c.query(
-      `UPDATE course_package_grants SET status='revoked', revoked_at=CURRENT_TIMESTAMP::text
-       WHERE user_id=$1 AND package_course_id=$2 AND status='active'`,
-      [normalizedUserId, normalizedPackageId],
-    );
-    return grants.map((grant) => Number(grant.itemCourseId));
-  });
-}
-async function pgFindCourseAccessRequestById(id) {
-  return normalizeCourseAccessRequestRow((await withClient((c) => c.query(
-    `SELECT car.id, car.user_id AS "userId", car.course_id AS "courseId", car.status, car.request_type AS "requestType", car.request_note AS "requestNote",
-            car.created_at AS "createdAt", car.reviewed_at AS "reviewedAt", car.reviewed_by AS "reviewedBy", car.review_note AS "reviewNote",
-            u.name AS "userName", u.username, c.title AS "courseTitle", c.price AS "coursePrice", c.slug AS "courseSlug",
-            uca.expires_at AS "enrollmentExpiresAt"
-     FROM course_access_requests car
-     JOIN users u ON u.id = car.user_id
-     JOIN courses c ON c.id = car.course_id
-     LEFT JOIN user_course_access uca ON uca.user_id = car.user_id AND uca.course_id = car.course_id
-     WHERE car.id = $1`,
-    [id],
-  ))).rows[0] || null);
-}
-async function pgListCourseAccessRequests() {
-  return (await withClient((c) => c.query(
-    `SELECT car.id, car.user_id AS "userId", car.course_id AS "courseId", car.status, car.request_type AS "requestType", car.request_note AS "requestNote",
-            car.created_at AS "createdAt", car.reviewed_at AS "reviewedAt", car.reviewed_by AS "reviewedBy", car.review_note AS "reviewNote",
-            u.name AS "userName", u.username, c.title AS "courseTitle", c.price AS "coursePrice", c.slug AS "courseSlug",
-            uca.expires_at AS "enrollmentExpiresAt"
-     FROM course_access_requests car
-     JOIN users u ON u.id = car.user_id
-     JOIN courses c ON c.id = car.course_id
-     LEFT JOIN user_course_access uca ON uca.user_id = car.user_id AND uca.course_id = car.course_id
-     ORDER BY car.created_at DESC, car.id DESC`
-  ))).rows.map(normalizeCourseAccessRequestRow);
-}
-async function pgUpdateCourseAccessRequestStatus(id, { status, reviewedBy, reviewNote = "" }) {
-  await withClient((c) => c.query(
-    `UPDATE course_access_requests
-     SET status=$2, reviewed_at=CURRENT_TIMESTAMP::text, reviewed_by=$3, review_note=$4
-     WHERE id=$1`,
-    [id, status, reviewedBy, String(reviewNote || "").trim()],
-  ));
-  return pgFindCourseAccessRequestById(id);
-}
+
 async function pgUserHasCourseAccess(userId, courseId) {
   const result = await withClient((c) => c.query(
     `SELECT 1 FROM user_course_access
@@ -7105,160 +5866,7 @@ async function pgUserHasCourseAccess(userId, courseId) {
   ));
   return Boolean(result.rows[0]);
 }
-async function pgCreateCourseAccessRequest(userId, courseId, { requestType = "access", requestNote = "" } = {}) {
-  return withTx(async (c) => {
-    const rawRequestType = String(requestType || "access").trim().toLowerCase();
-    const normalizedRequestType = ["revoke", "interest", "extend"].includes(rawRequestType) ? rawRequestType : "access";
-    const normalizedRequestNote = String(requestNote || "").trim();
-    const latest = normalizeCourseAccessRequestRow((await c.query(
-      `SELECT car.id, car.user_id AS "userId", car.course_id AS "courseId", car.status, car.request_type AS "requestType", car.request_note AS "requestNote",
-              car.created_at AS "createdAt", car.reviewed_at AS "reviewedAt", car.reviewed_by AS "reviewedBy", car.review_note AS "reviewNote",
-              u.name AS "userName", u.username, c2.title AS "courseTitle", c2.price AS "coursePrice", c2.slug AS "courseSlug",
-              uca.expires_at AS "enrollmentExpiresAt"
-       FROM course_access_requests car
-       JOIN users u ON u.id = car.user_id
-       JOIN courses c2 ON c2.id = car.course_id
-       LEFT JOIN user_course_access uca ON uca.user_id = car.user_id AND uca.course_id = car.course_id
-       WHERE car.user_id=$1 AND car.course_id=$2 AND car.request_type=$3
-       ORDER BY car.id DESC LIMIT 1`,
-      [userId, courseId, normalizedRequestType],
-    )).rows[0] || null);
-    if (latest && latest.status === "requested") return latest;
-    const id = await nextId(c, "course_access_requests");
-    await c.query(
-      `INSERT INTO course_access_requests (id,user_id,course_id,status,request_type,request_note,created_at,review_note)
-       VALUES ($1,$2,$3,'requested',$4,$5,CURRENT_TIMESTAMP::text,'')`,
-      [id, userId, courseId, normalizedRequestType, normalizedRequestNote],
-    );
-    return (await c.query(
-      `SELECT car.id,car.user_id AS "userId",car.course_id AS "courseId",car.status,car.request_type AS "requestType",car.request_note AS "requestNote",
-              car.created_at AS "createdAt",car.reviewed_at AS "reviewedAt",car.reviewed_by AS "reviewedBy",car.review_note AS "reviewNote",
-              u.name AS "userName",u.username,c.title AS "courseTitle",c.price AS "coursePrice",c.slug AS "courseSlug",
-              uca.expires_at AS "enrollmentExpiresAt"
-       FROM course_access_requests car
-       JOIN users u ON u.id=car.user_id
-       JOIN courses c ON c.id=car.course_id
-       LEFT JOIN user_course_access uca ON uca.user_id=car.user_id AND uca.course_id=car.course_id
-       WHERE car.id=$1`,
-      [id],
-    )).rows[0] || null;
-  });
-}
-async function pgCreatePayment(input) {
-  return withTx(async (c) => {
-    const requestedProvider = String(input.provider || "manual").trim().toLowerCase() || "manual";
-    const requestedAmount = Math.max(0, Number(input.amount || 0));
-    const requestedCurrency = String(input.currency || "KRW").trim().toUpperCase() || "KRW";
-    const requestedCouponCode = String(input.metadata?.couponCode || "").trim().toUpperCase();
-    const existing = normalizePaymentRow((await c.query(
-      `SELECT p.id, p.user_id AS "userId", p.course_id AS "courseId", p.provider, p.order_id AS "orderId",
-              p.payment_key AS "paymentKey", p.provider_order_id AS "providerOrderId",
-              p.amount, p.currency, p.status, p.failure_reason AS "failureReason",
-              p.metadata_json AS "metadataJson", p.requested_at AS "requestedAt", p.ready_at AS "readyAt",
-              p.paid_at AS "paidAt", p.failed_at AS "failedAt", p.cancelled_at AS "cancelledAt",
-              p.reviewed_by AS "reviewedBy", u.name AS "userName", u.username,
-              c2.title AS "courseTitle", c2.slug AS "courseSlug"
-       FROM payments p
-       JOIN users u ON u.id=p.user_id
-       JOIN courses c2 ON c2.id=p.course_id
-       WHERE p.user_id=$1 AND p.course_id=$2 AND p.status IN ('pending','ready')
-       ORDER BY p.id DESC LIMIT 1`,
-      [input.userId, input.courseId],
-    )).rows[0] || null);
-    if (
-      existing
-      && String(existing.provider || "manual").trim().toLowerCase() === requestedProvider
-      && Math.max(0, Number(existing.amount || 0)) === requestedAmount
-      && (String(existing.currency || "KRW").trim().toUpperCase() || "KRW") === requestedCurrency
-      && String(existing.metadata?.couponCode || "").trim().toUpperCase() === requestedCouponCode
-    ) return existing;
-    const id = await nextId(c, "payments");
-    await c.query(
-      `INSERT INTO payments (
-         id,user_id,course_id,provider,order_id,payment_key,provider_order_id,
-         amount,currency,status,failure_reason,metadata_json,
-         requested_at,ready_at,paid_at,failed_at,cancelled_at,reviewed_by
-       )
-       VALUES (
-         $1,$2,$3,$4,$5,$6,$7,
-         $8,$9,$10,$11,$12,
-         COALESCE($13,CURRENT_TIMESTAMP::text),$14,$15,$16,$17,$18
-       )`,
-      [
-        id, input.userId, input.courseId, requestedProvider, input.orderId,
-        input.paymentKey || null, input.providerOrderId || "",
-        requestedAmount, requestedCurrency, input.status || "ready",
-        input.failureReason || "", JSON.stringify(input.metadata || {}),
-        input.requestedAt || null, input.readyAt || null, input.paidAt || null, input.failedAt || null, input.cancelledAt || null, input.reviewedBy || null,
-      ],
-    );
-    return pgFindPaymentById(id);
-  });
-}
-async function pgFindPaymentById(id) {
-  return normalizePaymentRow((await withClient((c) => c.query(
-    `SELECT p.id, p.user_id AS "userId", p.course_id AS "courseId", p.provider, p.order_id AS "orderId",
-            p.payment_key AS "paymentKey", p.provider_order_id AS "providerOrderId",
-            p.amount, p.currency, p.status, p.failure_reason AS "failureReason",
-            p.metadata_json AS "metadataJson", p.requested_at AS "requestedAt", p.ready_at AS "readyAt",
-            p.paid_at AS "paidAt", p.failed_at AS "failedAt", p.cancelled_at AS "cancelledAt",
-            p.reviewed_by AS "reviewedBy", u.name AS "userName", u.username,
-            c2.title AS "courseTitle", c2.slug AS "courseSlug"
-     FROM payments p
-     JOIN users u ON u.id=p.user_id
-     JOIN courses c2 ON c2.id=p.course_id
-     WHERE p.id=$1`,
-    [id],
-  ))).rows[0] || null);
-}
-async function pgFindPaymentByOrderId(orderId) {
-  return normalizePaymentRow((await withClient((c) => c.query(
-    `SELECT p.id, p.user_id AS "userId", p.course_id AS "courseId", p.provider, p.order_id AS "orderId",
-            p.payment_key AS "paymentKey", p.provider_order_id AS "providerOrderId",
-            p.amount, p.currency, p.status, p.failure_reason AS "failureReason",
-            p.metadata_json AS "metadataJson", p.requested_at AS "requestedAt", p.ready_at AS "readyAt",
-            p.paid_at AS "paidAt", p.failed_at AS "failedAt", p.cancelled_at AS "cancelledAt",
-            p.reviewed_by AS "reviewedBy", u.name AS "userName", u.username,
-            c2.title AS "courseTitle", c2.slug AS "courseSlug"
-     FROM payments p
-     JOIN users u ON u.id=p.user_id
-     JOIN courses c2 ON c2.id=p.course_id
-     WHERE p.order_id=$1`,
-    [orderId],
-  ))).rows[0] || null);
-}
-async function pgListPayments() {
-  return (await withClient((c) => c.query(
-    `SELECT p.id, p.user_id AS "userId", p.course_id AS "courseId", p.provider, p.order_id AS "orderId",
-            p.payment_key AS "paymentKey", p.provider_order_id AS "providerOrderId",
-            p.amount, p.currency, p.status, p.failure_reason AS "failureReason",
-            p.metadata_json AS "metadataJson", p.requested_at AS "requestedAt", p.ready_at AS "readyAt",
-            p.paid_at AS "paidAt", p.failed_at AS "failedAt", p.cancelled_at AS "cancelledAt",
-            p.reviewed_by AS "reviewedBy", u.name AS "userName", u.username,
-            c2.title AS "courseTitle", c2.slug AS "courseSlug"
-     FROM payments p
-     JOIN users u ON u.id=p.user_id
-     JOIN courses c2 ON c2.id=p.course_id
-     ORDER BY p.requested_at DESC, p.id DESC`
-  ))).rows.map(normalizePaymentRow);
-}
-async function pgListPaymentsByUser(userId) {
-  return (await withClient((c) => c.query(
-    `SELECT p.id, p.user_id AS "userId", p.course_id AS "courseId", p.provider, p.order_id AS "orderId",
-            p.payment_key AS "paymentKey", p.provider_order_id AS "providerOrderId",
-            p.amount, p.currency, p.status, p.failure_reason AS "failureReason",
-            p.metadata_json AS "metadataJson", p.requested_at AS "requestedAt", p.ready_at AS "readyAt",
-            p.paid_at AS "paidAt", p.failed_at AS "failedAt", p.cancelled_at AS "cancelledAt",
-            p.reviewed_by AS "reviewedBy", u.name AS "userName", u.username,
-            c2.title AS "courseTitle", c2.slug AS "courseSlug"
-     FROM payments p
-     JOIN users u ON u.id=p.user_id
-     JOIN courses c2 ON c2.id=p.course_id
-     WHERE p.user_id=$1
-     ORDER BY p.requested_at DESC, p.id DESC`,
-    [userId],
-  ))).rows.map(normalizePaymentRow);
-}
+
 function normalizeExamEntitlementRow(row) {
   if (!row) return null;
   const sourcePaymentId = row.sourcePaymentId ?? row.source_payment_id ?? null;
@@ -7318,242 +5926,7 @@ async function pgGrantExamEntitlement(input = {}) {
     return normalizeExamEntitlementRow((await c.query(`${EXAM_ENTITLEMENT_SELECT} WHERE ee.id=$1`, [id])).rows[0]);
   });
 }
-async function pgListExamEntitlementsByUser(userId) {
-  return (await withClient((c) => c.query(`${EXAM_ENTITLEMENT_SELECT} WHERE ee.user_id=$1 ORDER BY ee.granted_at DESC`, [userId]))).rows.map(normalizeExamEntitlementRow);
-}
-async function pgListExamEntitlements() {
-  return (await withClient((c) => c.query(`${EXAM_ENTITLEMENT_SELECT} ORDER BY ee.granted_at DESC`))).rows.map(normalizeExamEntitlementRow);
-}
-async function pgRevokeExamEntitlement(id, patch = {}) {
-  await withClient((c) => c.query(
-    `UPDATE exam_entitlements SET status='revoked', revoked_at=CURRENT_TIMESTAMP::text, revoke_reason=$2 WHERE id=$1`,
-    [String(id || ""), String(patch.reason || "").trim()],
-  ));
-  return normalizeExamEntitlementRow((await withClient((c) => c.query(`${EXAM_ENTITLEMENT_SELECT} WHERE ee.id=$1`, [String(id || "")]))).rows[0] || null);
-}
-async function pgRevokeExamEntitlementsByPayment(paymentId, reason = "payment_refunded") {
-  const result = await withClient((c) => c.query(
-    `UPDATE exam_entitlements SET status='revoked', revoked_at=CURRENT_TIMESTAMP::text, revoke_reason=$2
-     WHERE source_payment_id=$1 AND status='active' RETURNING id`,
-    [Number(paymentId), String(reason || "payment_refunded")],
-  ));
-  return result.rowCount;
-}
-async function pgUpdatePayment(id, patch = {}) {
-  const current = await pgFindPaymentById(id);
-  if (!current) return null;
-  await withClient((c) => c.query(
-    `UPDATE payments
-     SET provider=$2, payment_key=$3, provider_order_id=$4, amount=$5, currency=$6,
-         status=$7, failure_reason=$8, metadata_json=$9, ready_at=$10, paid_at=$11,
-         failed_at=$12, cancelled_at=$13, reviewed_by=$14
-     WHERE id=$1`,
-    [
-      id,
-      String(patch.provider ?? current.provider ?? "manual").trim() || "manual",
-      String(patch.paymentKey ?? current.paymentKey ?? "").trim() || null,
-      String(patch.providerOrderId ?? current.providerOrderId ?? "").trim(),
-      Math.max(0, Number(patch.amount ?? current.amount ?? 0)),
-      String(patch.currency ?? current.currency ?? "KRW").trim() || "KRW",
-      String(patch.status ?? current.status ?? "ready").trim() || "ready",
-      String(patch.failureReason ?? current.failureReason ?? "").trim(),
-      JSON.stringify(patch.metadata ?? current.metadata ?? {}),
-      patch.readyAt ?? current.readyAt,
-      patch.paidAt ?? current.paidAt,
-      patch.failedAt ?? current.failedAt,
-      patch.cancelledAt ?? current.cancelledAt,
-      patch.reviewedBy ?? current.reviewedBy,
-    ],
-  ));
-  return pgFindPaymentById(id);
-}
-async function pgDeletePayment(id) {
-  await withClient((c) => c.query(`DELETE FROM payments WHERE id=$1`, [id]));
-}
-const COURSE_QUOTE_SELECT = `
-SELECT q.id, q.quote_no AS "quoteNo", q.user_id AS "userId", q.status,
-       q.recipient_company_name AS "recipientCompanyName",
-       q.recipient_name AS "recipientName", q.recipient_email AS "recipientEmail", q.recipient_phone AS "recipientPhone",
-       q.subtotal_amount AS "subtotalAmount", q.discount_rate AS "discountRate", q.discount_amount AS "discountAmount",
-       q.vat_rate AS "vatRate", q.vat_amount AS "vatAmount", q.total_amount AS "totalAmount", q.currency,
-       q.pricing_basis_json AS "pricingBasisJson", q.business_snapshot_json AS "businessSnapshotJson",
-       q.note, q.issued_at AS "issuedAt", q.valid_until AS "validUntil", q.accepted_at AS "acceptedAt",
-       q.sent_at AS "sentAt", q.sent_by AS "sentBy", q.cancelled_at AS "cancelledAt",
-       q.reviewed_by AS "reviewedBy", q.updated_at AS "updatedAt",
-       u.name AS "userName", u.username, u.email AS "userEmail",
-       sender.name AS "sentByName", sender.username AS "sentByUsername",
-       reviewer.name AS "reviewedByName", reviewer.username AS "reviewedByUsername"
-FROM course_quotes q
-JOIN users u ON u.id=q.user_id
-LEFT JOIN users sender ON sender.id=q.sent_by
-LEFT JOIN users reviewer ON reviewer.id=q.reviewed_by
-`;
 
-function normalizeCourseQuoteStatusValue(value, fallback = "issued") {
-  const normalized = String(value || fallback).trim().toLowerCase();
-  return ["issued", "sent", "accepted", "cancelled", "expired"].includes(normalized) ? normalized : fallback;
-}
-
-async function attachCourseQuoteItemsWithClient(client, rows = []) {
-  const quotes = (Array.isArray(rows) ? rows : [rows]).map(normalizeCourseQuoteRow).filter(Boolean);
-  if (!quotes.length) return [];
-  const quoteIds = quotes.map((quote) => quote.id);
-  const result = await client.query(
-    `SELECT id, quote_id AS "quoteId", course_id AS "courseId", course_title AS "courseTitle",
-            course_slug AS "courseSlug", course_category AS "courseCategory", course_type AS "courseType",
-            program_type AS "programType", duration, quantity, unit_price AS "unitPrice",
-            line_subtotal AS "lineSubtotal", pricing_note AS "pricingNote", metadata_json AS "metadataJson",
-            sort_order AS "sortOrder", created_at AS "createdAt"
-     FROM course_quote_items
-     WHERE quote_id = ANY($1::bigint[])
-     ORDER BY quote_id, sort_order, id`,
-    [quoteIds],
-  );
-  const itemsByQuoteId = new Map();
-  for (const item of result.rows.map(normalizeCourseQuoteItemRow).filter(Boolean)) {
-    const list = itemsByQuoteId.get(item.quoteId) || [];
-    list.push(item);
-    itemsByQuoteId.set(item.quoteId, list);
-  }
-  return quotes.map((quote) => ({ ...quote, items: itemsByQuoteId.get(quote.id) || [] }));
-}
-
-async function pgCreateCourseQuote(input) {
-  return withTx(async (c) => {
-    const now = new Date().toISOString();
-    const id = await nextId(c, "course_quotes");
-    await c.query(
-      `INSERT INTO course_quotes (
-         id, quote_no, user_id, status, recipient_company_name, recipient_name, recipient_email, recipient_phone,
-         subtotal_amount, discount_rate, discount_amount, vat_rate, vat_amount, total_amount, currency,
-         pricing_basis_json, business_snapshot_json, note, issued_at, valid_until, sent_at, sent_by,
-         accepted_at, cancelled_at, reviewed_by, updated_at
-       )
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)`,
-      [
-        id,
-        String(input.quoteNo || "").trim(),
-        input.userId,
-        normalizeCourseQuoteStatusValue(input.status),
-        String(input.recipientCompanyName || "").trim(),
-        String(input.recipientName || "").trim(),
-        String(input.recipientEmail || "").trim(),
-        String(input.recipientPhone || "").trim(),
-        Math.max(0, Number(input.subtotalAmount || 0) || 0),
-        Math.max(0, Number(input.discountRate || 0) || 0),
-        Math.max(0, Number(input.discountAmount || 0) || 0),
-        Math.max(0, Number(input.vatRate || 0) || 0),
-        Math.max(0, Number(input.vatAmount || 0) || 0),
-        Math.max(0, Number(input.totalAmount || 0) || 0),
-        String(input.currency || "KRW").trim() || "KRW",
-        JSON.stringify(input.pricingBasis || {}),
-        JSON.stringify(input.businessSnapshot || {}),
-        String(input.note || "").trim(),
-        input.issuedAt || now,
-        input.validUntil || null,
-        input.sentAt || null,
-        input.sentBy || null,
-        input.acceptedAt || null,
-        input.cancelledAt || null,
-        input.reviewedBy || null,
-        input.updatedAt || now,
-      ],
-    );
-    const items = Array.isArray(input.items) ? input.items : [];
-    for (let index = 0; index < items.length; index += 1) {
-      const item = items[index] || {};
-      const itemId = await nextId(c, "course_quote_items");
-      const quantity = Math.max(1, Number(item.quantity || 1) || 1);
-      const unitPrice = Math.max(0, Number(item.unitPrice || 0) || 0);
-      await c.query(
-        `INSERT INTO course_quote_items (
-           id, quote_id, course_id, course_title, course_slug, course_category, course_type, program_type,
-           duration, quantity, unit_price, line_subtotal, pricing_note, metadata_json, sort_order, created_at
-         )
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
-        [
-          itemId,
-          id,
-          item.courseId || null,
-          String(item.courseTitle || "").trim(),
-          String(item.courseSlug || "").trim(),
-          String(item.courseCategory || "").trim(),
-          String(item.courseType || "standard").trim() || "standard",
-          String(item.programType || "").trim(),
-          String(item.duration || "").trim(),
-          quantity,
-          unitPrice,
-          Math.max(0, Number(item.lineSubtotal ?? quantity * unitPrice) || 0),
-          String(item.pricingNote || "").trim(),
-          JSON.stringify(item.metadata || {}),
-          Math.max(0, Number(item.sortOrder ?? index) || 0),
-          item.createdAt || now,
-        ],
-      );
-    }
-    const rows = (await c.query(`${COURSE_QUOTE_SELECT} WHERE q.id=$1`, [id])).rows;
-    return (await attachCourseQuoteItemsWithClient(c, rows))[0] || null;
-  });
-}
-
-async function pgFindCourseQuoteById(id) {
-  return withClient(async (c) => {
-    const rows = (await c.query(`${COURSE_QUOTE_SELECT} WHERE q.id=$1`, [id])).rows;
-    return (await attachCourseQuoteItemsWithClient(c, rows))[0] || null;
-  });
-}
-
-async function pgFindCourseQuoteByQuoteNo(quoteNo) {
-  return withClient(async (c) => {
-    const rows = (await c.query(`${COURSE_QUOTE_SELECT} WHERE q.quote_no=$1`, [String(quoteNo || "").trim()])).rows;
-    return (await attachCourseQuoteItemsWithClient(c, rows))[0] || null;
-  });
-}
-
-async function pgListCourseQuotes() {
-  return withClient(async (c) => {
-    const rows = (await c.query(`${COURSE_QUOTE_SELECT} ORDER BY q.issued_at DESC, q.id DESC`)).rows;
-    return attachCourseQuoteItemsWithClient(c, rows);
-  });
-}
-
-async function pgListCourseQuotesByUser(userId) {
-  return withClient(async (c) => {
-    const rows = (await c.query(`${COURSE_QUOTE_SELECT} WHERE q.user_id=$1 ORDER BY q.issued_at DESC, q.id DESC`, [userId])).rows;
-    return attachCourseQuoteItemsWithClient(c, rows);
-  });
-}
-
-async function pgUpdateCourseQuoteStatus(id, patch = {}) {
-  const current = await pgFindCourseQuoteById(id);
-  if (!current) return null;
-  const status = normalizeCourseQuoteStatusValue(patch.status, current.status);
-  const now = new Date().toISOString();
-  const sentAt = status === "sent" ? (patch.sentAt || current.sentAt || now) : current.sentAt;
-  const sentBy = status === "sent" ? (patch.sentBy ?? patch.reviewedBy ?? current.sentBy ?? null) : current.sentBy;
-  const acceptedAt = status === "accepted" ? (patch.acceptedAt || current.acceptedAt || now) : current.acceptedAt;
-  const cancelledAt = ["cancelled", "expired"].includes(status) ? (patch.cancelledAt || current.cancelledAt || now) : current.cancelledAt;
-  await withClient((c) => c.query(
-    `UPDATE course_quotes
-     SET status=$2, sent_at=$3, sent_by=$4, accepted_at=$5, cancelled_at=$6, reviewed_by=$7, updated_at=$8
-     WHERE id=$1`,
-    [id, status, sentAt, sentBy, acceptedAt, cancelledAt, patch.reviewedBy ?? current.reviewedBy ?? null, now],
-  ));
-  return pgFindCourseQuoteById(id);
-}
-async function pgCreateLabRequest(input) {
-  return withTx(async (c) => {
-    const id = await nextId(c, "lab_requests");
-    await c.query(`INSERT INTO lab_requests (id,user_id,course_id,status,approval_mode,purpose,exam_session_id,stack_name,stack_id,instance_uuid,instance_ip,current_flavor,instance_ips_json,vm_nodes_json,terminal_ssh_user,terminal_ssh_password,lab_backend_type,container_uuid,container_name,container_image_name,container_command_text,container_access_mode,container_console_mode,traffic_resource_id,traffic_incoming_metric_id,traffic_outgoing_metric_id,traffic_rx_bytes,traffic_tx_bytes,traffic_total_bytes,traffic_daily_bytes,traffic_checked_at,traffic_exceeded,traffic_exceeded_at,cpu_usage_percent,memory_usage_percent,disk_read_bytes,disk_write_bytes,vm_metrics_checked_at,requested_public_domains_json,public_domains_json,requested_public_tcp_routes_json,public_tcp_routes_json,last_accessed_at,expires_at,error_message,approved_at,started_at,terminated_at,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,CURRENT_TIMESTAMP::text)`,
-      [id, input.userId, input.courseId, input.status, input.approvalMode, String(input.purpose || "learning").trim() || "learning", String(input.examSessionId || "").trim() || null, input.stackName ?? null, input.stackId ?? null, input.instanceUuid ?? null, input.instanceIp ?? null, String(input.currentFlavor || "").trim(), JSON.stringify(input.instanceIps || []), JSON.stringify(input.vmNodes || []), String(input.terminalSshUser || "").trim(), String(input.terminalSshPassword || ""), normalizeLabBackendType(input.labBackendType), String(input.containerUuid || "").trim(), String(input.containerName || "").trim(), String(input.containerImageName || "").trim(), String(input.containerCommandText || "").trim(), ["ssh", "console", "ssh_console"].includes(String(input.containerAccessMode || "").trim()) ? String(input.containerAccessMode || "").trim() : "console", ["zun", "ssh"].includes(String(input.containerConsoleMode || "").trim()) ? String(input.containerConsoleMode || "").trim() : "zun", String(input.trafficResourceId || "").trim(), String(input.trafficIncomingMetricId || "").trim(), String(input.trafficOutgoingMetricId || "").trim(), Math.max(0, Number(input.trafficRxBytes || 0)), Math.max(0, Number(input.trafficTxBytes || 0)), Math.max(0, Number(input.trafficTotalBytes || 0)), Math.max(0, Number(input.trafficDailyBytes || 0)), input.trafficCheckedAt ?? null, Number(Boolean(input.trafficExceeded)), input.trafficExceededAt ?? null, Math.max(0, Number(input.cpuUsagePercent || 0)), Math.max(0, Number(input.memoryUsagePercent || 0)), Math.max(0, Number(input.diskReadBytes || 0)), Math.max(0, Number(input.diskWriteBytes || 0)), input.vmMetricsCheckedAt ?? null, JSON.stringify(input.requestedPublicDomains || []), JSON.stringify(input.publicDomains || []), JSON.stringify(input.requestedPublicTcpRoutes || []), JSON.stringify(input.publicTcpRoutes || []), input.lastAccessedAt ?? null, input.expiresAt ?? null, input.errorMessage ?? null, input.approvedAt ?? null, input.startedAt ?? null, input.terminatedAt ?? null]);
-    if (input.ensureCourseAccess && String(input.purpose || "learning").trim().toLowerCase() !== "exam") {
-      await grantUserCourseAccessWithClient(c, input.userId, input.courseId, input.courseAccessGrantedVia || "lab_request", {
-        extendExisting: false,
-      });
-    }
-    return normalizeLabRow((await c.query(`${LAB_SELECT} WHERE lr.id=$1`, [id])).rows[0] || null);
-  });
-}
 async function pgFindLabRequestById(id) { return normalizeLabRow((await withClient((c) => c.query(`${LAB_SELECT} WHERE lr.id=$1`, [id]))).rows[0] || null); }
 async function pgListLabRequests(options = {}) {
   const includeArchived = Boolean(options?.includeArchived);
@@ -7561,93 +5934,7 @@ async function pgListLabRequests(options = {}) {
   const whereClause = archivedOnly ? `WHERE NOT (${LAB_ACTIVE_RECORD_CLAUSE})` : includeArchived ? "" : `WHERE ${LAB_ACTIVE_RECORD_CLAUSE}`;
   return (await withClient((c) => c.query(`${LAB_SELECT} ${whereClause} ORDER BY lr.created_at DESC,lr.id DESC`))).rows.map(normalizeLabRow);
 }
-function buildLabRequestListWhere(options = {}) {
-  const clauses = [];
-  const params = [];
-  if (options.archivedOnly) {
-    clauses.push(`NOT (${LAB_ACTIVE_RECORD_CLAUSE})`);
-  } else if (!options.includeArchived) {
-    clauses.push(LAB_ACTIVE_RECORD_CLAUSE);
-  }
-  if (options.activeOnly) {
-    params.push(LAB_ADMIN_IN_USE_QUERY_STATUSES);
-    const statusParam = params.length;
-    clauses.push(`(
-      LOWER(lr.status) = ANY($${statusParam}::text[])
-      OR (
-        LOWER(lr.status) = 'approved'
-        AND (
-          COALESCE(lr.stack_id, '') <> ''
-          OR COALESCE(lr.stack_name, '') <> ''
-          OR COALESCE(lr.instance_uuid, '') <> ''
-          OR COALESCE(lr.instance_ip, '') <> ''
-          OR COALESCE(lr.container_uuid, '') <> ''
-        )
-      )
-    )`);
-  } else {
-    const status = String(options.status || "").trim().toLowerCase();
-    if (status && status !== "all") {
-      params.push(status);
-      clauses.push(`LOWER(lr.status) = $${params.length}`);
-    }
-  }
-  const search = String(options.search || options.q || "").trim();
-  if (search) {
-    params.push(`%${search}%`);
-    const searchParam = params.length;
-    clauses.push(`(
-      u.name ILIKE $${searchParam}
-      OR u.username ILIKE $${searchParam}
-      OR c.title ILIKE $${searchParam}
-      OR c.slug ILIKE $${searchParam}
-      OR lr.status ILIKE $${searchParam}
-      OR lr.stack_name ILIKE $${searchParam}
-      OR lr.stack_id ILIKE $${searchParam}
-      OR lr.instance_ip ILIKE $${searchParam}
-      OR lr.instance_uuid ILIKE $${searchParam}
-      OR lr.current_flavor ILIKE $${searchParam}
-    )`);
-  }
-  return {
-    params,
-    whereClause: clauses.length ? `WHERE ${clauses.join(" AND ")}` : "",
-  };
-}
-async function pgListLabRequestsPage(options = {}) {
-  const limit = Math.min(500, Math.max(1, Math.round(Number(options.limit || 50) || 50)));
-  const offset = Math.max(0, Math.round(Number(options.offset || 0) || 0));
-  const { whereClause, params } = buildLabRequestListWhere(options);
-  return withClient(async (c) => {
-    const countResult = await c.query(
-      `SELECT COUNT(*)::int AS total
-       FROM lab_requests lr
-       JOIN users u ON u.id = lr.user_id
-       JOIN courses c ON c.id = lr.course_id
-       ${whereClause}`,
-      params,
-    );
-    const rows = (await c.query(
-      `${LAB_SELECT}
-       ${whereClause}
-       ORDER BY lr.created_at DESC, lr.id DESC
-       LIMIT $${params.length + 1}
-       OFFSET $${params.length + 2}`,
-      [...params, limit, offset],
-    )).rows.map(normalizeLabRow);
-    return {
-      labs: rows,
-      total: Number(countResult.rows[0]?.total || 0),
-      limit,
-      offset,
-    };
-  });
-}
-async function pgListLabRequestsByUser(userId, options = {}) {
-  const includeArchived = Boolean(options?.includeArchived);
-  const archivedClause = includeArchived ? "" : `AND ${LAB_ACTIVE_RECORD_CLAUSE}`;
-  return (await withClient((c) => c.query(`${LAB_SELECT} WHERE lr.user_id=$1 ${archivedClause} ORDER BY lr.created_at DESC,lr.id DESC`, [userId]))).rows.map(normalizeLabRow);
-}
+
 function normalizeTerminalReplaySessionRow(row) {
   if (!row) return null;
   return {
@@ -7771,21 +6058,7 @@ async function pgFindTerminalReplaySessionById(id) {
     [String(id || "")],
   ))).rows[0] || null);
 }
-async function pgListTerminalReplaySessionsByLab(labRequestId, { userId = null, limit = 20 } = {}) {
-  const params = [Number(labRequestId || 0), Math.max(1, Math.min(100, Number(limit || 20)))];
-  const userClause = userId ? "AND r.user_id=$3" : "";
-  if (userId) params.push(Number(userId));
-  return (await withClient((c) => c.query(
-    `SELECT r.*, u.name AS "userName", u.username, c.title AS "courseTitle"
-     FROM terminal_replay_sessions r
-     LEFT JOIN users u ON u.id = r.user_id
-     LEFT JOIN courses c ON c.id = r.course_id
-     WHERE r.lab_request_id=$1 ${userClause}
-     ORDER BY r.started_at DESC
-     LIMIT $2`,
-    params,
-  ))).rows.map(normalizeTerminalReplaySessionRow);
-}
+
 async function pgListTerminalReplayEvents(replaySessionId) {
   return (await withClient((c) => c.query(
     `SELECT id, replay_session_id AS "replaySessionId", offset_ms AS "offsetMs", event_type AS "eventType",
@@ -7946,11 +6219,7 @@ async function pgListPublishedLabRoutes() {
     });
   return [...labs, ...customLabs, ...selfServiceVms, ...cloudConsoleInstances, ...zunContainers];
 }
-async function pgDeleteLabRequests(ids) {
-  const values = Array.isArray(ids) ? ids.map((id) => Number(id)).filter(Boolean) : [];
-  if (!values.length) return 0;
-  return Number((await withClient((c) => c.query(`DELETE FROM lab_requests WHERE id = ANY($1::bigint[])`, [values]))).rowCount || 0);
-}
+
 function normalizeLabRequestArchiveRetentionDays(value) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 30;
@@ -7993,9 +6262,7 @@ async function pgDeleteCustomLabRequest(id) {
   if (!requestId) return 0;
   return Number((await withClient((c) => c.query(`DELETE FROM custom_lab_requests WHERE id=$1`, [requestId]))).rowCount || 0);
 }
-async function pgFindActiveLabByUserId(userId) {
-  return normalizeLabRow((await withClient((c) => c.query(`${LAB_SELECT} WHERE lr.user_id=$1 AND ${LAB_ACTIVE_RECORD_CLAUSE} AND lr.status IN ('pending','approved','provisioning','running','terminating') AND COALESCE(lr.purpose,'learning') <> 'exam' ORDER BY lr.created_at DESC,lr.id DESC LIMIT 1`, [userId]))).rows[0] || null);
-}
+
 async function pgTouchLabRequest(id, { lastAccessedAt = "", expiresAt = "" } = {}) {
   const labId = Number(id || 0);
   if (!labId) return 0;
@@ -8043,18 +6310,7 @@ async function pgUpdateLabRequest(id, patch) {
     return normalizeLabRow((await c.query(`${LAB_SELECT} WHERE lr.id=$1`, [id])).rows[0] || null);
   });
 }
-async function pgListExpiredRunningLabs(expiresBeforeIso, idleBeforeIso = expiresBeforeIso) {
-  return (await withClient((c) => c.query(
-    `${LAB_SELECT}
-     WHERE lr.status IN ('running','paused')
-       AND ${LAB_ACTIVE_RECORD_CLAUSE}
-       AND (
-         (NULLIF(lr.expires_at, '') IS NOT NULL AND lr.expires_at <= $1)
-         OR (NULLIF(lr.expires_at, '') IS NULL AND lr.last_accessed_at IS NOT NULL AND lr.last_accessed_at < $2)
-       )`,
-    [expiresBeforeIso, idleBeforeIso],
-  ))).rows.map(normalizeLabRow);
-}
+
 async function pgCreateConsultingRequest(input) {
   return withTx(async (c) => {
     const id = await nextId(c, "consulting_requests");
@@ -9048,202 +7304,6 @@ async function pgReplaceInternalImageCache({ registryUrl = "", namespace = "", i
     };
   });
 }
-async function pgListWrittenExamAttempts() {
-  return (await withClient((c) => c.query(`
-    SELECT id, course_id AS "courseId", exam_title AS "examTitle", user_id AS "userId",
-           user_name AS "userName", username, answers_json AS "answersJson",
-           score, total_points AS "totalPoints", passed, results_json AS "resultsJson",
-           submitted_at AS "submittedAt"
-    FROM written_exam_attempts
-    ORDER BY submitted_at DESC, id DESC
-  `))).rows.map(normalizeWrittenExamAttemptRow);
-}
-async function pgAppendWrittenExamAttempt(input) {
-  const entry = {
-    id: String(input.id),
-    courseId: Number(input.courseId),
-    examTitle: input.examTitle || "",
-    userId: Number(input.userId),
-    userName: input.userName || "",
-    username: input.username || "",
-    answersJson: JSON.stringify(input.answers || {}),
-    score: Number(input.score || 0),
-    totalPoints: Number(input.totalPoints || 0),
-    passed: input.passed ? 1 : 0,
-    resultsJson: JSON.stringify(input.results || []),
-    submittedAt: input.submittedAt,
-  };
-  await withClient((c) => c.query(`
-    INSERT INTO written_exam_attempts (
-      id, course_id, exam_title, user_id, user_name, username,
-      answers_json, score, total_points, passed, results_json, submitted_at
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-  `, [
-    entry.id, entry.courseId, entry.examTitle, entry.userId, entry.userName, entry.username,
-    entry.answersJson, entry.score, entry.totalPoints, entry.passed, entry.resultsJson, entry.submittedAt,
-  ]));
-  return normalizeWrittenExamAttemptRow(entry);
-}
-async function pgListLabExamAttempts() {
-  return (await withClient((c) => c.query(`
-    SELECT id, course_id AS "courseId", exam_title AS "examTitle", user_id AS "userId",
-             user_name AS "userName", username, session_id AS "sessionId", lab_request_id AS "labRequestId",
-             exit_code AS "exitCode", stdout_text AS "stdoutText", stderr_text AS "stderrText",
-             score, total_points AS "totalPoints", passed, messages_json AS "messagesJson",
-             screenshot_path AS "screenshotPath", screenshot_url AS "screenshotUrl",
-             result_snapshot_json AS "resultSnapshotJson",
-             review_status AS "reviewStatus", review_note AS "reviewNote",
-             reviewed_by AS "reviewedBy", reviewed_at AS "reviewedAt",
-             review_history_json AS "reviewHistoryJson",
-             result_mail_sent_at AS "resultMailSentAt",
-             submitted_at AS "submittedAt"
-    FROM lab_exam_attempts
-    ORDER BY submitted_at DESC, id DESC
-  `))).rows.map(normalizeLabExamAttemptRow);
-}
-async function pgAppendLabExamAttempt(input) {
-  const entry = {
-    id: String(input.id),
-    courseId: Number(input.courseId),
-    examTitle: input.examTitle || "",
-    userId: Number(input.userId),
-    userName: input.userName || "",
-    username: input.username || "",
-    sessionId: String(input.sessionId || "").trim(),
-    labRequestId: input.labRequestId != null ? Number(input.labRequestId) : null,
-    exitCode: Number(input.exitCode ?? 1),
-    stdoutText: input.stdoutText || "",
-    stderrText: input.stderrText || "",
-      score: Number(input.score || 0),
-      totalPoints: Number(input.totalPoints || 0),
-      passed: input.passed ? 1 : 0,
-      messagesJson: JSON.stringify(input.messages || []),
-      screenshotPath: input.screenshotPath || "",
-      screenshotUrl: input.screenshotUrl || "",
-      resultSnapshotJson: JSON.stringify(input.resultSnapshot || {}),
-      reviewStatus: input.reviewStatus || "pending",
-      reviewNote: input.reviewNote || "",
-      reviewedBy: input.reviewedBy != null ? Number(input.reviewedBy) : null,
-      reviewedAt: input.reviewedAt || null,
-      reviewHistoryJson: JSON.stringify(input.reviewHistory || []),
-      resultMailSentAt: input.resultMailSentAt || null,
-      submittedAt: input.submittedAt,
-    };
-    await withClient((c) => c.query(`
-      INSERT INTO lab_exam_attempts (
-        id, course_id, exam_title, user_id, user_name, username, session_id, lab_request_id,
-        exit_code, stdout_text, stderr_text, score, total_points, passed, messages_json,
-        screenshot_path, screenshot_url, result_snapshot_json, review_status, review_note,
-        reviewed_by, reviewed_at, review_history_json, result_mail_sent_at, submitted_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
-    `, [
-      entry.id, entry.courseId, entry.examTitle, entry.userId, entry.userName, entry.username, entry.sessionId || null, entry.labRequestId,
-      entry.exitCode, entry.stdoutText, entry.stderrText, entry.score, entry.totalPoints, entry.passed, entry.messagesJson,
-      entry.screenshotPath, entry.screenshotUrl, entry.resultSnapshotJson, entry.reviewStatus, entry.reviewNote,
-      entry.reviewedBy, entry.reviewedAt, entry.reviewHistoryJson, entry.resultMailSentAt, entry.submittedAt,
-    ]));
-  return normalizeLabExamAttemptRow(entry);
-}
-async function pgUpdateLabExamAttempt(id, patch) {
-  const attemptId = String(id || "").trim();
-  if (!attemptId) return null;
-  const current = normalizeLabExamAttemptRow((await withClient((c) => c.query(`SELECT * FROM lab_exam_attempts WHERE id=$1`, [attemptId]))).rows[0] || null);
-  if (!current) return null;
-  const next = {
-    examTitle: patch.examTitle !== undefined ? patch.examTitle : current.examTitle,
-    sessionId: patch.sessionId !== undefined ? patch.sessionId : current.sessionId,
-    labRequestId: patch.labRequestId !== undefined ? patch.labRequestId : current.labRequestId,
-    exitCode: patch.exitCode !== undefined ? Number(patch.exitCode ?? 1) : current.exitCode,
-    stdoutText: patch.stdoutText !== undefined ? patch.stdoutText : current.stdoutText,
-    stderrText: patch.stderrText !== undefined ? patch.stderrText : current.stderrText,
-    score: patch.score !== undefined ? Number(patch.score || 0) : current.score,
-    totalPoints: patch.totalPoints !== undefined ? Number(patch.totalPoints || 0) : current.totalPoints,
-    passed: patch.passed !== undefined ? Boolean(patch.passed) : current.passed,
-    messages: patch.messages !== undefined ? patch.messages : current.messages,
-    screenshotPath: patch.screenshotPath !== undefined ? patch.screenshotPath : current.screenshotPath,
-    screenshotUrl: patch.screenshotUrl !== undefined ? patch.screenshotUrl : current.screenshotUrl,
-    resultSnapshot: patch.resultSnapshot !== undefined ? patch.resultSnapshot : current.resultSnapshot,
-    reviewStatus: patch.reviewStatus ?? current.reviewStatus,
-    reviewNote: patch.reviewNote ?? current.reviewNote,
-    reviewedBy: patch.reviewedBy !== undefined ? patch.reviewedBy : current.reviewedBy,
-    reviewedAt: patch.reviewedAt !== undefined ? patch.reviewedAt : current.reviewedAt,
-    reviewHistory: patch.reviewHistory !== undefined ? patch.reviewHistory : current.reviewHistory,
-    resultMailSentAt: patch.resultMailSentAt !== undefined ? patch.resultMailSentAt : current.resultMailSentAt,
-    submittedAt: patch.submittedAt !== undefined ? patch.submittedAt : current.submittedAt,
-  };
-  await withClient((c) => c.query(`
-    UPDATE lab_exam_attempts
-       SET exam_title=$2, session_id=$3, lab_request_id=$4,
-           exit_code=$5, stdout_text=$6, stderr_text=$7, score=$8, total_points=$9, passed=$10,
-           messages_json=$11, screenshot_path=$12, screenshot_url=$13, result_snapshot_json=$14,
-           review_status=$15, review_note=$16, reviewed_by=$17, reviewed_at=$18,
-           review_history_json=$19, result_mail_sent_at=$20, submitted_at=$21
-     WHERE id=$1
-  `, [
-    attemptId,
-    String(next.examTitle || ""),
-    String(next.sessionId || "").trim() || null,
-    next.labRequestId != null ? Number(next.labRequestId) : null,
-    next.exitCode,
-    String(next.stdoutText || ""),
-    String(next.stderrText || ""),
-    next.score,
-    next.totalPoints,
-    next.passed ? 1 : 0,
-    JSON.stringify(Array.isArray(next.messages) ? next.messages : []),
-    String(next.screenshotPath || ""),
-    String(next.screenshotUrl || ""),
-    JSON.stringify(next.resultSnapshot && typeof next.resultSnapshot === "object" ? next.resultSnapshot : {}),
-    String(next.reviewStatus || "pending").trim() || "pending",
-    String(next.reviewNote || "").trim(),
-    next.reviewedBy != null ? Number(next.reviewedBy) : null,
-    next.reviewedAt || null,
-    JSON.stringify(Array.isArray(next.reviewHistory) ? next.reviewHistory : []),
-    next.resultMailSentAt || null,
-    next.submittedAt || current.submittedAt || new Date().toISOString(),
-  ]));
-  return normalizeLabExamAttemptRow((await withClient((c) => c.query(`
-    SELECT id, course_id AS "courseId", exam_title AS "examTitle", user_id AS "userId",
-           user_name AS "userName", username, session_id AS "sessionId", lab_request_id AS "labRequestId",
-           exit_code AS "exitCode", stdout_text AS "stdoutText", stderr_text AS "stderrText",
-           score, total_points AS "totalPoints", passed, messages_json AS "messagesJson",
-           screenshot_path AS "screenshotPath", screenshot_url AS "screenshotUrl",
-           result_snapshot_json AS "resultSnapshotJson",
-           review_status AS "reviewStatus", review_note AS "reviewNote",
-           reviewed_by AS "reviewedBy", reviewed_at AS "reviewedAt",
-           review_history_json AS "reviewHistoryJson",
-           result_mail_sent_at AS "resultMailSentAt",
-           submitted_at AS "submittedAt"
-      FROM lab_exam_attempts
-     WHERE id=$1
-  `, [attemptId]))).rows[0] || null);
-}
-
-async function pgDeleteLabExamAttempt(id) {
-  const attemptId = String(id || "").trim();
-  if (!attemptId) return null;
-  const current = normalizeLabExamAttemptRow((await withClient((c) => c.query(`
-    SELECT id, course_id AS "courseId", exam_title AS "examTitle", user_id AS "userId",
-           user_name AS "userName", username, session_id AS "sessionId", lab_request_id AS "labRequestId",
-           exit_code AS "exitCode", stdout_text AS "stdoutText", stderr_text AS "stderrText",
-           score, total_points AS "totalPoints", passed, messages_json AS "messagesJson",
-           screenshot_path AS "screenshotPath", screenshot_url AS "screenshotUrl",
-           result_snapshot_json AS "resultSnapshotJson",
-           review_status AS "reviewStatus", review_note AS "reviewNote",
-           reviewed_by AS "reviewedBy", reviewed_at AS "reviewedAt",
-           review_history_json AS "reviewHistoryJson",
-           result_mail_sent_at AS "resultMailSentAt",
-           submitted_at AS "submittedAt"
-      FROM lab_exam_attempts
-     WHERE id=$1
-  `, [attemptId]))).rows[0] || null);
-  if (!current) return null;
-  await withTx(async (client) => {
-    await client.query(`UPDATE lab_exam_sessions SET attempt_id=NULL, updated_at=CURRENT_TIMESTAMP::text WHERE attempt_id=$1`, [attemptId]);
-    await client.query(`DELETE FROM lab_exam_attempts WHERE id=$1`, [attemptId]);
-  });
-  return current;
-}
 
 function normalizeLabExamSessionRow(row) {
   return row ? {
@@ -9279,180 +7339,10 @@ const LAB_EXAM_SESSION_SELECT = `
   LEFT JOIN lab_requests lr ON lr.id = s.lab_request_id
 `;
 
-async function pgCreateLabExamSession(input) {
-  const id = String(input.id || randomUUID());
-  const now = input.createdAt || new Date().toISOString();
-  const startedAt = input.startedAt || now;
-  const expiresAt = input.expiresAt || new Date(Date.now() + 60 * 60 * 1000).toISOString();
-  await withClient((c) => c.query(`
-    INSERT INTO lab_exam_sessions (
-      id, course_id, exam_title, user_id, lab_request_id, attempt_id, status,
-      started_at, expires_at, ended_at, grading_started_at, grading_finished_at,
-      end_reason, error_message, metadata_json, created_at, updated_at
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
-  `, [
-    id,
-    Number(input.courseId || 0),
-    String(input.examTitle || "").trim(),
-    Number(input.userId || 0),
-    input.labRequestId != null ? Number(input.labRequestId) : null,
-    String(input.attemptId || "").trim() || null,
-    String(input.status || "preparing").trim() || "preparing",
-    startedAt,
-    expiresAt,
-    input.endedAt || null,
-    input.gradingStartedAt || null,
-    input.gradingFinishedAt || null,
-    String(input.endReason || "").trim(),
-    String(input.errorMessage || "").trim(),
-    JSON.stringify(input.metadata || {}),
-    now,
-    now,
-  ]));
-  return pgFindLabExamSessionById(id);
-}
-
 async function pgFindLabExamSessionById(id) {
   return normalizeLabExamSessionRow((await withClient((c) => c.query(`${LAB_EXAM_SESSION_SELECT} WHERE s.id=$1`, [String(id || "")]))).rows[0] || null);
 }
 
-async function pgListLabExamSessions() {
-  return (await withClient((c) => c.query(`${LAB_EXAM_SESSION_SELECT} ORDER BY s.started_at DESC, s.id DESC`))).rows.map(normalizeLabExamSessionRow);
-}
-
-async function pgListLabExamSessionsByUser(userId) {
-  return (await withClient((c) => c.query(`${LAB_EXAM_SESSION_SELECT} WHERE s.user_id=$1 ORDER BY s.started_at DESC, s.id DESC`, [Number(userId || 0)]))).rows.map(normalizeLabExamSessionRow);
-}
-
-async function pgFindActiveLabExamSessionByUserCourse(userId, courseId) {
-  return normalizeLabExamSessionRow((await withClient((c) => c.query(
-    `${LAB_EXAM_SESSION_SELECT}
-     WHERE s.user_id=$1 AND s.course_id=$2 AND s.status IN ('preparing','ready','running','ending','grading')
-       AND s.expires_at::timestamptz > NOW()
-     ORDER BY s.started_at DESC, s.id DESC
-     LIMIT 1`,
-    [Number(userId || 0), Number(courseId || 0)],
-  ))).rows[0] || null);
-}
-
-async function pgClaimLabExamSessionPreparation(id, leaseUntil) {
-  const result = await withClient((c) => c.query(`
-    UPDATE lab_exam_sessions
-       SET metadata_json=jsonb_set(
-             COALESCE(NULLIF(metadata_json, '')::jsonb, '{}'::jsonb),
-             '{preparationLeaseUntil}',
-             to_jsonb($2::text),
-             true
-           )::text,
-           updated_at=CURRENT_TIMESTAMP::text
-     WHERE id=$1
-       AND status='preparing'
-       AND COALESCE(
-             NULLIF(metadata_json::jsonb ->> 'preparationLeaseUntil', '')::timestamptz,
-             '-infinity'::timestamptz
-           ) <= NOW()
-     RETURNING id
-  `, [String(id || ''), leaseUntil]));
-  return result.rowCount > 0;
-}
-
-async function pgUpdateLabExamSession(id, patch = {}) {
-  const current = await pgFindLabExamSessionById(id);
-  if (!current) return null;
-  const next = {
-    labRequestId: patch.labRequestId !== undefined ? patch.labRequestId : current.labRequestId,
-    attemptId: patch.attemptId !== undefined ? patch.attemptId : current.attemptId,
-    status: patch.status !== undefined ? patch.status : current.status,
-    startedAt: patch.startedAt !== undefined ? patch.startedAt : current.startedAt,
-    expiresAt: patch.expiresAt !== undefined ? patch.expiresAt : current.expiresAt,
-    endedAt: patch.endedAt !== undefined ? patch.endedAt : current.endedAt,
-    gradingStartedAt: patch.gradingStartedAt !== undefined ? patch.gradingStartedAt : current.gradingStartedAt,
-    gradingFinishedAt: patch.gradingFinishedAt !== undefined ? patch.gradingFinishedAt : current.gradingFinishedAt,
-    endReason: patch.endReason !== undefined ? patch.endReason : current.endReason,
-    errorMessage: patch.errorMessage !== undefined ? patch.errorMessage : current.errorMessage,
-    metadata: patch.metadata !== undefined ? patch.metadata : current.metadata,
-  };
-  await withClient((c) => c.query(`
-    UPDATE lab_exam_sessions
-       SET lab_request_id=$2, attempt_id=$3, status=$4, started_at=$5, expires_at=$6, ended_at=$7,
-           grading_started_at=$8, grading_finished_at=$9, end_reason=$10,
-           error_message=$11, metadata_json=$12, updated_at=CURRENT_TIMESTAMP::text
-     WHERE id=$1
-  `, [
-    String(id || ""),
-    next.labRequestId != null ? Number(next.labRequestId) : null,
-    String(next.attemptId || "").trim() || null,
-    String(next.status || "preparing").trim() || "preparing",
-    next.startedAt || current.startedAt || new Date().toISOString(),
-    next.expiresAt || null,
-    next.endedAt || null,
-    next.gradingStartedAt || null,
-    next.gradingFinishedAt || null,
-    String(next.endReason || "").trim(),
-    String(next.errorMessage || "").trim(),
-    JSON.stringify(next.metadata || {}),
-  ]));
-  return pgFindLabExamSessionById(id);
-}
-
-async function pgDeleteLabExamSession(id) {
-  const session = await pgFindLabExamSessionById(id);
-  if (!session) return null;
-  if (session.attemptId) return null;
-  const deleted = await withClient((client) => client.query(
-    `DELETE FROM lab_exam_sessions WHERE id=$1 AND attempt_id IS NULL`,
-    [String(id || "")],
-  ));
-  return deleted.rowCount > 0 ? session : null;
-}
-async function pgListCertificates() {
-  return (await withClient((c) => c.query(`
-    SELECT id, user_id AS "userId", user_name AS "userName", username,
-           course_id AS "courseId", course_title AS "courseTitle",
-           certificate_code AS "certificateCode", verify_code AS "verifyCode",
-           written_attempt_id AS "writtenAttemptId", lab_attempt_id AS "labAttemptId",
-           issued_at AS "issuedAt"
-    FROM certificates
-    ORDER BY issued_at DESC, id DESC
-  `))).rows.map(normalizeCertificateRow);
-}
-async function pgAppendCertificate(input) {
-  const entry = {
-    id: String(input.id),
-    userId: Number(input.userId),
-    userName: input.userName || "",
-    username: input.username || "",
-    courseId: Number(input.courseId),
-    courseTitle: input.courseTitle || "",
-    certificateCode: input.certificateCode || "",
-    verifyCode: input.verifyCode || "",
-    writtenAttemptId: input.writtenAttemptId || null,
-    labAttemptId: input.labAttemptId || null,
-    issuedAt: input.issuedAt,
-  };
-  await withTx(async (c) => {
-    await c.query(`LOCK TABLE certificates IN EXCLUSIVE MODE`);
-    const existing = await c.query(
-      `SELECT id FROM certificates WHERE user_id=$1 AND course_id=$2 LIMIT 1`,
-      [entry.userId, entry.courseId],
-    );
-    if (existing.rows[0]?.id) {
-      const error = new Error("Certificate already exists for this user and course.");
-      error.code = "CERTIFICATE_EXISTS";
-      throw error;
-    }
-    await c.query(`
-      INSERT INTO certificates (
-        id, user_id, user_name, username, course_id, course_title,
-        certificate_code, verify_code, written_attempt_id, lab_attempt_id, issued_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-    `, [
-      entry.id, entry.userId, entry.userName, entry.username, entry.courseId, entry.courseTitle,
-      entry.certificateCode, entry.verifyCode, entry.writtenAttemptId, entry.labAttemptId, entry.issuedAt,
-    ]);
-  });
-  return normalizeCertificateRow(entry);
-}
 async function pgCreateNotice({ title, body, isPinned = false, createdBy }) {
   return withTx(async (c) => {
     const id = await nextId(c, "notices");
@@ -9907,436 +7797,9 @@ async function pgFindDiscountCouponById(id) {
     WHERE dc.id = $1
   `, [Number(id)]))).rows[0] || null);
 }
-async function pgConsumeDiscountCoupon(id) {
-  return withTx(async (c) => {
-    const current = normalizeDiscountCouponRow((await c.query(`
-      SELECT dc.id, dc.code, dc.user_id AS "userId", dc.course_id AS "courseId", dc.source,
-             dc.discount_type AS "discountType", dc.discount_value AS "discountValue",
-             dc.max_uses AS "maxUses", dc.used_count AS "usedCount", dc.status, dc.expires_at AS "expiresAt",
-             dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt",
-             c.title AS "courseTitle"
-      FROM discount_coupons dc
-      LEFT JOIN courses c ON c.id = dc.course_id
-      WHERE dc.id = $1
-      FOR UPDATE
-    `, [Number(id)])).rows[0] || null);
-    if (!current) return null;
-    const nextUsedCount = Math.max(0, Number(current.usedCount || 0)) + 1;
-    const nextStatus = nextUsedCount >= current.maxUses ? "used" : current.status;
-    await c.query(`
-      UPDATE discount_coupons
-      SET used_count = $2,
-          status = $3,
-          used_at = CURRENT_TIMESTAMP::text
-      WHERE id = $1
-    `, [Number(id), nextUsedCount, nextStatus]);
-    return normalizeDiscountCouponRow((await c.query(`
-      SELECT dc.id, dc.code, dc.user_id AS "userId", dc.course_id AS "courseId", dc.source,
-             dc.discount_type AS "discountType", dc.discount_value AS "discountValue",
-             dc.max_uses AS "maxUses", dc.used_count AS "usedCount", dc.status, dc.expires_at AS "expiresAt",
-             dc.metadata_json AS "metadataJson", dc.created_at AS "createdAt", dc.used_at AS "usedAt",
-             c.title AS "courseTitle"
-      FROM discount_coupons dc
-      LEFT JOIN courses c ON c.id = dc.course_id
-      WHERE dc.id = $1
-    `, [Number(id)])).rows[0] || null);
-  });
-}
 
-async function pgCreateArenaSeason(input) {
-  return withTx(async (c) => {
-    const id = await nextId(c, "arena_seasons");
-    await c.query(
-      `INSERT INTO arena_seasons (id, code, title, status, reset_policy, started_at, ends_at, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,CURRENT_TIMESTAMP::text)`,
-      [
-        id,
-        String(input.code || "").trim(),
-        String(input.title || "").trim(),
-        String(input.status || "scheduled").trim() || "scheduled",
-        String(input.resetPolicy || "quarterly").trim() || "quarterly",
-        input.startedAt || null,
-        input.endsAt || null,
-      ],
-    );
-    return normalizeArenaSeasonRow((await c.query(`${ARENA_SEASON_SELECT} WHERE s.id=$1`, [id])).rows[0] || null);
-  });
-}
-async function pgFindArenaSeasonByCode(code) {
-  return normalizeArenaSeasonRow((await withClient((c) => c.query(`${ARENA_SEASON_SELECT} WHERE s.code=$1`, [String(code || "").trim()]))).rows[0] || null);
-}
-async function pgListArenaSeasons() {
-  return (await withClient((c) => c.query(`${ARENA_SEASON_SELECT} ORDER BY s.id DESC`))).rows.map(normalizeArenaSeasonRow);
-}
-async function pgUpdateArenaSeason(id, patch) {
-  const current = normalizeArenaSeasonRow((await withClient((c) => c.query(`${ARENA_SEASON_SELECT} WHERE s.id=$1`, [Number(id)]))).rows[0] || null);
-  if (!current) return null;
-  await withClient((c) => c.query(
-    `UPDATE arena_seasons
-     SET code=$2,
-         title=$3,
-         status=$4,
-         reset_policy=$5,
-         started_at=$6,
-         ends_at=$7
-     WHERE id=$1`,
-    [
-      Number(id),
-      patch.code === undefined ? current.code : String(patch.code || "").trim(),
-      patch.title === undefined ? current.title : String(patch.title || "").trim(),
-      patch.status === undefined ? current.status : String(patch.status || "scheduled").trim(),
-      patch.resetPolicy === undefined ? current.resetPolicy : String(patch.resetPolicy || "quarterly").trim(),
-      patch.startedAt === undefined ? current.startedAt : (patch.startedAt || null),
-      patch.endsAt === undefined ? current.endsAt : (patch.endsAt || null),
-    ],
-  ));
-  return normalizeArenaSeasonRow((await withClient((c) => c.query(`${ARENA_SEASON_SELECT} WHERE s.id=$1`, [Number(id)]))).rows[0] || null);
-}
-async function pgCreateArenaScenario(input) {
-  return withTx(async (c) => {
-    const id = await nextId(c, "arena_scenarios");
-    await c.query(
-      `INSERT INTO arena_scenarios
-       (id, code, title, summary, backend_type, console_type, tier, difficulty, ttl_seconds, validator_key, image_name, flavor_name, network_name, metadata_json, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,CURRENT_TIMESTAMP::text)`,
-      [
-        id,
-        String(input.code || "").trim(),
-        String(input.title || "").trim(),
-        String(input.summary || "").trim(),
-        String(input.backendType || "container").trim() || "container",
-        String(input.consoleType || "xterm").trim() || "xterm",
-        String(input.tier || "normal").trim() || "normal",
-        Math.max(1, Number(input.difficulty || 1)),
-        Math.max(60, Number(input.ttlSeconds || 1200)),
-        String(input.validatorKey || "").trim(),
-        String(input.imageName || "").trim(),
-        String(input.flavorName || "").trim(),
-        String(input.networkName || "").trim(),
-        JSON.stringify(input.metadata || {}),
-      ],
-    );
-    return normalizeArenaScenarioRow((await c.query(`${ARENA_SCENARIO_SELECT} WHERE s.id=$1`, [id])).rows[0] || null);
-  });
-}
 async function pgListArenaScenarios() {
   return (await withClient((c) => c.query(`${ARENA_SCENARIO_SELECT} ORDER BY s.id ASC`))).rows.map(normalizeArenaScenarioRow);
-}
-async function pgUpdateArenaScenario(id, patch) {
-  const current = normalizeArenaScenarioRow((await withClient((c) => c.query(`${ARENA_SCENARIO_SELECT} WHERE s.id=$1`, [Number(id)]))).rows[0] || null);
-  if (!current) return null;
-  await withClient((c) => c.query(
-    `UPDATE arena_scenarios
-     SET title=$2,
-         summary=$3,
-         backend_type=$4,
-         console_type=$5,
-         tier=$6,
-         difficulty=$7,
-         ttl_seconds=$8,
-         validator_key=$9,
-         image_name=$10,
-         flavor_name=$11,
-         network_name=$12,
-         metadata_json=$13
-     WHERE id=$1`,
-    [
-      Number(id),
-      patch.title === undefined ? current.title : String(patch.title || "").trim(),
-      patch.summary === undefined ? current.summary : String(patch.summary || "").trim(),
-      patch.backendType === undefined ? current.backendType : String(patch.backendType || "container").trim(),
-      patch.consoleType === undefined ? current.consoleType : String(patch.consoleType || "xterm").trim(),
-      patch.tier === undefined ? current.tier : String(patch.tier || "normal").trim(),
-      patch.difficulty === undefined ? current.difficulty : Math.max(1, Number(patch.difficulty || 1)),
-      patch.ttlSeconds === undefined ? current.ttlSeconds : Math.max(60, Number(patch.ttlSeconds || 1200)),
-      patch.validatorKey === undefined ? current.validatorKey : String(patch.validatorKey || "").trim(),
-      patch.imageName === undefined ? current.imageName : String(patch.imageName || "").trim(),
-      patch.flavorName === undefined ? current.flavorName : String(patch.flavorName || "").trim(),
-      patch.networkName === undefined ? current.networkName : String(patch.networkName || "").trim(),
-      JSON.stringify(patch.metadata === undefined ? current.metadata : (patch.metadata || {})),
-    ],
-  ));
-  return normalizeArenaScenarioRow((await withClient((c) => c.query(`${ARENA_SCENARIO_SELECT} WHERE s.id=$1`, [Number(id)]))).rows[0] || null);
-}
-async function pgCreateArenaNode(input) {
-  return withTx(async (c) => {
-    const id = await nextId(c, "arena_nodes");
-    await c.query(
-      `INSERT INTO arena_nodes
-       (id, season_id, scenario_id, node_code, label, map_x, map_y, current_owner_user_id, current_owner_handle, first_capture_at, status, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CURRENT_TIMESTAMP::text)`,
-      [
-        id,
-        Number(input.seasonId),
-        Number(input.scenarioId),
-        String(input.nodeCode || "").trim(),
-        String(input.label || "").trim(),
-        Number(input.mapX || 0),
-        Number(input.mapY || 0),
-        input.currentOwnerUserId == null ? null : Number(input.currentOwnerUserId),
-        String(input.currentOwnerHandle || "").trim(),
-        input.firstCaptureAt || null,
-        String(input.status || "open").trim() || "open",
-      ],
-    );
-    return normalizeArenaNodeRow((await c.query(`${ARENA_NODE_SELECT} WHERE n.id=$1`, [id])).rows[0] || null);
-  });
-}
-async function pgListArenaNodesBySeasonId(seasonId) {
-  return (await withClient((c) => c.query(`${ARENA_NODE_SELECT} WHERE n.season_id=$1 ORDER BY n.id ASC`, [Number(seasonId)]))).rows.map(normalizeArenaNodeRow);
-}
-async function pgFindArenaNodeBySeasonAndCode(seasonId, nodeCode) {
-  return normalizeArenaNodeRow((await withClient((c) => c.query(`${ARENA_NODE_SELECT} WHERE n.season_id=$1 AND n.node_code=$2`, [Number(seasonId), String(nodeCode || "").trim()]))).rows[0] || null);
-}
-async function pgUpdateArenaNode(id, patch) {
-  const current = normalizeArenaNodeRow((await withClient((c) => c.query(`${ARENA_NODE_SELECT} WHERE n.id=$1`, [Number(id)]))).rows[0] || null);
-  if (!current) return null;
-  await withClient((c) => c.query(
-    `UPDATE arena_nodes
-     SET scenario_id=$2,
-         node_code=$3,
-         label=$4,
-         map_x=$5,
-         map_y=$6,
-         current_owner_user_id=$7,
-         current_owner_handle=$8,
-         first_capture_at=$9,
-         status=$10
-     WHERE id=$1`,
-    [
-      Number(id),
-      patch.scenarioId === undefined ? current.scenarioId : Number(patch.scenarioId || current.scenarioId),
-      patch.nodeCode === undefined ? current.nodeCode : String(patch.nodeCode || "").trim(),
-      patch.label === undefined ? current.label : String(patch.label || "").trim(),
-      patch.mapX === undefined ? current.mapX : Number(patch.mapX || 0),
-      patch.mapY === undefined ? current.mapY : Number(patch.mapY || 0),
-      patch.currentOwnerUserId === undefined ? current.currentOwnerUserId : (patch.currentOwnerUserId == null ? null : Number(patch.currentOwnerUserId)),
-      patch.currentOwnerHandle === undefined ? current.currentOwnerHandle : String(patch.currentOwnerHandle || "").trim(),
-      patch.firstCaptureAt === undefined ? current.firstCaptureAt : (patch.firstCaptureAt || null),
-      patch.status === undefined ? current.status : String(patch.status || "open").trim(),
-    ],
-  ));
-  return normalizeArenaNodeRow((await withClient((c) => c.query(`${ARENA_NODE_SELECT} WHERE n.id=$1`, [Number(id)]))).rows[0] || null);
-}
-async function pgCreateArenaSession(input) {
-  return withTx(async (c) => {
-    const id = await nextId(c, "arena_sessions");
-    await c.query(
-      `INSERT INTO arena_sessions
-       (id, season_id, node_id, scenario_id, user_id, state, backend_type, console_type, resource_id, resource_name, console_url, validator_state, started_at, expires_at, ended_at, terminated_reason, metadata_json)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
-      [
-        id,
-        Number(input.seasonId),
-        Number(input.nodeId),
-        Number(input.scenarioId),
-        Number(input.userId),
-        String(input.state || "provisioning").trim() || "provisioning",
-        String(input.backendType || "container").trim() || "container",
-        String(input.consoleType || "xterm").trim() || "xterm",
-        String(input.resourceId || "").trim(),
-        String(input.resourceName || "").trim(),
-        String(input.consoleUrl || "").trim(),
-        String(input.validatorState || "pending").trim() || "pending",
-        input.startedAt || new Date().toISOString(),
-        input.expiresAt,
-        input.endedAt || null,
-        String(input.terminatedReason || "").trim(),
-        JSON.stringify(input.metadata || {}),
-      ],
-    );
-    return normalizeArenaSessionRow((await c.query(`${ARENA_SESSION_SELECT} WHERE s.id=$1`, [id])).rows[0] || null);
-  });
-}
-async function pgFindArenaSessionById(id) {
-  return normalizeArenaSessionRow((await withClient((c) => c.query(`${ARENA_SESSION_SELECT} WHERE s.id=$1`, [Number(id)]))).rows[0] || null);
-}
-async function pgFindActiveArenaSessionByUserId(userId) {
-  return normalizeArenaSessionRow((await withClient((c) => c.query(`${ARENA_SESSION_SELECT} WHERE s.user_id=$1 AND s.state IN ('provisioning','running','rebooting','validating') ORDER BY s.id DESC LIMIT 1`, [Number(userId)]))).rows[0] || null);
-}
-async function pgListArenaSessions(limit = 50) {
-  return (await withClient((c) => c.query(
-    `${ARENA_SESSION_SELECT}
-     ORDER BY s.id DESC
-     LIMIT $1`,
-    [Math.max(1, Math.min(200, Number(limit || 50)))],
-  ))).rows.map(normalizeArenaSessionRow);
-}
-async function pgUpdateArenaSession(id, patch) {
-  const current = await pgFindArenaSessionById(id);
-  if (!current) return null;
-  await withClient((c) => c.query(
-    `UPDATE arena_sessions
-     SET state=$2,
-         resource_id=$3,
-         resource_name=$4,
-         console_url=$5,
-         validator_state=$6,
-         expires_at=$7,
-         ended_at=$8,
-         terminated_reason=$9,
-         metadata_json=$10
-     WHERE id=$1`,
-    [
-      Number(id),
-      patch.state === undefined ? current.state : String(patch.state || current.state).trim(),
-      patch.resourceId === undefined ? current.resourceId : String(patch.resourceId || "").trim(),
-      patch.resourceName === undefined ? current.resourceName : String(patch.resourceName || "").trim(),
-      patch.consoleUrl === undefined ? current.consoleUrl : String(patch.consoleUrl || "").trim(),
-      patch.validatorState === undefined ? current.validatorState : String(patch.validatorState || current.validatorState).trim(),
-      patch.expiresAt === undefined ? current.expiresAt : patch.expiresAt,
-      patch.endedAt === undefined ? current.endedAt : patch.endedAt,
-      patch.terminatedReason === undefined ? current.terminatedReason : String(patch.terminatedReason || "").trim(),
-      JSON.stringify(patch.metadata === undefined ? current.metadata : (patch.metadata || {})),
-    ],
-  ));
-  return pgFindArenaSessionById(id);
-}
-async function pgCreateArenaEvent(input) {
-  return withTx(async (c) => {
-    const id = await nextId(c, "arena_events");
-    await c.query(
-      `INSERT INTO arena_events (id, season_id, node_id, user_id, event_type, message, payload_json, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [
-        id,
-        Number(input.seasonId),
-        input.nodeId == null ? null : Number(input.nodeId),
-        input.userId == null ? null : Number(input.userId),
-        String(input.eventType || "system").trim() || "system",
-        String(input.message || "").trim(),
-        JSON.stringify(input.payload || {}),
-        input.createdAt || new Date().toISOString(),
-      ],
-    );
-    return normalizeArenaEventRow((await c.query(`SELECT id, season_id AS "seasonId", node_id AS "nodeId", user_id AS "userId", event_type AS "eventType", message, payload_json AS "payloadJson", created_at AS "createdAt" FROM arena_events WHERE id=$1`, [id])).rows[0] || null);
-  });
-}
-async function pgListArenaEventsBySeasonId(seasonId, limit = 20) {
-  return (await withClient((c) => c.query(
-    `SELECT id, season_id AS "seasonId", node_id AS "nodeId", user_id AS "userId", event_type AS "eventType", message, payload_json AS "payloadJson", created_at AS "createdAt"
-     FROM arena_events
-     WHERE season_id=$1
-     ORDER BY id DESC
-     LIMIT $2`,
-    [Number(seasonId), Math.max(1, Math.min(100, Number(limit || 20)))],
-  ))).rows.map(normalizeArenaEventRow);
-}
-async function pgCreateArenaAttempt(input) {
-  return withTx(async (c) => {
-    const id = await nextId(c, "arena_attempts");
-    await c.query(
-      `INSERT INTO arena_attempts
-       (id, session_id, season_id, node_id, user_id, result, score, mmr_delta, rank_delta, duration_seconds, first_try_bonus, remaining_seconds, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-      [
-        id,
-        Number(input.sessionId),
-        Number(input.seasonId),
-        Number(input.nodeId),
-        Number(input.userId),
-        String(input.result || "failed").trim() || "failed",
-        Number(input.score || 0),
-        Number(input.mmrDelta || 0),
-        Number(input.rankDelta || 0),
-        Number(input.durationSeconds || 0),
-        Number(input.firstTryBonus || 0),
-        Number(input.remainingSeconds || 0),
-        input.createdAt || new Date().toISOString(),
-      ],
-    );
-    return normalizeArenaAttemptRow((await c.query(
-      `SELECT a.id, a.session_id AS "sessionId", a.season_id AS "seasonId", a.node_id AS "nodeId", a.user_id AS "userId",
-              a.result, a.score, a.mmr_delta AS "mmrDelta", a.rank_delta AS "rankDelta", a.duration_seconds AS "durationSeconds",
-              a.first_try_bonus AS "firstTryBonus", a.remaining_seconds AS "remainingSeconds", a.created_at AS "createdAt",
-              n.node_code AS "nodeCode", n.label AS "nodeLabel", s.code AS "scenarioCode", s.title AS "scenarioTitle"
-       FROM arena_attempts a
-       JOIN arena_nodes n ON n.id = a.node_id
-       JOIN arena_scenarios s ON s.id = n.scenario_id
-       WHERE a.id=$1`,
-      [id],
-    )).rows[0] || null);
-  });
-}
-async function pgListArenaAttemptsByUserId(userId, limit = 20) {
-  return (await withClient((c) => c.query(
-    `SELECT a.id, a.session_id AS "sessionId", a.season_id AS "seasonId", a.node_id AS "nodeId", a.user_id AS "userId",
-            a.result, a.score, a.mmr_delta AS "mmrDelta", a.rank_delta AS "rankDelta", a.duration_seconds AS "durationSeconds",
-            a.first_try_bonus AS "firstTryBonus", a.remaining_seconds AS "remainingSeconds", a.created_at AS "createdAt",
-            n.node_code AS "nodeCode", n.label AS "nodeLabel", s.code AS "scenarioCode", s.title AS "scenarioTitle"
-     FROM arena_attempts a
-     JOIN arena_nodes n ON n.id = a.node_id
-     JOIN arena_scenarios s ON s.id = n.scenario_id
-     WHERE a.user_id=$1
-     ORDER BY a.id DESC
-     LIMIT $2`,
-    [Number(userId), Math.max(1, Math.min(100, Number(limit || 20)))],
-  ))).rows.map(normalizeArenaAttemptRow);
-}
-async function pgListArenaAttempts(limit = 50) {
-  return (await withClient((c) => c.query(
-    `SELECT a.id, a.session_id AS "sessionId", a.season_id AS "seasonId", a.node_id AS "nodeId", a.user_id AS "userId",
-            a.result, a.score, a.mmr_delta AS "mmrDelta", a.rank_delta AS "rankDelta", a.duration_seconds AS "durationSeconds",
-            a.first_try_bonus AS "firstTryBonus", a.remaining_seconds AS "remainingSeconds", a.created_at AS "createdAt",
-            n.node_code AS "nodeCode", n.label AS "nodeLabel", s.code AS "scenarioCode", s.title AS "scenarioTitle"
-     FROM arena_attempts a
-     JOIN arena_nodes n ON n.id = a.node_id
-     JOIN arena_scenarios s ON s.id = n.scenario_id
-     ORDER BY a.id DESC
-     LIMIT $1`,
-    [Math.max(1, Math.min(200, Number(limit || 50)))],
-  ))).rows.map(normalizeArenaAttemptRow);
-}
-async function pgCreateArenaCapture(input) {
-  return withTx(async (c) => {
-    const id = await nextId(c, "arena_captures");
-    await c.query(
-      `INSERT INTO arena_captures (id, season_id, node_id, user_id, capture_type, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [
-        id,
-        Number(input.seasonId),
-        Number(input.nodeId),
-        Number(input.userId),
-        String(input.captureType || "first_blood").trim() || "first_blood",
-        input.createdAt || new Date().toISOString(),
-      ],
-    );
-    return normalizeArenaCaptureRow((await c.query(
-      `SELECT c.id, c.season_id AS "seasonId", c.node_id AS "nodeId", c.user_id AS "userId", c.capture_type AS "captureType", c.created_at AS "createdAt",
-              n.node_code AS "nodeCode", n.label AS "nodeLabel", s.code AS "scenarioCode", s.title AS "scenarioTitle"
-       FROM arena_captures c
-       JOIN arena_nodes n ON n.id = c.node_id
-       JOIN arena_scenarios s ON s.id = n.scenario_id
-       WHERE c.id=$1`,
-      [id],
-    )).rows[0] || null);
-  });
-}
-async function pgListArenaCapturesByUserId(userId, limit = 20) {
-  return (await withClient((c) => c.query(
-    `SELECT c.id, c.season_id AS "seasonId", c.node_id AS "nodeId", c.user_id AS "userId", c.capture_type AS "captureType", c.created_at AS "createdAt",
-            n.node_code AS "nodeCode", n.label AS "nodeLabel", s.code AS "scenarioCode", s.title AS "scenarioTitle"
-     FROM arena_captures c
-     JOIN arena_nodes n ON n.id = c.node_id
-     JOIN arena_scenarios s ON s.id = n.scenario_id
-     WHERE c.user_id=$1
-     ORDER BY c.id DESC
-     LIMIT $2`,
-    [Number(userId), Math.max(1, Math.min(100, Number(limit || 20)))],
-  ))).rows.map(normalizeArenaCaptureRow);
-}
-async function pgListArenaCaptures(limit = 50) {
-  return (await withClient((c) => c.query(
-    `SELECT c.id, c.season_id AS "seasonId", c.node_id AS "nodeId", c.user_id AS "userId", c.capture_type AS "captureType", c.created_at AS "createdAt",
-            n.node_code AS "nodeCode", n.label AS "nodeLabel", s.code AS "scenarioCode", s.title AS "scenarioTitle"
-     FROM arena_captures c
-     JOIN arena_nodes n ON n.id = c.node_id
-     JOIN arena_scenarios s ON s.id = n.scenario_id
-     ORDER BY c.id DESC
-     LIMIT $1`,
-    [Math.max(1, Math.min(200, Number(limit || 50)))],
-  ))).rows.map(normalizeArenaCaptureRow);
 }
 
 async function pgCreateCicdCredential(input) {
@@ -10831,30 +8294,9 @@ export async function runtimeFindOauthAccount(provider, providerUserId) { return
 export async function runtimeCreateOauthAccount(input) { return pgCreateOauthAccount(input); }
 export async function runtimeListUsers() { return pgListUsers(); }
 export async function runtimeRecordUserMarketingConsent(input) { return pgRecordUserMarketingConsent(input); }
-export async function runtimeCreateArenaSeason(input) { return pgCreateArenaSeason(input); }
-export async function runtimeFindArenaSeasonByCode(code) { return pgFindArenaSeasonByCode(code); }
-export async function runtimeListArenaSeasons() { return pgListArenaSeasons(); }
-export async function runtimeUpdateArenaSeason(id, patch) { return pgUpdateArenaSeason(id, patch); }
-export async function runtimeCreateArenaScenario(input) { return pgCreateArenaScenario(input); }
+
 export async function runtimeListArenaScenarios() { return pgListArenaScenarios(); }
-export async function runtimeUpdateArenaScenario(id, patch) { return pgUpdateArenaScenario(id, patch); }
-export async function runtimeCreateArenaNode(input) { return pgCreateArenaNode(input); }
-export async function runtimeListArenaNodesBySeasonId(seasonId) { return pgListArenaNodesBySeasonId(seasonId); }
-export async function runtimeFindArenaNodeBySeasonAndCode(seasonId, nodeCode) { return pgFindArenaNodeBySeasonAndCode(seasonId, nodeCode); }
-export async function runtimeUpdateArenaNode(id, patch) { return pgUpdateArenaNode(id, patch); }
-export async function runtimeCreateArenaSession(input) { return pgCreateArenaSession(input); }
-export async function runtimeFindArenaSessionById(id) { return pgFindArenaSessionById(id); }
-export async function runtimeFindActiveArenaSessionByUserId(userId) { return pgFindActiveArenaSessionByUserId(userId); }
-export async function runtimeListArenaSessions(limit) { return pgListArenaSessions(limit); }
-export async function runtimeUpdateArenaSession(id, patch) { return pgUpdateArenaSession(id, patch); }
-export async function runtimeCreateArenaEvent(input) { return pgCreateArenaEvent(input); }
-export async function runtimeListArenaEventsBySeasonId(seasonId, limit) { return pgListArenaEventsBySeasonId(seasonId, limit); }
-export async function runtimeCreateArenaAttempt(input) { return pgCreateArenaAttempt(input); }
-export async function runtimeListArenaAttemptsByUserId(userId, limit) { return pgListArenaAttemptsByUserId(userId, limit); }
-export async function runtimeListArenaAttempts(limit) { return pgListArenaAttempts(limit); }
-export async function runtimeCreateArenaCapture(input) { return pgCreateArenaCapture(input); }
-export async function runtimeListArenaCapturesByUserId(userId, limit) { return pgListArenaCapturesByUserId(userId, limit); }
-export async function runtimeListArenaCaptures(limit) { return pgListArenaCaptures(limit); }
+
 export async function runtimeCreateCicdCredential(input) { return pgCreateCicdCredential(input); }
 export async function runtimeFindCicdCredentialById(id) { return pgFindCicdCredentialById(id); }
 export async function runtimeListCicdCredentialsByUser(userId) { return pgListCicdCredentialsByUser(userId); }
@@ -10870,7 +8312,7 @@ export async function runtimeListCicdRuns(limit) { return pgListCicdRuns(limit);
 export async function runtimeListCicdRunsByUser(userId, limit) { return pgListCicdRunsByUser(userId, limit); }
 export async function runtimeUpdateCicdRun(id, patch) { return pgUpdateCicdRun(id, patch); }
 export async function runtimeCreateCicdRunEvent(input) { return pgCreateCicdRunEvent(input); }
-export async function runtimeListCicdRunEvents(runId) { return pgListCicdRunEvents(runId); }
+
 export async function runtimeUpsertHeatWorkloadTestJob(job) { return pgUpsertHeatWorkloadTestJob(job); }
 export async function runtimeFindHeatWorkloadTestJob(jobId) { return pgFindHeatWorkloadTestJob(jobId); }
 export async function runtimeListHeatWorkloadTestJobs(options) { return pgListHeatWorkloadTestJobs(options); }
@@ -10955,14 +8397,8 @@ export async function runtimeEnsureSchema() {
   await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS public_quote_inquiries (id BIGINT PRIMARY KEY,status TEXT NOT NULL DEFAULT 'requested',company_name TEXT NOT NULL DEFAULT '',contact_name TEXT NOT NULL DEFAULT '',contact_email TEXT NOT NULL DEFAULT '',contact_phone TEXT NOT NULL DEFAULT '',interest_type TEXT NOT NULL DEFAULT '',course_titles TEXT NOT NULL DEFAULT '',participant_count INTEGER NOT NULL DEFAULT 1,desired_timeline TEXT NOT NULL DEFAULT '',requirements TEXT NOT NULL DEFAULT '',privacy_agreed INTEGER NOT NULL DEFAULT 0,ip_address TEXT NOT NULL DEFAULT '',user_agent TEXT NOT NULL DEFAULT '',admin_note TEXT NOT NULL DEFAULT '',reviewed_by BIGINT REFERENCES users(id),created_at TEXT NOT NULL,reviewed_at TEXT)`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_public_quote_inquiries_status_created ON public_quote_inquiries(status, created_at DESC)`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_public_quote_inquiries_email_created ON public_quote_inquiries(contact_email, created_at DESC)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS course_quotes (id BIGINT PRIMARY KEY,quote_no TEXT NOT NULL UNIQUE,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,status TEXT NOT NULL DEFAULT 'issued',recipient_company_name TEXT NOT NULL DEFAULT '',recipient_name TEXT NOT NULL DEFAULT '',recipient_email TEXT NOT NULL DEFAULT '',recipient_phone TEXT NOT NULL DEFAULT '',subtotal_amount INTEGER NOT NULL DEFAULT 0,discount_rate DOUBLE PRECISION NOT NULL DEFAULT 0,discount_amount INTEGER NOT NULL DEFAULT 0,vat_rate DOUBLE PRECISION NOT NULL DEFAULT 0.1,vat_amount INTEGER NOT NULL DEFAULT 0,total_amount INTEGER NOT NULL DEFAULT 0,currency TEXT NOT NULL DEFAULT 'KRW',pricing_basis_json TEXT NOT NULL DEFAULT '{}',business_snapshot_json TEXT NOT NULL DEFAULT '{}',note TEXT NOT NULL DEFAULT '',issued_at TEXT NOT NULL,valid_until TEXT,sent_at TEXT,sent_by BIGINT REFERENCES users(id) ON DELETE SET NULL,accepted_at TEXT,cancelled_at TEXT,reviewed_by BIGINT REFERENCES users(id) ON DELETE SET NULL,updated_at TEXT NOT NULL)`));
-  await withClient((c) => c.query(`ALTER TABLE course_quotes ADD COLUMN IF NOT EXISTS sent_at TEXT`));
-  await withClient((c) => c.query(`ALTER TABLE course_quotes ADD COLUMN IF NOT EXISTS sent_by BIGINT REFERENCES users(id) ON DELETE SET NULL`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_course_quotes_user_issued ON course_quotes(user_id, issued_at DESC)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_course_quotes_status_issued ON course_quotes(status, issued_at DESC)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS course_quote_items (id BIGINT PRIMARY KEY,quote_id BIGINT NOT NULL REFERENCES course_quotes(id) ON DELETE CASCADE,course_id BIGINT REFERENCES courses(id) ON DELETE SET NULL,course_title TEXT NOT NULL DEFAULT '',course_slug TEXT NOT NULL DEFAULT '',course_category TEXT NOT NULL DEFAULT '',course_type TEXT NOT NULL DEFAULT 'standard',program_type TEXT NOT NULL DEFAULT '',duration TEXT NOT NULL DEFAULT '',quantity INTEGER NOT NULL DEFAULT 1,unit_price INTEGER NOT NULL DEFAULT 0,line_subtotal INTEGER NOT NULL DEFAULT 0,pricing_note TEXT NOT NULL DEFAULT '',metadata_json TEXT NOT NULL DEFAULT '{}',sort_order INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_course_quote_items_quote ON course_quote_items(quote_id, sort_order, id)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS user_messages (id BIGINT PRIMARY KEY,sender_id BIGINT NOT NULL REFERENCES users(id),recipient_id BIGINT NOT NULL REFERENCES users(id),subject TEXT NOT NULL DEFAULT '',body TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,read_at TEXT,sender_archived INTEGER NOT NULL DEFAULT 0,recipient_archived INTEGER NOT NULL DEFAULT 0)`));
+
+await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS user_messages (id BIGINT PRIMARY KEY,sender_id BIGINT NOT NULL REFERENCES users(id),recipient_id BIGINT NOT NULL REFERENCES users(id),subject TEXT NOT NULL DEFAULT '',body TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,read_at TEXT,sender_archived INTEGER NOT NULL DEFAULT 0,recipient_archived INTEGER NOT NULL DEFAULT 0)`));
   await withClient((c) => c.query(`ALTER TABLE user_messages ADD COLUMN IF NOT EXISTS sender_archived INTEGER NOT NULL DEFAULT 0`));
   await withClient((c) => c.query(`ALTER TABLE user_messages ADD COLUMN IF NOT EXISTS recipient_archived INTEGER NOT NULL DEFAULT 0`));
   await withClient((c) => c.query(`ALTER TABLE user_messages ADD COLUMN IF NOT EXISTS recipient_type TEXT NOT NULL DEFAULT 'user'`));
@@ -10991,25 +8427,8 @@ export async function runtimeEnsureSchema() {
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_qna_posts_type_status ON qna_posts(post_type,status,created_at DESC)`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_qna_posts_course_lab ON qna_posts(course_id,lab_request_id,created_at DESC)`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_qna_helpful_votes_post ON qna_helpful_votes(post_id)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS schedule_events (id BIGINT PRIMARY KEY,title TEXT NOT NULL,summary TEXT NOT NULL DEFAULT '',location TEXT NOT NULL DEFAULT '',start_at TEXT NOT NULL,end_at TEXT NOT NULL,timezone TEXT NOT NULL DEFAULT 'Asia/Seoul',visibility TEXT NOT NULL DEFAULT 'public',status TEXT NOT NULL DEFAULT 'scheduled',course_id BIGINT REFERENCES courses(id),recurrence_json TEXT NOT NULL DEFAULT '{}',created_by BIGINT REFERENCES users(id),created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS memo TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS instructor_name TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS capacity INTEGER`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS apply_url TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS apply_method TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS show_on_landing INTEGER NOT NULL DEFAULT 0`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS promotion_enabled INTEGER NOT NULL DEFAULT 0`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS promotion_title TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS promotion_message TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS promotion_priority INTEGER NOT NULL DEFAULT 0`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS badge_label TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS icon_key TEXT NOT NULL DEFAULT 'video'`));
-  await withClient((c) => c.query(`ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS recurrence_exceptions_json TEXT NOT NULL DEFAULT '[]'`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_schedule_events_start ON schedule_events(start_at)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_schedule_events_course ON schedule_events(course_id)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_schedule_events_visibility ON schedule_events(visibility)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_schedule_events_status ON schedule_events(status)`));
-  await withClient((c) => c.query(`ALTER TABLE qna_comments ADD COLUMN IF NOT EXISTS parent_comment_id BIGINT REFERENCES qna_comments(id)`));
+
+await withClient((c) => c.query(`ALTER TABLE qna_comments ADD COLUMN IF NOT EXISTS parent_comment_id BIGINT REFERENCES qna_comments(id)`));
   await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_seasons (id BIGINT PRIMARY KEY,code TEXT NOT NULL UNIQUE,title TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'scheduled',reset_policy TEXT NOT NULL DEFAULT 'quarterly',started_at TEXT,ends_at TEXT,created_at TEXT NOT NULL)`));
   await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_scenarios (id BIGINT PRIMARY KEY,code TEXT NOT NULL UNIQUE,title TEXT NOT NULL,summary TEXT NOT NULL DEFAULT '',backend_type TEXT NOT NULL DEFAULT 'container',console_type TEXT NOT NULL DEFAULT 'xterm',tier TEXT NOT NULL DEFAULT 'normal',difficulty INTEGER NOT NULL DEFAULT 1,ttl_seconds INTEGER NOT NULL DEFAULT 1200,validator_key TEXT NOT NULL DEFAULT '',image_name TEXT NOT NULL DEFAULT '',flavor_name TEXT NOT NULL DEFAULT '',network_name TEXT NOT NULL DEFAULT '',metadata_json TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL)`));
   await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS arena_nodes (id BIGINT PRIMARY KEY,season_id BIGINT NOT NULL REFERENCES arena_seasons(id) ON DELETE CASCADE,scenario_id BIGINT NOT NULL REFERENCES arena_scenarios(id),node_code TEXT NOT NULL,label TEXT NOT NULL,map_x DOUBLE PRECISION NOT NULL DEFAULT 0,map_y DOUBLE PRECISION NOT NULL DEFAULT 0,current_owner_user_id BIGINT REFERENCES users(id),current_owner_handle TEXT NOT NULL DEFAULT '',first_capture_at TEXT,status TEXT NOT NULL DEFAULT 'open',created_at TEXT NOT NULL,UNIQUE(season_id,node_code))`));
@@ -11020,23 +8439,8 @@ export async function runtimeEnsureSchema() {
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_arena_nodes_season_id ON arena_nodes(season_id)`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_arena_sessions_user_state ON arena_sessions(user_id, state)`));
   await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_arena_events_season_created ON arena_events(season_id, created_at DESC)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS course_survey_responses (id BIGINT PRIMARY KEY,user_id BIGINT NOT NULL REFERENCES users(id),course_id BIGINT NOT NULL REFERENCES courses(id),phase TEXT NOT NULL,answers_json TEXT NOT NULL DEFAULT '{}',metrics_json TEXT NOT NULL DEFAULT '{}',submitted_at TEXT NOT NULL,updated_at TEXT NOT NULL,llm_feedback_text TEXT NOT NULL DEFAULT '',llm_feedback_model TEXT NOT NULL DEFAULT '',llm_feedback_provider TEXT NOT NULL DEFAULT '',llm_feedback_message_id BIGINT,llm_feedback_delivered INTEGER NOT NULL DEFAULT 0,llm_feedback_generated_by BIGINT,llm_feedback_generated_at TEXT,UNIQUE(user_id,course_id,phase))`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_text TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_model TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_provider TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_message_id BIGINT`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_delivered INTEGER NOT NULL DEFAULT 0`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_generated_by BIGINT`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_generated_at TEXT`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_auto_status TEXT NOT NULL DEFAULT 'none'`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_auto_scheduled_for TEXT`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_auto_attempts INTEGER NOT NULL DEFAULT 0`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_auto_error TEXT NOT NULL DEFAULT ''`));
-  await withClient((c) => c.query(`ALTER TABLE course_survey_responses ADD COLUMN IF NOT EXISTS llm_feedback_auto_updated_at TEXT`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_course_survey_responses_course_phase ON course_survey_responses(course_id, phase)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_course_survey_responses_user_course ON course_survey_responses(user_id, course_id)`));
-  await withClient((c) => c.query(`CREATE INDEX IF NOT EXISTS idx_course_survey_responses_auto_feedback ON course_survey_responses(llm_feedback_auto_status, llm_feedback_auto_scheduled_for)`));
-  await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS marketing_surveys (id BIGINT PRIMARY KEY,title TEXT NOT NULL,description TEXT NOT NULL DEFAULT '',question TEXT NOT NULL DEFAULT '',status TEXT NOT NULL DEFAULT 'draft',multi_choice INTEGER NOT NULL DEFAULT 0,show_results INTEGER NOT NULL DEFAULT 1,start_at TEXT NOT NULL,end_at TEXT NOT NULL,created_by BIGINT REFERENCES users(id),created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`));
+
+await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS marketing_surveys (id BIGINT PRIMARY KEY,title TEXT NOT NULL,description TEXT NOT NULL DEFAULT '',question TEXT NOT NULL DEFAULT '',status TEXT NOT NULL DEFAULT 'draft',multi_choice INTEGER NOT NULL DEFAULT 0,show_results INTEGER NOT NULL DEFAULT 1,start_at TEXT NOT NULL,end_at TEXT NOT NULL,created_by BIGINT REFERENCES users(id),created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`));
   await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS marketing_survey_options (id BIGINT PRIMARY KEY,survey_id BIGINT NOT NULL REFERENCES marketing_surveys(id) ON DELETE CASCADE,label TEXT NOT NULL,sort_order INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL)`));
   await withClient((c) => c.query(`CREATE TABLE IF NOT EXISTS marketing_survey_submissions (id BIGINT PRIMARY KEY,survey_id BIGINT NOT NULL REFERENCES marketing_surveys(id) ON DELETE CASCADE,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,ip_address TEXT NOT NULL DEFAULT '',user_agent TEXT NOT NULL DEFAULT '',submitted_at TEXT NOT NULL,UNIQUE(survey_id,user_id))`));
   await withClient((c) => c.query(`ALTER TABLE marketing_survey_submissions ADD COLUMN IF NOT EXISTS survey_title TEXT NOT NULL DEFAULT ''`));
@@ -11059,268 +8463,6 @@ async function pgListLuckyDrawEvents() {
     FROM lucky_draw_events
     ORDER BY created_at DESC, id DESC
   `))).rows.map(normalizeLuckyDrawEventRow);
-}
-
-async function pgListCourseSurveyResponsesByUser(userId) {
-  return (await withClient((c) => c.query(`
-    SELECT r.id, r.user_id AS "userId", u.name AS "userName", u.username,
-           r.course_id AS "courseId", c.title AS "courseTitle", r.phase,
-           r.answers_json AS "answersJson", r.metrics_json AS "metricsJson",
-           r.submitted_at AS "submittedAt", r.updated_at AS "updatedAt",
-           r.llm_feedback_text AS "llmFeedbackText",
-           r.llm_feedback_model AS "llmFeedbackModel",
-           r.llm_feedback_provider AS "llmFeedbackProvider",
-           r.llm_feedback_message_id AS "llmFeedbackMessageId",
-           r.llm_feedback_delivered AS "llmFeedbackDelivered",
-           r.llm_feedback_generated_by AS "llmFeedbackGeneratedBy",
-           r.llm_feedback_generated_at AS "llmFeedbackGeneratedAt",
-           r.llm_feedback_auto_status AS "llmFeedbackAutoStatus",
-           r.llm_feedback_auto_scheduled_for AS "llmFeedbackAutoScheduledFor",
-           r.llm_feedback_auto_attempts AS "llmFeedbackAutoAttempts",
-           r.llm_feedback_auto_error AS "llmFeedbackAutoError",
-           r.llm_feedback_auto_updated_at AS "llmFeedbackAutoUpdatedAt",
-           legacy_feedback.body AS "legacyFeedbackBody",
-           legacy_feedback.message_id AS "legacyFeedbackMessageId",
-           legacy_feedback.created_at AS "legacyFeedbackGeneratedAt",
-           legacy_feedback.sender_id AS "legacyFeedbackGeneratedBy"
-    FROM course_survey_responses r
-    JOIN users u ON u.id = r.user_id
-    JOIN courses c ON c.id = r.course_id
-    LEFT JOIN LATERAL (
-      SELECT m.id AS message_id, m.body, m.created_at, m.sender_id
-      FROM user_messages m
-      WHERE m.recipient_id = r.user_id
-        AND m.subject = ('[AI 해설] ' || c.title || ' ' || CASE WHEN r.phase = 'post' THEN '사후 설문' ELSE '사전 설문' END)
-      ORDER BY m.created_at DESC, m.id DESC
-      LIMIT 1
-    ) legacy_feedback ON TRUE
-    WHERE r.user_id = $1
-    ORDER BY r.updated_at DESC, r.id DESC
-  `, [Number(userId)]))).rows.map(normalizeCourseSurveyResponseRow);
-}
-
-async function pgListCourseSurveyResponses() {
-  return (await withClient((c) => c.query(`
-    SELECT r.id, r.user_id AS "userId", u.name AS "userName", u.username,
-           r.course_id AS "courseId", c.title AS "courseTitle", r.phase,
-           r.answers_json AS "answersJson", r.metrics_json AS "metricsJson",
-           r.submitted_at AS "submittedAt", r.updated_at AS "updatedAt",
-           r.llm_feedback_text AS "llmFeedbackText",
-           r.llm_feedback_model AS "llmFeedbackModel",
-           r.llm_feedback_provider AS "llmFeedbackProvider",
-           r.llm_feedback_message_id AS "llmFeedbackMessageId",
-           r.llm_feedback_delivered AS "llmFeedbackDelivered",
-           r.llm_feedback_generated_by AS "llmFeedbackGeneratedBy",
-           r.llm_feedback_generated_at AS "llmFeedbackGeneratedAt",
-           r.llm_feedback_auto_status AS "llmFeedbackAutoStatus",
-           r.llm_feedback_auto_scheduled_for AS "llmFeedbackAutoScheduledFor",
-           r.llm_feedback_auto_attempts AS "llmFeedbackAutoAttempts",
-           r.llm_feedback_auto_error AS "llmFeedbackAutoError",
-           r.llm_feedback_auto_updated_at AS "llmFeedbackAutoUpdatedAt",
-           legacy_feedback.body AS "legacyFeedbackBody",
-           legacy_feedback.message_id AS "legacyFeedbackMessageId",
-           legacy_feedback.created_at AS "legacyFeedbackGeneratedAt",
-           legacy_feedback.sender_id AS "legacyFeedbackGeneratedBy"
-    FROM course_survey_responses r
-    JOIN users u ON u.id = r.user_id
-    JOIN courses c ON c.id = r.course_id
-    LEFT JOIN LATERAL (
-      SELECT m.id AS message_id, m.body, m.created_at, m.sender_id
-      FROM user_messages m
-      WHERE m.recipient_id = r.user_id
-        AND m.subject = ('[AI 해설] ' || c.title || ' ' || CASE WHEN r.phase = 'post' THEN '사후 설문' ELSE '사전 설문' END)
-      ORDER BY m.created_at DESC, m.id DESC
-      LIMIT 1
-    ) legacy_feedback ON TRUE
-    ORDER BY r.updated_at DESC, r.id DESC
-  `))).rows.map(normalizeCourseSurveyResponseRow);
-}
-
-async function pgListCourseAccessCounts() {
-  return (await withClient((c) => c.query(`
-    SELECT c.id AS "courseId", c.title AS "courseTitle", COUNT(DISTINCT uca.user_id) AS "accessCount"
-    FROM courses c
-    LEFT JOIN user_course_access uca ON uca.course_id = c.id
-    GROUP BY c.id, c.title
-    ORDER BY c.id ASC
-  `))).rows.map((row) => ({
-    courseId: Number(row.courseId),
-    courseTitle: String(row.courseTitle || ""),
-    accessCount: Number(row.accessCount || 0),
-  }));
-}
-
-async function pgUpsertCourseSurveyResponse(input) {
-  return withTx(async (c) => {
-    const phase = String(input.phase || "").trim().toLowerCase();
-    if (!["pre", "post"].includes(phase)) throw new Error("지원하지 않는 설문 단계입니다.");
-    const userId = Number(input.userId);
-    const courseId = Number(input.courseId);
-    const answersJson = JSON.stringify(input.answers || {});
-    const metricsJson = JSON.stringify(input.metrics || {});
-    const autoStatus = phase === "post" ? "pending" : "none";
-    const autoScheduledFor = phase === "post" ? getNextKstSurveyFeedbackRunIso() : null;
-    const existing = await c.query(`
-      SELECT id FROM course_survey_responses
-      WHERE user_id = $1 AND course_id = $2 AND phase = $3
-      ORDER BY updated_at DESC, id DESC
-      LIMIT 1
-    `, [userId, courseId, phase]);
-    const existingId = Number(existing.rows[0]?.id || 0);
-    const id = existingId || await nextId(c, "course_survey_responses");
-    if (existingId) {
-      await c.query(`
-        UPDATE course_survey_responses
-        SET answers_json = $2,
-            metrics_json = $3,
-            llm_feedback_text = '',
-            llm_feedback_model = '',
-            llm_feedback_provider = '',
-            llm_feedback_message_id = NULL,
-            llm_feedback_delivered = 0,
-            llm_feedback_generated_by = NULL,
-            llm_feedback_generated_at = NULL,
-            llm_feedback_auto_status = $4,
-            llm_feedback_auto_scheduled_for = $5,
-            llm_feedback_auto_attempts = 0,
-            llm_feedback_auto_error = '',
-            llm_feedback_auto_updated_at = CURRENT_TIMESTAMP::text,
-            updated_at = CURRENT_TIMESTAMP::text
-        WHERE id = $1
-      `, [id, answersJson, metricsJson, autoStatus, autoScheduledFor]);
-    } else {
-      await c.query(`
-        INSERT INTO course_survey_responses (
-          id, user_id, course_id, phase, answers_json, metrics_json,
-          llm_feedback_auto_status, llm_feedback_auto_scheduled_for, llm_feedback_auto_updated_at,
-          submitted_at, updated_at
-        )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,CURRENT_TIMESTAMP::text,CURRENT_TIMESTAMP::text,CURRENT_TIMESTAMP::text)
-      `, [id, userId, courseId, phase, answersJson, metricsJson, autoStatus, autoScheduledFor]);
-    }
-    return normalizeCourseSurveyResponseRow((await c.query(`
-      SELECT r.id, r.user_id AS "userId", u.name AS "userName", u.username,
-             r.course_id AS "courseId", co.title AS "courseTitle", r.phase,
-             r.answers_json AS "answersJson", r.metrics_json AS "metricsJson",
-             r.submitted_at AS "submittedAt", r.updated_at AS "updatedAt",
-             r.llm_feedback_text AS "llmFeedbackText",
-             r.llm_feedback_model AS "llmFeedbackModel",
-             r.llm_feedback_provider AS "llmFeedbackProvider",
-             r.llm_feedback_message_id AS "llmFeedbackMessageId",
-             r.llm_feedback_delivered AS "llmFeedbackDelivered",
-             r.llm_feedback_generated_by AS "llmFeedbackGeneratedBy",
-             r.llm_feedback_generated_at AS "llmFeedbackGeneratedAt",
-             r.llm_feedback_auto_status AS "llmFeedbackAutoStatus",
-             r.llm_feedback_auto_scheduled_for AS "llmFeedbackAutoScheduledFor",
-             r.llm_feedback_auto_attempts AS "llmFeedbackAutoAttempts",
-             r.llm_feedback_auto_error AS "llmFeedbackAutoError",
-             r.llm_feedback_auto_updated_at AS "llmFeedbackAutoUpdatedAt"
-      FROM course_survey_responses r
-      JOIN users u ON u.id = r.user_id
-      JOIN courses co ON co.id = r.course_id
-      WHERE r.id = $1
-    `, [id])).rows[0] || null);
-  });
-}
-
-async function pgUpdateCourseSurveyFeedback(input) {
-  return withTx(async (c) => {
-    const phase = String(input.phase || "").trim().toLowerCase();
-    if (!["pre", "post"].includes(phase)) throw new Error("지원하지 않는 설문 단계입니다.");
-    const updated = await c.query(`
-      UPDATE course_survey_responses
-      SET llm_feedback_text = $4,
-          llm_feedback_model = $5,
-          llm_feedback_provider = $6,
-          llm_feedback_message_id = $7,
-          llm_feedback_delivered = $8,
-          llm_feedback_generated_by = $9,
-          llm_feedback_generated_at = CURRENT_TIMESTAMP::text,
-          llm_feedback_auto_status = 'generated',
-          llm_feedback_auto_error = '',
-          llm_feedback_auto_updated_at = CURRENT_TIMESTAMP::text
-      WHERE user_id = $1 AND course_id = $2 AND phase = $3
-      RETURNING id
-    `, [
-      Number(input.userId),
-      Number(input.courseId),
-      phase,
-      String(input.text || "").trim(),
-      String(input.model || "").trim(),
-      String(input.provider || "").trim(),
-      input.messageId ? Number(input.messageId) : null,
-      input.delivered ? 1 : 0,
-      input.generatedBy ? Number(input.generatedBy) : null,
-    ]);
-    const id = Number(updated.rows[0]?.id || 0);
-    if (!id) return null;
-    return normalizeCourseSurveyResponseRow((await c.query(`
-      SELECT r.id, r.user_id AS "userId", u.name AS "userName", u.username,
-             r.course_id AS "courseId", co.title AS "courseTitle", r.phase,
-             r.answers_json AS "answersJson", r.metrics_json AS "metricsJson",
-             r.submitted_at AS "submittedAt", r.updated_at AS "updatedAt",
-             r.llm_feedback_text AS "llmFeedbackText",
-             r.llm_feedback_model AS "llmFeedbackModel",
-             r.llm_feedback_provider AS "llmFeedbackProvider",
-             r.llm_feedback_message_id AS "llmFeedbackMessageId",
-             r.llm_feedback_delivered AS "llmFeedbackDelivered",
-             r.llm_feedback_generated_by AS "llmFeedbackGeneratedBy",
-             r.llm_feedback_generated_at AS "llmFeedbackGeneratedAt",
-             r.llm_feedback_auto_status AS "llmFeedbackAutoStatus",
-             r.llm_feedback_auto_scheduled_for AS "llmFeedbackAutoScheduledFor",
-             r.llm_feedback_auto_attempts AS "llmFeedbackAutoAttempts",
-             r.llm_feedback_auto_error AS "llmFeedbackAutoError",
-             r.llm_feedback_auto_updated_at AS "llmFeedbackAutoUpdatedAt"
-      FROM course_survey_responses r
-      JOIN users u ON u.id = r.user_id
-      JOIN courses co ON co.id = r.course_id
-      WHERE r.id = $1
-    `, [id])).rows[0] || null);
-  });
-}
-
-async function pgListPendingCourseSurveyFeedbackJobs(nowIso = new Date().toISOString(), limit = 10) {
-  return (await withClient((c) => c.query(`
-    SELECT r.id, r.user_id AS "userId", u.name AS "userName", u.username,
-           r.course_id AS "courseId", co.title AS "courseTitle", r.phase,
-           r.answers_json AS "answersJson", r.metrics_json AS "metricsJson",
-           r.submitted_at AS "submittedAt", r.updated_at AS "updatedAt",
-           r.llm_feedback_text AS "llmFeedbackText",
-           r.llm_feedback_model AS "llmFeedbackModel",
-           r.llm_feedback_provider AS "llmFeedbackProvider",
-           r.llm_feedback_message_id AS "llmFeedbackMessageId",
-           r.llm_feedback_delivered AS "llmFeedbackDelivered",
-           r.llm_feedback_generated_by AS "llmFeedbackGeneratedBy",
-           r.llm_feedback_generated_at AS "llmFeedbackGeneratedAt",
-           r.llm_feedback_auto_status AS "llmFeedbackAutoStatus",
-           r.llm_feedback_auto_scheduled_for AS "llmFeedbackAutoScheduledFor",
-           r.llm_feedback_auto_attempts AS "llmFeedbackAutoAttempts",
-           r.llm_feedback_auto_error AS "llmFeedbackAutoError",
-           r.llm_feedback_auto_updated_at AS "llmFeedbackAutoUpdatedAt"
-    FROM course_survey_responses r
-    JOIN users u ON u.id = r.user_id
-    JOIN courses co ON co.id = r.course_id
-    WHERE r.phase = 'post'
-      AND r.llm_feedback_auto_status = 'pending'
-      AND COALESCE(r.llm_feedback_text, '') = ''
-      AND COALESCE(r.llm_feedback_auto_scheduled_for, '') <> ''
-      AND r.llm_feedback_auto_scheduled_for <= $1
-    ORDER BY r.llm_feedback_auto_scheduled_for ASC, r.updated_at ASC, r.id ASC
-    LIMIT $2
-  `, [String(nowIso || new Date().toISOString()), Math.max(1, Math.min(50, Number(limit || 10) || 10))]))).rows.map(normalizeCourseSurveyResponseRow);
-}
-
-async function pgUpdateCourseSurveyFeedbackAutoStatus(responseId, input = {}) {
-  const status = String(input.status || "").trim() || "pending";
-  const errorText = String(input.error || "").trim();
-  await withClient((c) => c.query(`
-    UPDATE course_survey_responses
-    SET llm_feedback_auto_status = $2,
-        llm_feedback_auto_error = $3,
-        llm_feedback_auto_attempts = CASE WHEN $4::integer = 1 THEN llm_feedback_auto_attempts + 1 ELSE llm_feedback_auto_attempts END,
-        llm_feedback_auto_updated_at = CURRENT_TIMESTAMP::text
-    WHERE id = $1
-  `, [Number(responseId), status, errorText, input.incrementAttempts ? 1 : 0]));
 }
 
 const MARKETING_SURVEY_SELECT = `
@@ -12176,7 +9318,7 @@ export async function runtimeGetLlmQuotaStatus(userId, options) { return pgGetLl
 export async function runtimeConsumeLlmQuota(userId, options) { return pgConsumeLlmQuota(userId, options); }
 export async function runtimeCreateMailLog(input) { return pgCreateMailLog(input); }
 export async function runtimeListMailLogs(limit) { return pgListMailLogs(limit); }
-export async function runtimeDeleteMailLogsByMetadata(filters) { return pgDeleteMailLogsByMetadata(filters); }
+
 export async function runtimeCreateMailCampaign(input) { return pgCreateMailCampaign(input); }
 export async function runtimeFindMailCampaignById(id) { return pgFindMailCampaignById(id); }
 export async function runtimeListMailCampaigns(limit) { return pgListMailCampaigns(limit); }
@@ -12367,64 +9509,36 @@ export async function runtimeListInviteCodes() { return pgListInviteCodes(); }
 export async function runtimeUpdateInviteCode(id, patch) { return pgUpdateInviteCode(id, patch); }
 export async function runtimeDeleteInviteCode(id) { return pgDeleteInviteCode(id); }
 export async function runtimeListCourses() { return pgListCourses(); }
-export async function runtimeCreateCourse(input) { return pgCreateCourse(input); }
-export async function runtimeUpdateCourse(id, input) { return pgUpdateCourse(id, input); }
-export async function runtimeDeleteCourse(id) { return pgDeleteCourse(id); }
-export async function runtimeListTextbooks() { return pgListTextbooks(); }
-export async function runtimeCreateTextbook(input) { return pgCreateTextbook(input); }
-export async function runtimeUpdateTextbook(id, input) { return pgUpdateTextbook(id, input); }
-export async function runtimeDeleteTextbook(id) { return pgDeleteTextbook(id); }
-export async function runtimeListVisibleCoursesByUser(userId) { return pgListVisibleCoursesByUser(userId); }
+
 export async function runtimeFindCourseById(id) { return pgFindCourseById(id); }
 export async function runtimeFindCourseByAccessCode(accessCode) { return pgFindCourseByAccessCode(accessCode); }
 export async function runtimeFindAvailableInviteCode(code) { return pgFindAvailableInviteCode(code); }
 export async function runtimeConsumeInviteCode(id) { return pgConsumeInviteCode(id); }
 export async function runtimeGrantUserCourseAccess(userId, courseId, grantedVia, options = {}) { return pgGrantUserCourseAccess(userId, courseId, grantedVia, options); }
-export async function runtimeRevokeUserCourseAccess(userId, courseId) { return pgRevokeUserCourseAccess(userId, courseId); }
+
 export async function runtimeGrantCoursePackageItems(input) { return pgGrantCoursePackageItems(input); }
-export async function runtimeRevokeCoursePackageByPayment(paymentId) { return pgRevokeCoursePackageByPayment(paymentId); }
-export async function runtimeRevokeCoursePackageItemsByUser(userId, packageCourseId) { return pgRevokeCoursePackageItemsByUser(userId, packageCourseId); }
-export async function runtimeCreateCourseAccessRequest(userId, courseId, options = {}) { return pgCreateCourseAccessRequest(userId, courseId, options); }
-export async function runtimeFindCourseAccessRequestById(id) { return pgFindCourseAccessRequestById(id); }
-export async function runtimeListCourseAccessRequests() { return pgListCourseAccessRequests(); }
-export async function runtimeUpdateCourseAccessRequestStatus(id, patch) { return pgUpdateCourseAccessRequestStatus(id, patch); }
+
 export async function runtimeUserHasCourseAccess(userId, courseId) { return pgUserHasCourseAccess(userId, courseId); }
-export async function runtimeCreatePayment(input) { return pgCreatePayment(input); }
+
 export async function runtimeCreateDiscountCoupon(input) { return pgCreateDiscountCoupon(input); }
 export async function runtimeFindDiscountCouponByCode(code) { return pgFindDiscountCouponByCode(code); }
-export async function runtimeFindDiscountCouponById(id) { return pgFindDiscountCouponById(id); }
+
 export async function runtimeListDiscountCoupons() { return pgListDiscountCoupons(); }
 export async function runtimeListDiscountCouponsByUser(userId) { return pgListDiscountCouponsByUser(userId); }
 export async function runtimeUpdateDiscountCoupon(id, patch) { return pgUpdateDiscountCoupon(id, patch); }
-export async function runtimeConsumeDiscountCoupon(id) { return pgConsumeDiscountCoupon(id); }
+
 export async function runtimeListTermsVersions() { return pgListTermsVersions(); }
 export async function runtimeListActiveTermsVersions() { return pgListActiveTermsVersions(); }
 export async function runtimeFindTermsVersionById(id) { return pgFindTermsVersionById(id); }
 export async function runtimeCreateTermsVersion(input) { return pgCreateTermsVersion(input); }
 export async function runtimeUpdateTermsVersion(id, patch) { return pgUpdateTermsVersion(id, patch); }
 export async function runtimeCreateUserTermsAgreements(input) { return pgCreateUserTermsAgreements(input); }
-export async function runtimeFindPaymentById(id) { return pgFindPaymentById(id); }
-export async function runtimeFindPaymentByOrderId(orderId) { return pgFindPaymentByOrderId(orderId); }
-export async function runtimeListPayments() { return pgListPayments(); }
-export async function runtimeListPaymentsByUser(userId) { return pgListPaymentsByUser(userId); }
-export async function runtimeUpdatePayment(id, patch) { return pgUpdatePayment(id, patch); }
-export async function runtimeDeletePayment(id) { return pgDeletePayment(id); }
+
 export async function runtimeGrantExamEntitlement(input) { return pgGrantExamEntitlement(input); }
-export async function runtimeListExamEntitlementsByUser(userId) { return pgListExamEntitlementsByUser(userId); }
-export async function runtimeListExamEntitlements() { return pgListExamEntitlements(); }
-export async function runtimeRevokeExamEntitlement(id, patch) { return pgRevokeExamEntitlement(id, patch); }
-export async function runtimeRevokeExamEntitlementsByPayment(paymentId, reason) { return pgRevokeExamEntitlementsByPayment(paymentId, reason); }
-export async function runtimeCreateCourseQuote(input) { return pgCreateCourseQuote(input); }
-export async function runtimeFindCourseQuoteById(id) { return pgFindCourseQuoteById(id); }
-export async function runtimeFindCourseQuoteByQuoteNo(quoteNo) { return pgFindCourseQuoteByQuoteNo(quoteNo); }
-export async function runtimeListCourseQuotes() { return pgListCourseQuotes(); }
-export async function runtimeListCourseQuotesByUser(userId) { return pgListCourseQuotesByUser(userId); }
-export async function runtimeUpdateCourseQuoteStatus(id, patch) { return pgUpdateCourseQuoteStatus(id, patch); }
-export async function runtimeCreateLabRequest(input) { return pgCreateLabRequest(input); }
+
 export async function runtimeFindLabRequestById(id) { return pgFindLabRequestById(id); }
 export async function runtimeListLabRequests(options) { return pgListLabRequests(options); }
-export async function runtimeListLabRequestsPage(options) { return pgListLabRequestsPage(options); }
-export async function runtimeListLabRequestsByUser(userId, options) { return pgListLabRequestsByUser(userId, options); }
+
 export async function runtimeCreateTerminalReplaySession(input) { return pgCreateTerminalReplaySession(input); }
 export async function runtimeFinishTerminalReplaySession(id, patch) { return pgFinishTerminalReplaySession(id, patch); }
 export async function runtimeAppendTerminalReplayEvent(input) { return pgAppendTerminalReplayEvent(input); }
@@ -12433,16 +9547,15 @@ export async function runtimeUpsertTerminalSessionRegistry(input) { return pgUps
 export async function runtimeFindTerminalSessionRegistryById(id) { return pgFindTerminalSessionRegistryById(id); }
 export async function runtimeDeleteTerminalSessionRegistry(id) { return pgDeleteTerminalSessionRegistry(id); }
 export async function runtimeDeleteExpiredTerminalSessionRegistry(nowIso) { return pgDeleteExpiredTerminalSessionRegistry(nowIso); }
-export async function runtimeListTerminalReplaySessionsByLab(labRequestId, options) { return pgListTerminalReplaySessionsByLab(labRequestId, options); }
+
 export async function runtimeListTerminalReplayEvents(replaySessionId) { return pgListTerminalReplayEvents(replaySessionId); }
 export async function runtimeFindLabRequestByPublicSubdomain(subdomain) { return pgFindLabRequestByPublicSubdomain(subdomain); }
 export async function runtimeListPublishedLabRoutes() { return pgListPublishedLabRoutes(); }
 export async function runtimeArchiveOldLabRequests(options) { return pgArchiveOldLabRequests(options); }
-export async function runtimeDeleteLabRequests(ids) { return pgDeleteLabRequests(ids); }
-export async function runtimeFindActiveLabByUserId(userId) { return pgFindActiveLabByUserId(userId); }
+
 export async function runtimeTouchLabRequest(id, patch) { return pgTouchLabRequest(id, patch); }
 export async function runtimeUpdateLabRequest(id, patch) { return pgUpdateLabRequest(id, patch); }
-export async function runtimeListExpiredRunningLabs(expiresBeforeIso, idleBeforeIso) { return pgListExpiredRunningLabs(expiresBeforeIso, idleBeforeIso); }
+
 export async function runtimeCreateConsultingRequest(input) { return pgCreateConsultingRequest(input); }
 export async function runtimeFindConsultingRequestById(id) { return pgFindConsultingRequestById(id); }
 export async function runtimeListConsultingRequests() { return pgListConsultingRequests(); }
@@ -12466,7 +9579,7 @@ export async function runtimeListSelfServiceVms() { return pgListSelfServiceVms(
 export async function runtimeListSelfServiceVmsByUser(userId) { return pgListSelfServiceVmsByUser(userId); }
 export async function runtimeUpdateSelfServiceVm(id, patch) { return pgUpdateSelfServiceVm(id, patch); }
 export async function runtimeWithExternalPortLock(fn) { return pgWithExternalPortLock(fn); }
-export async function runtimeWithMetalLbVipAllocationLock(fn) { return pgWithMetalLbVipAllocationLock(fn); }
+
 export async function runtimeCreateSelfServiceProjectRequest(input) { return pgCreateSelfServiceProjectRequest(input); }
 export async function runtimeFindSelfServiceProjectRequestById(id) { return pgFindSelfServiceProjectRequestById(id); }
 export async function runtimeListSelfServiceProjectRequests() { return pgListSelfServiceProjectRequests(); }
@@ -12495,7 +9608,7 @@ export async function runtimeListTroveInstancesByUser(userId) { return pgListTro
 export async function runtimeUpdateTroveInstance(id, patch) { return pgUpdateTroveInstance(id, patch); }
 export async function runtimeDeleteTroveInstance(id) { return pgDeleteTroveInstance(id); }
 export async function runtimeCreateResourceDeletionJob(input) { return pgCreateResourceDeletionJob(input); }
-export async function runtimeFindResourceDeletionJob(id) { return pgFindResourceDeletionJob(id); }
+
 export async function runtimeUpdateResourceDeletionJob(id, patch) { return pgUpdateResourceDeletionJob(id, patch); }
 export async function runtimeListResourceDeletionJobs(options) { return pgListResourceDeletionJobs(options); }
 export async function runtimeCreateCloudConsoleAction(input) { return pgCreateCloudConsoleAction(input); }
@@ -12505,9 +9618,7 @@ export async function runtimeUpdateCloudConsoleAction(id, patch) { return pgUpda
 export async function runtimeGetInternalImageCacheStatus(options) { return pgGetInternalImageCacheStatus(options); }
 export async function runtimeListInternalImageCache(options) { return pgListInternalImageCache(options); }
 export async function runtimeReplaceInternalImageCache(options) { return pgReplaceInternalImageCache(options); }
-export async function runtimeListWrittenExamAttempts() { return pgListWrittenExamAttempts(); }
-export async function runtimeAppendWrittenExamAttempt(input) { return pgAppendWrittenExamAttempt(input); }
-export async function runtimeListLabExamAttempts() { return pgListLabExamAttempts(); }
+
 export async function runtimeLoadLabExamConfig(courseId) {
   const result = await withClient((c) => c.query(`
     SELECT c.lab_exam_config_json, e.config_json,
@@ -12541,27 +9652,9 @@ export async function runtimeSaveLabExamConfig(courseId, config) {
     return safeJsonParse(result.rows[0]?.lab_exam_config_json, null);
   });
 }
-export async function runtimeDeleteLabExamConfig(courseId) {
-  return withTx(async (c) => {
-    const settingDeleted = await c.query(`DELETE FROM platform_settings WHERE key=$1`, [`lab_exam_config:${Number(courseId)}`]);
-    const deleted = await c.query(`DELETE FROM lab_exam_configs WHERE course_id=$1`, [courseId]);
-    const cleared = await c.query(`UPDATE courses SET lab_exam_config_json='{}' WHERE id=$1 AND lab_exam_config_json<>'{}'`, [courseId]);
-    return settingDeleted.rowCount > 0 || deleted.rowCount > 0 || cleared.rowCount > 0;
-  });
-}
-export async function runtimeAppendLabExamAttempt(input) { return pgAppendLabExamAttempt(input); }
-export async function runtimeUpdateLabExamAttempt(id, patch) { return pgUpdateLabExamAttempt(id, patch); }
-export async function runtimeDeleteLabExamAttempt(id) { return pgDeleteLabExamAttempt(id); }
-export async function runtimeCreateLabExamSession(input) { return pgCreateLabExamSession(input); }
+
 export async function runtimeFindLabExamSessionById(id) { return pgFindLabExamSessionById(id); }
-export async function runtimeListLabExamSessions() { return pgListLabExamSessions(); }
-export async function runtimeListLabExamSessionsByUser(userId) { return pgListLabExamSessionsByUser(userId); }
-export async function runtimeFindActiveLabExamSessionByUserCourse(userId, courseId) { return pgFindActiveLabExamSessionByUserCourse(userId, courseId); }
-export async function runtimeClaimLabExamSessionPreparation(id, leaseUntil) { return pgClaimLabExamSessionPreparation(id, leaseUntil); }
-export async function runtimeUpdateLabExamSession(id, patch) { return pgUpdateLabExamSession(id, patch); }
-export async function runtimeDeleteLabExamSession(id) { return pgDeleteLabExamSession(id); }
-export async function runtimeListCertificates() { return pgListCertificates(); }
-export async function runtimeAppendCertificate(input) { return pgAppendCertificate(input); }
+
 export async function runtimeCreateNotice(input) { return pgCreateNotice(input); }
 export async function runtimeUpdateNotice(id, input) { return pgUpdateNotice(id, input); }
 export async function runtimeDeleteNotice(id) { return pgDeleteNotice(id); }
@@ -12587,7 +9680,7 @@ export async function runtimeDeleteUserMessageById(messageId) { return pgDeleteU
 export async function runtimeUpdateUserMessageCleanupStatus(messageId, input) { return pgUpdateUserMessageCleanupStatus(messageId, input); }
 export async function runtimeListLuckyDrawEvents() { return pgListLuckyDrawEvents(); }
 export async function runtimeFindLuckyDrawEventById(id) { return pgFindLuckyDrawEventById(id); }
-export async function runtimeFindActiveLuckyDrawEvent(at) { return pgFindActiveLuckyDrawEvent(at); }
+
 export async function runtimeCreateLuckyDrawEvent(input) { return pgCreateLuckyDrawEvent(input); }
 export async function runtimeUpdateLuckyDrawEvent(id, patch) { return pgUpdateLuckyDrawEvent(id, patch); }
 export async function runtimeDeleteLuckyDrawEvent(id) { return pgDeleteLuckyDrawEvent(id); }
@@ -12595,17 +9688,11 @@ export async function runtimeListLuckyDrawRewardsByEvent(eventId) { return pgLis
 export async function runtimeCreateLuckyDrawReward(input) { return pgCreateLuckyDrawReward(input); }
 export async function runtimeUpdateLuckyDrawReward(id, patch) { return pgUpdateLuckyDrawReward(id, patch); }
 export async function runtimeListLuckyDrawAttempts(options) { return pgListLuckyDrawAttempts(options); }
-export async function runtimeListLuckyDrawGrantsByUser(userId, limit) { return pgListLuckyDrawGrantsByUser(userId, limit); }
+
 export async function runtimeGetLuckyDrawStats(eventId) { return pgGetLuckyDrawStats(eventId); }
 export async function runtimeGetLuckyDrawEventOverview(userId, at) { return pgGetLuckyDrawEventOverview(userId, at); }
 export async function runtimeAttemptLuckyDraw(input) { return pgAttemptLuckyDraw(input); }
-export async function runtimeListCourseSurveyResponsesByUser(userId) { return pgListCourseSurveyResponsesByUser(userId); }
-export async function runtimeListCourseSurveyResponses() { return pgListCourseSurveyResponses(); }
-export async function runtimeListCourseAccessCounts() { return pgListCourseAccessCounts(); }
-export async function runtimeListPendingCourseSurveyFeedbackJobs(nowIso, limit) { return pgListPendingCourseSurveyFeedbackJobs(nowIso, limit); }
-export async function runtimeUpsertCourseSurveyResponse(input) { return pgUpsertCourseSurveyResponse(input); }
-export async function runtimeUpdateCourseSurveyFeedback(input) { return pgUpdateCourseSurveyFeedback(input); }
-export async function runtimeUpdateCourseSurveyFeedbackAutoStatus(responseId, input) { return pgUpdateCourseSurveyFeedbackAutoStatus(responseId, input); }
+
 export async function runtimeListMarketingSurveys(options) { return pgListMarketingSurveys(options); }
 export async function runtimeFindMarketingSurveyById(id, options) { return pgFindMarketingSurveyById(id, options); }
 export async function runtimeCreateMarketingSurvey(input) { return pgCreateMarketingSurvey(input); }
@@ -12613,12 +9700,7 @@ export async function runtimeUpdateMarketingSurvey(id, patch) { return pgUpdateM
 export async function runtimeDeleteMarketingSurvey(id) { return pgDeleteMarketingSurvey(id); }
 export async function runtimeSubmitMarketingSurveyVote(input) { return pgSubmitMarketingSurveyVote(input); }
 export async function runtimeListMarketingSurveySubmissions(surveyId, limit) { return pgListMarketingSurveySubmissions(surveyId, limit); }
-export async function runtimeListScheduleEvents(options) { return pgListScheduleEvents(options); }
-export async function runtimeListAdminScheduleEvents() { return pgListAdminScheduleEvents(); }
-export async function runtimeCreateScheduleEvent(input) { return pgCreateScheduleEvent(input); }
-export async function runtimeUpdateScheduleEvent(id, input) { return pgUpdateScheduleEvent(id, input); }
-export async function runtimeDeleteScheduleEvent(id) { return pgDeleteScheduleEvent(id); }
-export async function runtimeUpsertGoogleScheduleEvent(input, options = {}) { return pgUpsertGoogleScheduleEvent(input, options); }
+
 export async function runtimeExportBackupData() {
   return withClient(async (client) => {
     const tableRows = (await client.query(`
@@ -12897,8 +9979,8 @@ async function pgImportBackupTableDump(client, tableName, snapshot) {
 }
 
 export async function runtimeImportBackupData(bundle) {
-  const tables = bundle?.database?.tables;
-  const dumps = bundle?.database?.dumps || {};
+  const tables = omitEmptyEducationSnapshots(bundle?.database?.tables);
+  const dumps = omitEmptyEducationSnapshots(bundle?.database?.dumps || {});
   if (!isBackupObject(tables)) {
     throw new Error("백업 파일의 데이터베이스 테이블 형식이 올바르지 않습니다.");
   }

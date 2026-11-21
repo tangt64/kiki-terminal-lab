@@ -397,44 +397,6 @@ CREATE INDEX IF NOT EXISTS idx_qna_posts_type_status ON qna_posts(post_type, sta
 CREATE INDEX IF NOT EXISTS idx_qna_posts_course_lab ON qna_posts(course_id, lab_request_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_qna_helpful_votes_post ON qna_helpful_votes(post_id);
 
-CREATE TABLE IF NOT EXISTS schedule_events (
-  id BIGINT PRIMARY KEY,
-  title TEXT NOT NULL,
-  summary TEXT NOT NULL DEFAULT '',
-  memo TEXT NOT NULL DEFAULT '',
-  location TEXT NOT NULL DEFAULT '',
-  instructor_name TEXT NOT NULL DEFAULT '',
-  capacity INTEGER,
-  apply_url TEXT NOT NULL DEFAULT '',
-  apply_method TEXT NOT NULL DEFAULT '',
-  start_at TEXT NOT NULL,
-  end_at TEXT NOT NULL,
-  timezone TEXT NOT NULL DEFAULT 'Asia/Seoul',
-  visibility TEXT NOT NULL DEFAULT 'public',
-  status TEXT NOT NULL DEFAULT 'scheduled',
-  show_on_landing INTEGER NOT NULL DEFAULT 0,
-  promotion_enabled INTEGER NOT NULL DEFAULT 0,
-  promotion_title TEXT NOT NULL DEFAULT '',
-  promotion_message TEXT NOT NULL DEFAULT '',
-  promotion_priority INTEGER NOT NULL DEFAULT 0,
-  badge_label TEXT NOT NULL DEFAULT '',
-  icon_key TEXT NOT NULL DEFAULT 'video',
-  course_id BIGINT REFERENCES courses(id),
-  recurrence_json TEXT NOT NULL DEFAULT '{}',
-  recurrence_exceptions_json TEXT NOT NULL DEFAULT '[]',
-  schedule_source TEXT NOT NULL DEFAULT 'manual',
-  external_event_id TEXT NOT NULL DEFAULT '',
-  created_by BIGINT REFERENCES users(id),
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_schedule_events_start ON schedule_events(start_at);
-CREATE INDEX IF NOT EXISTS idx_schedule_events_course ON schedule_events(course_id);
-CREATE INDEX IF NOT EXISTS idx_schedule_events_visibility ON schedule_events(visibility);
-CREATE INDEX IF NOT EXISTS idx_schedule_events_status ON schedule_events(status);
-CREATE INDEX IF NOT EXISTS idx_schedule_events_external_source ON schedule_events(schedule_source, external_event_id);
-
 CREATE TABLE IF NOT EXISTS consulting_requests (
   id BIGINT PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id),
@@ -599,59 +561,6 @@ CREATE TABLE IF NOT EXISTS course_package_grants (
 
 CREATE INDEX IF NOT EXISTS idx_course_package_grants_payment ON course_package_grants(source_payment_id, status);
 CREATE INDEX IF NOT EXISTS idx_course_package_grants_user ON course_package_grants(user_id, package_course_id, status);
-
-CREATE TABLE IF NOT EXISTS course_quotes (
-  id BIGINT PRIMARY KEY,
-  quote_no TEXT NOT NULL UNIQUE,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  status TEXT NOT NULL DEFAULT 'issued',
-  recipient_company_name TEXT NOT NULL DEFAULT '',
-  recipient_name TEXT NOT NULL DEFAULT '',
-  recipient_email TEXT NOT NULL DEFAULT '',
-  recipient_phone TEXT NOT NULL DEFAULT '',
-  subtotal_amount INTEGER NOT NULL DEFAULT 0,
-  discount_rate DOUBLE PRECISION NOT NULL DEFAULT 0,
-  discount_amount INTEGER NOT NULL DEFAULT 0,
-  vat_rate DOUBLE PRECISION NOT NULL DEFAULT 0.1,
-  vat_amount INTEGER NOT NULL DEFAULT 0,
-  total_amount INTEGER NOT NULL DEFAULT 0,
-  currency TEXT NOT NULL DEFAULT 'KRW',
-  pricing_basis_json TEXT NOT NULL DEFAULT '{}',
-  business_snapshot_json TEXT NOT NULL DEFAULT '{}',
-  note TEXT NOT NULL DEFAULT '',
-  issued_at TEXT NOT NULL,
-  valid_until TEXT,
-  sent_at TEXT,
-  sent_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
-  accepted_at TEXT,
-  cancelled_at TEXT,
-  reviewed_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_course_quotes_user_issued ON course_quotes(user_id, issued_at DESC);
-CREATE INDEX IF NOT EXISTS idx_course_quotes_status_issued ON course_quotes(status, issued_at DESC);
-
-CREATE TABLE IF NOT EXISTS course_quote_items (
-  id BIGINT PRIMARY KEY,
-  quote_id BIGINT NOT NULL REFERENCES course_quotes(id) ON DELETE CASCADE,
-  course_id BIGINT REFERENCES courses(id) ON DELETE SET NULL,
-  course_title TEXT NOT NULL DEFAULT '',
-  course_slug TEXT NOT NULL DEFAULT '',
-  course_category TEXT NOT NULL DEFAULT '',
-  course_type TEXT NOT NULL DEFAULT 'standard',
-  program_type TEXT NOT NULL DEFAULT '',
-  duration TEXT NOT NULL DEFAULT '',
-  quantity INTEGER NOT NULL DEFAULT 1,
-  unit_price INTEGER NOT NULL DEFAULT 0,
-  line_subtotal INTEGER NOT NULL DEFAULT 0,
-  pricing_note TEXT NOT NULL DEFAULT '',
-  metadata_json TEXT NOT NULL DEFAULT '{}',
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_course_quote_items_quote ON course_quote_items(quote_id, sort_order, id);
 
 CREATE TABLE IF NOT EXISTS discount_coupons (
   id BIGINT PRIMARY KEY,
@@ -945,12 +854,6 @@ ALTER TABLE courses ADD COLUMN IF NOT EXISTS public_tcp_approval_mode TEXT NOT N
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_daily_limit_gb DOUBLE PRECISION NOT NULL DEFAULT 0;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_total_limit_gb DOUBLE PRECISION NOT NULL DEFAULT 0;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS traffic_exceeded_action TEXT NOT NULL DEFAULT 'warn';
-ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS promotion_enabled INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS promotion_title TEXT NOT NULL DEFAULT '';
-ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS promotion_message TEXT NOT NULL DEFAULT '';
-ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS promotion_priority INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS badge_label TEXT NOT NULL DEFAULT '';
-ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS icon_key TEXT NOT NULL DEFAULT 'video';
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS is_pinned INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS instance_uuid TEXT;
@@ -1229,71 +1132,6 @@ ALTER TABLE trove_instances ADD COLUMN IF NOT EXISTS database_username TEXT NOT 
 ALTER TABLE trove_instances ADD COLUMN IF NOT EXISTS credential_secret_ref TEXT NOT NULL DEFAULT '';
 ALTER TABLE trove_instances ADD COLUMN IF NOT EXISTS database_port INTEGER NOT NULL DEFAULT 3306;
 
-CREATE TABLE IF NOT EXISTS written_exam_attempts (
-  id TEXT PRIMARY KEY,
-  course_id BIGINT NOT NULL,
-  exam_title TEXT NOT NULL,
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  user_name TEXT NOT NULL,
-  username TEXT NOT NULL,
-  answers_json TEXT NOT NULL DEFAULT '{}',
-  score INTEGER NOT NULL DEFAULT 0,
-  total_points INTEGER NOT NULL DEFAULT 0,
-  passed INTEGER NOT NULL DEFAULT 0,
-  results_json TEXT NOT NULL DEFAULT '[]',
-  submitted_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS lab_exam_attempts (
-  id TEXT PRIMARY KEY,
-  course_id BIGINT NOT NULL,
-  exam_title TEXT NOT NULL,
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  user_name TEXT NOT NULL,
-  username TEXT NOT NULL,
-  session_id TEXT,
-  lab_request_id BIGINT,
-  exit_code INTEGER NOT NULL DEFAULT 1,
-  stdout_text TEXT NOT NULL DEFAULT '',
-  stderr_text TEXT NOT NULL DEFAULT '',
-    score INTEGER NOT NULL DEFAULT 0,
-    total_points INTEGER NOT NULL DEFAULT 0,
-    passed INTEGER NOT NULL DEFAULT 0,
-    messages_json TEXT NOT NULL DEFAULT '[]',
-    screenshot_path TEXT NOT NULL DEFAULT '',
-    screenshot_url TEXT NOT NULL DEFAULT '',
-    result_snapshot_json TEXT NOT NULL DEFAULT '{}',
-    review_status TEXT NOT NULL DEFAULT 'pending',
-    review_note TEXT NOT NULL DEFAULT '',
-    reviewed_by BIGINT REFERENCES users(id),
-    reviewed_at TEXT,
-    review_history_json TEXT NOT NULL DEFAULT '[]',
-    result_mail_sent_at TEXT,
-    submitted_at TEXT NOT NULL
-  );
-
-CREATE TABLE IF NOT EXISTS course_survey_responses (
-  id BIGINT PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  course_id BIGINT NOT NULL REFERENCES courses(id),
-  phase TEXT NOT NULL,
-  answers_json TEXT NOT NULL DEFAULT '{}',
-  metrics_json TEXT NOT NULL DEFAULT '{}',
-  submitted_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  llm_feedback_text TEXT NOT NULL DEFAULT '',
-  llm_feedback_model TEXT NOT NULL DEFAULT '',
-  llm_feedback_provider TEXT NOT NULL DEFAULT '',
-  llm_feedback_message_id BIGINT,
-  llm_feedback_delivered INTEGER NOT NULL DEFAULT 0,
-  llm_feedback_generated_by BIGINT,
-  llm_feedback_generated_at TEXT,
-  UNIQUE(user_id, course_id, phase)
-);
-
-CREATE INDEX IF NOT EXISTS idx_course_survey_responses_course_phase ON course_survey_responses(course_id, phase);
-CREATE INDEX IF NOT EXISTS idx_course_survey_responses_user_course ON course_survey_responses(user_id, course_id);
-
 CREATE TABLE IF NOT EXISTS marketing_surveys (
   id BIGINT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -1341,20 +1179,6 @@ CREATE TABLE IF NOT EXISTS marketing_survey_submission_choices (
 CREATE INDEX IF NOT EXISTS idx_marketing_surveys_status_window ON marketing_surveys(status, start_at, end_at);
 CREATE INDEX IF NOT EXISTS idx_marketing_survey_options_survey ON marketing_survey_options(survey_id, sort_order, id);
 CREATE INDEX IF NOT EXISTS idx_marketing_survey_submissions_survey ON marketing_survey_submissions(survey_id, submitted_at DESC);
-
-CREATE TABLE IF NOT EXISTS certificates (
-  id TEXT PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id),
-  user_name TEXT NOT NULL,
-  username TEXT NOT NULL,
-  course_id BIGINT NOT NULL,
-  course_title TEXT NOT NULL,
-  certificate_code TEXT NOT NULL UNIQUE,
-  verify_code TEXT NOT NULL UNIQUE,
-  written_attempt_id TEXT,
-  lab_attempt_id TEXT,
-  issued_at TEXT NOT NULL
-);
 
 CREATE TABLE IF NOT EXISTS sessions (
   sid TEXT PRIMARY KEY,
@@ -1582,7 +1406,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_lab_requests_metallb_vip_cidr_unique
   WHERE metallb_vip_cidr <> '';
 ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS terminal_ssh_user TEXT NOT NULL DEFAULT '';
 ALTER TABLE lab_requests ADD COLUMN IF NOT EXISTS terminal_ssh_password TEXT NOT NULL DEFAULT '';
-ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS schedule_source TEXT NOT NULL DEFAULT 'manual';
-ALTER TABLE schedule_events ADD COLUMN IF NOT EXISTS external_event_id TEXT NOT NULL DEFAULT '';
-CREATE INDEX IF NOT EXISTS idx_schedule_events_external_source ON schedule_events(schedule_source, external_event_id);
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS terminal_replay_mode TEXT NOT NULL DEFAULT 'inherit';
