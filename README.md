@@ -1,4 +1,4 @@
-# KIKI OS TERMINAL-LAB Community 0.3.5
+# KIKI OS TERMINAL-LAB Community 0.3.6
 
 <img src="platform/client/public/brand/kikios-kiki-wordmark-v1.png" width="360" height="120" alt="노란색 KIKI 박스 마스코트와 KIKI · 키키 로고" />
 
@@ -39,6 +39,10 @@ Self-hosted OpenStack portal for general users and administrators, with SSO, OTP
 **교육 보고서·교육 랩 터미널·강사 공유 WebSocket·검증용 과정 생성 경로도 제거**했습니다. 
 
 공통 쿼리 호환성을 위해 DB의 교육 호환 테이블과 일부 비활성 호환 코드·빈 화면 스텁은 남아 있습니다. 이 배포본의 초기화는 교육 콘텐츠를 생성하지 않습니다. 원본 수강생 정보·운영 DB·운영 자격증명 파일과 원문 커리큘럼 데이터는 현재 배포 소스에서 제외합니다. 과거 교육 콘텐츠가 포함된 이력·릴리스는 별도 비공개 아카이브에 보존했습니다. 현재 저장소에는 정리된 Community 이력만 포함하며 GitHub에서는 공개합니다. 과거 비공개 아카이브는 공개하지 않습니다.
+
+## 0.3.6 프로젝트 정리 안내 개선
+
+관리자 프로젝트 전체 삭제 버튼과 삭제 범위·보존 대상·실패 시 영향을 명확히 표시하고, 프로젝트 이름 확인과 기존 서버 권한·보호 검사를 유지합니다. [릴리스 ZIP](https://github.com/tangt64/kiki-terminal-lab/releases/tag/v0.3.6)에 인스톨러가 포함되며 함께 제공하는 체크섬을 검증한 뒤 [설치·업데이트 안내](docs/installation.md)를 따르세요.
 
 ## 0.3.5 배포 정보 정리
 
@@ -181,7 +185,7 @@ python3 installer/package.py
 
 배포 담당자는 `npm run release:publish` 한 번으로 GitHub와 Gitea에 코드·태그·ZIP·체크섬을 올리고 일치 여부와 비공개 접근을 확인할 수 있습니다. 새 버전을 커밋한 깨끗한 `main`에서 실행합니다. 준비·재시도·검증 전용 옵션은 [양쪽 저장소 배포 안내](docs/releasing.md)를 참조하세요.
 
-저장소는 [tangt64/kiki-terminal-lab](https://github.com/tangt64/kiki-terminal-lab)이며, GitHub와 [Gitea](https://git.vlab.dustbox.kr/terminal-lab/kiki-terminal-lab)는 **공개**로 관리합니다. 이 디렉터리의 배포 소스만 포함하며 부모 저장소와 Git 이력, 운영 DB·설정·키·업로드를 포함하지 않습니다. `.gitignore`는 운영 경로를 제외합니다. MIT 라이선스와 의존성 고지는 [LICENSE](LICENSE)·[NOTICE.md](NOTICE.md)에 있으며, 추출 원본 해시는 [출처 기록](platform/SOURCE-PROVENANCE.json)에 있습니다. 공개 연락처는 위의 문의 메일이며 실제 인프라 자격증명은 설치자가 별도로 설정합니다.
+저장소는 [tangt64/kiki-terminal-lab](https://github.com/tangt64/kiki-terminal-lab)이며, GitHub는 **공개**, [Gitea](https://git.vlab.dustbox.kr/terminal-lab/kiki-terminal-lab)는 **비공개**로 관리합니다. 이 디렉터리의 배포 소스만 포함하며 부모 저장소와 Git 이력, 운영 DB·설정·키·업로드를 포함하지 않습니다. `.gitignore`는 운영 경로를 제외합니다. MIT 라이선스와 의존성 고지는 [LICENSE](LICENSE)·[NOTICE.md](NOTICE.md)에 있으며, 추출 원본 해시는 [출처 기록](platform/SOURCE-PROVENANCE.json)에 있습니다. 공개 연락처는 위의 문의 메일이며 실제 인프라 자격증명은 설치자가 별도로 설정합니다.
 
 ```bash
 git clone https://github.com/tangt64/kiki-terminal-lab.git
@@ -194,6 +198,6 @@ cd kiki-terminal-lab
 
 ## 2026-11-02 업데이트
 중지된 VM의 다중 선택·순차 시작 요청을 추가했습니다. 실제 자원 시작 없이 모의 요청으로 검증했으며, 기존 권한·한도는 유지합니다.
-현재 GitHub·Gitea 저장소는 공개로 관리하며 운영 비밀과 실행 환경은 포함하지 않습니다.
+현재 GitHub는 공개, Gitea는 비공개로 관리하며 운영 비밀과 실행 환경은 포함하지 않습니다.
 
-프로젝트 단위 삭제 버튼과 기록·인스턴스·프로젝트별 범위는 [프로젝트 정리 안내](docs/project-cleanup.md)를 참고하세요. 공개 Gitea에 릴리스를 발행할 때는 `npm run release:publish -- --allow-public-gitea`로 공개 대상 사용을 명시합니다. 이 옵션은 저장소 공개 설정을 바꾸지 않으며, 생략하면 기존 비공개 Gitea 보호 검사가 유지됩니다.
+프로젝트 단위 삭제 버튼과 기록·인스턴스·프로젝트별 범위는 [프로젝트 정리 안내](docs/project-cleanup.md)를 참고하세요. 배포는 `npm run release:publish`로 수행합니다. 현재 Gitea는 비공개이며, 공개 Gitea 허용 옵션은 사용하지 않습니다.

@@ -1,6 +1,6 @@
 # GitHub·Gitea 한 번에 배포하기
 
-GitHub의 `origin`과 Gitea의 `internal`은 일반 저장소 두 개입니다. GitHub는 공개하고 Gitea는 비공개로 유지합니다. 자동 Pull Mirror를 사용하지 않습니다. 아래 명령 한 번이 양쪽에 현재 브랜치·버전 태그·소스 ZIP·체크섬을 올리고 일치 여부를 확인합니다.
+GitHub의 `origin`과 Gitea의 `internal`은 일반 저장소 두 개입니다. GitHub는 공개하고 Gitea는 비공개로 유지합니다. 현재 0.3.6 Preview도 이 정책을 따르며 `--allow-public-gitea` 옵션을 사용하지 않습니다. 자동 Pull Mirror를 사용하지 않습니다. 아래 명령 한 번이 양쪽에 현재 브랜치·버전 태그·소스 ZIP·체크섬을 올리고 일치 여부를 확인합니다.
 
 ```bash
 npm run release:publish
